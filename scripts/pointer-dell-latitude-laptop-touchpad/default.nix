@@ -13,8 +13,8 @@ let
   xinput = "${pkgs.xlibs.xinput}/bin/xinput";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable raku}
-    ${utils.bash.checkFileIsExecutable xinput}
+    ${utils.shellCheckers.fileIsExecutable raku}
+    ${utils.shellCheckers.fileIsExecutable xinput}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

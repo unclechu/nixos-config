@@ -11,10 +11,10 @@ let
   bash = "${pkgs.bash}/bin/bash";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable bash}
-    ${utils.bash.checkFileIsExecutable "${pkgs.inotify-tools}/bin/inotifywait"}
-    ${utils.bash.checkFileIsExecutable "${pkgs.gnused}/bin/sed"}
-    ${utils.bash.checkFileIsExecutable "${pkgs.dzen2}/bin/dzen2"}
+    ${utils.shellCheckers.fileIsExecutable bash}
+    ${utils.shellCheckers.fileIsExecutable "${pkgs.inotify-tools}/bin/inotifywait"}
+    ${utils.shellCheckers.fileIsExecutable "${pkgs.gnused}/bin/sed"}
+    ${utils.shellCheckers.fileIsExecutable "${pkgs.dzen2}/bin/dzen2"}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

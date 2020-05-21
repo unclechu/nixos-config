@@ -1,17 +1,18 @@
 args@
 { pkgs ? import <nixpkgs> { config = if builtins.hasAttr "config" args then args.config else {}; }
 , bashEnvFile ? null
+
+, neovimRC ? fetchGit {
+    url = "https://github.com/unclechu/neovimrc.git";
+    rev = "b36a8142070a03a850d4da8b51f2ec7c22212a0d"; # 21 May 2020
+    ref = "master";
+  }
+
 , ...
 }:
 let
   utils = import ../utils args;
-  inherit (utils) esc lines unlines nameOfModuleFile writeCheckedExecutable;
-
-  neovimRC = fetchGit {
-    url = "https://github.com/unclechu/neovimrc.git";
-    rev = "c0de28d8860bd4bcb658ff9a9daf1fec88b3e365"; # 8 May 2020
-    ref = "master";
-  };
+  inherit (utils) esc lines unlines nameOfModuleFile writeCheckedExecutable wrapExecutable;
 
   init  = builtins.readFile "${neovimRC}/init.vim";
   ginit = builtins.readFile "${neovimRC}/ginit.vim";
@@ -245,16 +246,13 @@ let
             owner = builtins.head plugin;
             repo = name;
           } // pluginsOverrides."${name}");
-
-        patch =
-          pkgs.runCommand "${name}-without-makefile" {} ''
-            set -Eeuo pipefail
-            mkdir -- "$out"
-            cp -r -- ${esc origin}/* "$out"
-            rm -- "$out/Makefile"
-          '';
       in
-        if builtins.pathExists "${origin}/Makefile" then patch else origin;
+        pkgs.runCommand "${name}-clean" {} ''
+          set -Eeuo pipefail
+          mkdir -- "$out"
+          cp -r -- ${esc origin}/* "$out"
+          rm -f -- "$out/Makefile"
+        '';
   };
 
   plugins =
@@ -358,13 +356,12 @@ let
       perl = "${pkgs.perl}/bin/perl";
 
       perlDependencies = [ pkgs.perlPackages.IPCSystemSimple ];
-      perlDepsPath     = pkgs.perlPackages.makePerlPath perlDependencies;
 
       perlLibWrap = name: checkPhase: perlScript:
-        writeCheckedExecutable name checkPhase ''
-          #! ${dash}
-          PERL5LIB=${esc perlDepsPath} ${esc perlScript}/bin/${esc name} "$@"
-        '';
+        wrapExecutable "${perlScript}/bin/${name}" {
+          env = { PERL5LIB = pkgs.perlPackages.makePerlPath perlDependencies; };
+          inherit checkPhase;
+        };
     in
       {
         clean-vim =
@@ -373,14 +370,14 @@ let
             src  = builtins.readFile "${neovimRC}/apps/${name}";
 
             checkPhase = ''
-              ${utils.bash.checkFileIsExecutable dash}
-              ${utils.bash.checkFileIsExecutable perl}
-              ${utils.bash.checkValueIsNonEmptyString src}
+              ${utils.shellCheckers.fileIsExecutable dash}
+              ${utils.shellCheckers.fileIsExecutable perl}
             '';
 
             perlScript = writeCheckedExecutable name checkPhase "#! ${perl}\n${src}";
             pkg = perlLibWrap name checkPhase perlScript;
           in
+            assert utils.valueCheckers.isNonEmptyString src;
             { inherit name src checkPhase pkg perlDependencies perlScript; };
 
         git-grep-nvr =
@@ -391,10 +388,9 @@ let
             src      = builtins.readFile "${neovimRC}/apps/${name}.sh";
 
             checkPhase = ''
-              ${utils.bash.checkFileIsExecutable bash}
-              ${utils.bash.checkFileIsExecutable nvr}
-              ${utils.bash.checkFileIsExecutable whiptail}
-              ${utils.bash.checkValueIsNonEmptyString src}
+              ${utils.shellCheckers.fileIsExecutable bash}
+              ${utils.shellCheckers.fileIsExecutable nvr}
+              ${utils.shellCheckers.fileIsExecutable whiptail}
             '';
 
             pkg = writeCheckedExecutable name checkPhase ''
@@ -405,6 +401,7 @@ let
               ${src}
             '';
           in
+            assert utils.valueCheckers.isNonEmptyString src;
             { inherit name src checkPhase pkg; };
 
         nvimd =
@@ -417,11 +414,10 @@ let
             src   = builtins.readFile "${neovimRC}/apps/${name}";
 
             checkPhase = ''
-              ${utils.bash.checkFileIsExecutable dash}
-              ${utils.bash.checkFileIsExecutable perl}
-              ${utils.bash.checkFileIsExecutable nvim}
-              ${utils.bash.checkFileIsExecutable pkill}
-              ${utils.bash.checkValueIsNonEmptyString src}
+              ${utils.shellCheckers.fileIsExecutable dash}
+              ${utils.shellCheckers.fileIsExecutable perl}
+              ${utils.shellCheckers.fileIsExecutable nvim}
+              ${utils.shellCheckers.fileIsExecutable pkill}
             '';
 
             perlScript = writeCheckedExecutable name checkPhase ''
@@ -434,6 +430,7 @@ let
 
             pkg = perlLibWrap name checkPhase perlScript;
           in
+            assert utils.valueCheckers.isNonEmptyString src;
             { inherit name src checkPhase pkg neovim perlDependencies perlScript; };
       };
 in

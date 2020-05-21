@@ -4,30 +4,22 @@ args@
 }:
 let
   utils = import ../utils args;
-  inherit (utils) nameOfModuleFile writeCheckedExecutable esc;
+  inherit (utils) nameOfModuleFile wrapExecutable esc;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
 
-  dash = "${pkgs.dash}/bin/dash";
-  xkb-switch = "${pkgs.xkb-switch}/bin/xkb-switch";
-  xautolock = "${pkgs.xautolock}/bin/xautolock";
-
-  xbindkeys-origin = "${pkgs.xbindkeys}/bin/xbindkeys";
-  xbindkeys_show-origin = "${pkgs.xbindkeys}/bin/xbindkeys_show";
-
-  checkPhase = ''
-    ${utils.bash.checkFileIsExecutable dash}
-    ${utils.bash.checkFileIsExecutable xkb-switch}
-    ${utils.bash.checkFileIsExecutable xautolock}
-    ${utils.bash.checkFileIsExecutable xbindkeys-origin}
-    ${utils.bash.checkFileIsExecutable xbindkeys_show-origin}
-  '';
+  # previously i was confused with some weird behavior like layouts were rotating not sequentially.
+  # but i realized its LShift+RShift for rotating forward and RShift+LShift for backward rotation
+  # which is a lot more convenient.
+  #
+  # old hooks for one-direction rotation:
+  #
+  #   "${xkb-switch} -n"
+  #     shift + c:50
+  #   "${xkb-switch} -n"
+  #     shift + c:62
+  #
 
   xbindkeysrc = pkgs.writeText "xbindkeysrc" ''
-    # "${xkb-switch} -n"
-    #   shift + c:50
-    # "${xkb-switch} -n"
-    #   shift + c:62
-
     "${xautolock} -locknow"
       XF86Eject
 
@@ -36,22 +28,43 @@ let
       shift + XF86Eject
   '';
 
-  xbindkeys = ''
-    #! ${dash}
-    ${esc xbindkeys-origin} -f ${esc xbindkeysrc} "$@"
+  xkb-switch = "${pkgs.xkb-switch}/bin/xkb-switch";
+  xautolock = "${pkgs.xautolock}/bin/xautolock";
+
+  xbindkeys-origin = "${pkgs.xbindkeys}/bin/xbindkeys";
+  xbindkeys_show-origin = "${pkgs.xbindkeys}/bin/xbindkeys_show";
+
+  checkPhase = ''
+    ${utils.shellCheckers.fileIsExecutable xkb-switch}
+    ${utils.shellCheckers.fileIsExecutable xautolock}
+    ${utils.shellCheckers.fileIsExecutable xbindkeys-origin}
+    ${utils.shellCheckers.fileIsExecutable xbindkeys_show-origin}
+    ${utils.shellCheckers.fileIsReadable xbindkeysrc}
   '';
 
-  xbindkeys_show = ''
-    #! ${dash}
-    ${esc xbindkeys_show-origin} -f ${esc xbindkeysrc} "$@"
-  '';
+  configArgs = [ "-f" xbindkeysrc ];
+
+  xbindkeys = wrapExecutable xbindkeys-origin {
+    inherit name checkPhase;
+    args = configArgs;
+  };
+
+  xbindkeys_show = wrapExecutable xbindkeys_show-origin {
+    inherit checkPhase;
+    name = "${name}_show";
+    args = configArgs;
+  };
 
   wenzels-xbindkeys = pkgs.runCommand name {} ''
     set -Eeuo pipefail
     mkdir -p -- "$out/bin"
-    printf '%s' ${esc xbindkeys} > "$out"/bin/${esc name}
-    printf '%s' ${esc xbindkeys_show} > "$out"/bin/${esc name}_show
-    chmod +x -- "$out"/bin/${esc name} "$out"/bin/${esc name}_show
+
+    cp -- \
+      ${esc xbindkeys}/bin/${esc xbindkeys.name} \
+      ${esc xbindkeys_show}/bin/${esc xbindkeys_show.name} \
+      "$out"/bin/
+
+    chmod +x -- "$out"/bin/${esc xbindkeys.name} "$out"/bin/${esc xbindkeys_show.name}
   '';
 in
 {

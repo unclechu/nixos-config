@@ -105,7 +105,7 @@ let
   screen-backlight =
     (import scripts/screen-backlight.nix (moduleArgs // { inherit dzen-box; })).pkg;
 
-  hsc2hs-pipe = (import scripts/hsc2hs-pipe.nix (moduleArgs // { inherit ghc; })).pkg;
+  hsc2hs-pipe = (import scripts/hsc2hs-pipe.nix (moduleArgs // { inherit ghc gcc; })).pkg;
   timer = (import scripts/timer.nix moduleArgs).pkg;
   genpass = (import scripts/genpass.nix moduleArgs).pkg;
   picom = import scripts/picom.nix moduleArgs;
@@ -130,7 +130,15 @@ let
   };
 
   ghc = pkgs.haskellPackages.ghc;
-  inherit (import ./utils moduleArgs) esc;
+  gcc = pkgs.gcc;
+
+  firefox = wrapExecutable "${pkgs.firefox}/bin/firefox" {
+    env = {
+      MOZ_USE_XINPUT2 = 1; # support touchscreen scrolling
+    };
+  };
+
+  inherit (import ./utils moduleArgs) esc wrapExecutable;
 in
 {
   imports = [
@@ -183,7 +191,7 @@ in
     # let network manager do the work.
     # if you turn both this and network manager on the network
     # will constantly go up and down in an infinite loop.
-    interfaces.enp3s0.useDHCP = false;
+    # interfaces.enp3s0.useDHCP = false;
 
     # proxy = {
     #   default = "http://user:password@proxy:port/";
@@ -210,6 +218,14 @@ in
     variables = {
       EDITOR = "nvim";
       TERMINAL = "termite";
+
+      # XCompose and XIM setup
+      XMODIFIERS = "@im=none";
+      QT_IM_MODULE = "xim";
+      GTK_IM_MODULE = "xim";
+
+      QT_QPA_PLATFORMTHEME = "qt5ct";
+      GTK_THEME = "Adwaita:dark";
     };
 
     shells = [
@@ -235,6 +251,7 @@ in
       pkgs.parted pkgs.gparted
       pkgs.pciutils
       pkgs.wally-cli
+      pkgs.sshfs pkgs.curlftpfs
 
       # code editing
       system-vim.vim
@@ -249,6 +266,10 @@ in
       (pkgs.haskell.lib.justStaticExecutables pkgs.haskellPackages.hoogle)
       ## perls
       pkgs.perl pkgs.rakudo
+      ## c
+      gcc
+      ## etc
+      pkgs.gnumake
 
       # file managers
       pkgs.mc
@@ -289,7 +310,7 @@ in
       place-cursor-at
       pkgs.xautolock
       pkgs.termite
-      pkgs.firefox
+      firefox
       pkgs.chromium
       pkgs.gnome3.networkmanagerapplet
       pkgs.gnome3.gnome-system-monitor
@@ -303,6 +324,11 @@ in
       pkgs.shutter
       pkgs.keepassx2
       pkgs.hledger pkgs.hledger-ui pkgs.hledger-web
+
+      # antivirus
+      pkgs.clamav
+      pkgs.lynis
+      # pkgs.vulnix # FIXME broken python-ZODB depedency
 
       # etc
       pkgs.git
@@ -342,11 +368,14 @@ in
 
     opengl = rec {
       enable = true;
+      driSupport = true;
       driSupport32Bit = true;
+      s3tcSupport = true;
 
       extraPackages = [
         pkgs.mesa
         pkgs.vaapiVdpau
+        pkgs.vaapiIntel
         pkgs.libvdpau-va-gl
       ];
 
@@ -407,6 +436,11 @@ in
     fwupd.enable = true;
   };
 
+  virtualisation = {
+    docker.enable = true;
+    virtualbox.host.enable = true;
+  };
+
   fonts = {
     enableFontDir = true;
 
@@ -437,6 +471,8 @@ in
         "networkmanager"
         rawdevinputGroupName
         backlightcontrolGroupName
+        "docker"
+        "vboxusers"
       ];
 
       packages = [

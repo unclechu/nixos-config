@@ -13,8 +13,8 @@ let
   dzen2 = "${pkgs.dzen2}/bin/dzen2";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable raku}
-    ${utils.bash.checkFileIsExecutable dzen2}
+    ${utils.shellCheckers.fileIsExecutable raku}
+    ${utils.shellCheckers.fileIsExecutable dzen2}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

@@ -10,7 +10,7 @@ let
   raku = "${pkgs.rakudo}/bin/raku";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable raku}
+    ${utils.shellCheckers.fileIsExecutable raku}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

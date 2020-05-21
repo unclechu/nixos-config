@@ -18,11 +18,11 @@ let
   xargs = "${pkgs.findutils}/bin/xargs";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable bash}
-    ${utils.bash.checkFileIsExecutable dzen-box-exe}
-    ${utils.bash.checkFileIsExecutable pactl}
-    ${utils.bash.checkFileIsExecutable pacmd}
-    ${utils.bash.checkFileIsExecutable awk}
+    ${utils.shellCheckers.fileIsExecutable bash}
+    ${utils.shellCheckers.fileIsExecutable dzen-box-exe}
+    ${utils.shellCheckers.fileIsExecutable pactl}
+    ${utils.shellCheckers.fileIsExecutable pacmd}
+    ${utils.shellCheckers.fileIsExecutable awk}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

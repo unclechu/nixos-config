@@ -31,18 +31,13 @@ let
   xkbOptions = xkb.options;
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable raku}
-    ${utils.bash.checkFileIsExecutable xset}
-    ${utils.bash.checkValueIsPositiveNaturalNumber keyRepeatDelay}
-    ${utils.bash.checkValueIsPositiveNaturalNumber keyRepeatInterval}
-    ${utils.bash.checkFileIsExecutable setxkbmap}
-    ${utils.bash.checkValueIsNonEmptyString xkbLayout}
-    ${utils.bash.checkValueIsNonEmptyString xkbOptions}
-    ${utils.bash.checkFileIsExecutable numlockx}
-    ${utils.bash.checkFileIsExecutable pkill}
-    ${utils.bash.checkFileIsExecutable xbindkeys-exe}
-    ${utils.bash.checkFileIsExecutable xlib-keys-hack-starter-exe}
-    ${utils.bash.checkValueIsNonEmptyString xlib-keys-hack-starter-name}
+    ${utils.shellCheckers.fileIsExecutable raku}
+    ${utils.shellCheckers.fileIsExecutable xset}
+    ${utils.shellCheckers.fileIsExecutable setxkbmap}
+    ${utils.shellCheckers.fileIsExecutable numlockx}
+    ${utils.shellCheckers.fileIsExecutable pkill}
+    ${utils.shellCheckers.fileIsExecutable xbindkeys-exe}
+    ${utils.shellCheckers.fileIsExecutable xlib-keys-hack-starter-exe}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''
@@ -63,6 +58,11 @@ let
     ${src}
   '';
 in
+assert utils.valueCheckers.isPositiveNaturalNumber keyRepeatDelay;
+assert utils.valueCheckers.isPositiveNaturalNumber keyRepeatInterval;
+assert utils.valueCheckers.isNonEmptyString xkbLayout;
+assert utils.valueCheckers.isNonEmptyString xkbOptions;
+assert utils.valueCheckers.isNonEmptyString xlib-keys-hack-starter-name;
 {
   inherit src name pkg checkPhase;
 }

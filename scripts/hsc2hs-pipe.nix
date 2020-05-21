@@ -1,45 +1,39 @@
 args@
 { pkgs ? import <nixpkgs> { config = if builtins.hasAttr "config" args then args.config else {}; }
+, gcc ? null
 , ghc ? null
 , ...
 }:
 let
   utils = import ../utils args;
-  inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (utils) esc writeCheckedExecutable wrapExecutable nameOfModuleFile;
 
   src = builtins.readFile "${(import ../apps/wenzels-bash.nix args).src}/apps/${name}";
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
 
   ghc' = args.ghc or pkgs.haskellPackages.ghc;
+  gcc' = args.gcc or pkgs.gcc;
 
-  dash = "${pkgs.dash}/bin/dash";
   perl = "${pkgs.perl}/bin/perl";
-  hsc2hs = "${ghc'}/bin/hsc2hs";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable dash}
-    ${utils.bash.checkFileIsExecutable perl}
-    ${utils.bash.checkFileIsExecutable hsc2hs}
+    ${utils.shellCheckers.fileIsExecutable perl}
+    ${utils.shellCheckers.fileIsExecutable "${ghc'}/bin/hsc2hs"}
+    ${utils.shellCheckers.fileIsExecutable "${gcc'}/bin/gcc"}
   '';
 
-  perlScript = writeCheckedExecutable name checkPhase ''
-    #! ${perl}
-    use v5.10; use strict; use warnings; use autodie qw(:all);
-    $ENV{PATH} = q<${ghc'}/bin:>.$ENV{PATH};
-    ${src}
-  '';
+  perlScript = writeCheckedExecutable name checkPhase "#! ${perl}\n${src}";
 
   perlDependencies = [
     pkgs.perlPackages.IPCSystemSimple
     pkgs.perlPackages.FileTemp
   ];
 
-  perlDepsPath = pkgs.perlPackages.makePerlPath perlDependencies;
-
-  pkg = writeCheckedExecutable name checkPhase ''
-    #! ${dash}
-    PERL5LIB=${esc perlDepsPath} ${esc perlScript}/bin/${esc name} "$@"
-  '';
+  pkg = wrapExecutable "${perlScript}/bin/${name}" {
+    inherit checkPhase;
+    deps = [ ghc' gcc' ];
+    env = { PERL5LIB = pkgs.perlPackages.makePerlPath perlDependencies; };
+  };
 in
 {
   inherit name src pkg checkPhase perlDependencies perlScript;

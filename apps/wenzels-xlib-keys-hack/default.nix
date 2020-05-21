@@ -12,8 +12,8 @@ let
   bash = "${pkgs.bash}/bin/bash";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable bash}
-    ${utils.bash.checkFileIsExecutable "${xlib-keys-hack}/bin/xlib-keys-hack"}
+    ${utils.shellCheckers.fileIsExecutable bash}
+    ${utils.shellCheckers.fileIsExecutable "${xlib-keys-hack}/bin/xlib-keys-hack"}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

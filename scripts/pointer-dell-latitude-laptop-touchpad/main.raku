@@ -5,3 +5,4 @@ $found-device-line ~~ / 'id=' $<found-id> = (\d+) /;
 
 run(xinput, 'set-prop', $<found-id>, 'libinput Natural Scrolling Enabled', '1');
 run(xinput, 'set-prop', $<found-id>, 'libinput Left Handed Enabled', '1');
+run(xinput, 'set-prop', $<found-id>, 'libinput Tapping Enabled', '0');

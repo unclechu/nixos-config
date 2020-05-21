@@ -4,7 +4,7 @@ args@
 }:
 let
   utils = import ../utils args;
-  inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (utils) esc wrapExecutable nameOfModuleFile;
 
   src = fetchGit {
     url = "https://github.com/unclechu/unclechu-i3-status.git";
@@ -20,19 +20,14 @@ let
   pkg = hs.callCabal2nix name src {};
   pkg-exe = "${pkgs.haskell.lib.justStaticExecutables pkg}/bin/${name}";
 
-  dash = "${pkgs.dash}/bin/dash";
   dzen2 = "${pkgs.dzen2}/bin/dzen2";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable dash}
-    ${utils.bash.checkFileIsExecutable dzen2}
-    ${utils.bash.checkFileIsExecutable pkg-exe}
+    ${utils.shellCheckers.fileIsExecutable dzen2}
+    ${utils.shellCheckers.fileIsExecutable pkg-exe}
   '';
 
-  wrapper = writeCheckedExecutable name checkPhase ''
-    #! ${dash}
-    PATH=${pkgs.dzen2}/bin:$PATH ${esc pkg-exe} "$@"
-  '';
+  wrapper = wrapExecutable pkg-exe { deps = [ pkgs.dzen2 ]; inherit checkPhase; };
 in
 {
   inherit name src;

@@ -4,7 +4,7 @@ args@
 }:
 let
   utils = import ../utils args;
-  inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (utils) esc writeCheckedExecutable wrapExecutable nameOfModuleFile;
 
   src = fetchGit {
     url = "https://github.com/unclechu/gpaste-gui.git";
@@ -31,9 +31,8 @@ let
   ];
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable perl}
-    ${utils.bash.checkFileIsExecutable gpaste-client}
-    ${utils.bash.checkValueIsNonEmptyString srcFile}
+    ${utils.shellCheckers.fileIsExecutable perl}
+    ${utils.shellCheckers.fileIsExecutable gpaste-client}
   '';
 
   perlScript = writeCheckedExecutable name checkPhase ''
@@ -43,13 +42,12 @@ let
     ${srcFile}
   '';
 
-  perlDepsPath = pkgs.perlPackages.makePerlPath perlDependencies;
-
-  pkg = writeCheckedExecutable name checkPhase ''
-    #! ${dash}
-    PERL5LIB=${esc perlDepsPath} ${esc perlScript}/bin/${esc name} "$@"
-  '';
+  pkg = wrapExecutable "${perlScript}/bin/${name}" {
+    env = { PERL5LIB = pkgs.perlPackages.makePerlPath perlDependencies; };
+    inherit checkPhase;
+  };
 in
+assert utils.valueCheckers.isNonEmptyString srcFile;
 {
   inherit name src srcFile perlDependencies perlScript pkg;
 }

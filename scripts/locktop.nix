@@ -18,9 +18,9 @@ let
   i3lock = "${pkgs.i3lock}/bin/i3lock";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable bash}
-    ${utils.bash.checkFileIsExecutable dzen-box-exe}
-    ${utils.bash.checkFileIsExecutable xautolock}
+    ${utils.shellCheckers.fileIsExecutable bash}
+    ${utils.shellCheckers.fileIsExecutable dzen-box-exe}
+    ${utils.shellCheckers.fileIsExecutable xautolock}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

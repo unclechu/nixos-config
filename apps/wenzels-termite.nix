@@ -4,7 +4,7 @@ args@
 }:
 let
   utils = import ../utils args;
-  inherit (utils) esc writeCheckedExecutable;
+  inherit (utils) esc wrapExecutable;
 
   rc = fetchGit {
     url = "https://github.com/unclechu/termiterc.git";
@@ -18,16 +18,16 @@ let
   lightConfig = "${rc}/config-light";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable dash}
-    ${utils.bash.checkFileIsExecutable termiteBin}
-    ${utils.bash.checkFileIsReadable darkConfig}
-    ${utils.bash.checkFileIsReadable lightConfig}
+    ${utils.shellCheckers.fileIsExecutable dash}
+    ${utils.shellCheckers.fileIsExecutable termiteBin}
+    ${utils.shellCheckers.fileIsReadable darkConfig}
+    ${utils.shellCheckers.fileIsReadable lightConfig}
   '';
 
-  termite = name: config: writeCheckedExecutable name checkPhase ''
-    #! ${dash}
-    ${esc termiteBin} --config=${esc config} "$@" || exit $?
-  '';
+  termite = name: config: wrapExecutable termiteBin {
+    inherit name checkPhase;
+    args = [ "--config=${config}" ];
+  };
 in {
   inherit rc checkPhase;
   default = termite "termite" darkConfig;

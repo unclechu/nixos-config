@@ -12,9 +12,9 @@ let
   perl = "${pkgs.perl}/bin/perl";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable perl}
-    ${utils.bash.checkFileIsExecutable "${pkgs.xlibs.xrandr}/bin/xrandr"}
-    ${utils.bash.checkFileIsExecutable "${pkgs.xdotool}/bin/xdotool"}
+    ${utils.shellCheckers.fileIsExecutable perl}
+    ${utils.shellCheckers.fileIsExecutable "${pkgs.xlibs.xrandr}/bin/xrandr"}
+    ${utils.shellCheckers.fileIsExecutable "${pkgs.xdotool}/bin/xdotool"}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

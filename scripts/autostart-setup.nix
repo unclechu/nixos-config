@@ -22,14 +22,14 @@ let
   picom-exe = "${picom}/bin/${picom.name}";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable bash}
-    ${utils.bash.checkFileIsExecutable input-setup-exe}
-    ${utils.bash.checkFileIsExecutable autolock-exe}
-    ${utils.bash.checkFileIsExecutable pactl}
-    ${utils.bash.checkFileIsExecutable gpaste-client}
-    ${utils.bash.checkFileIsExecutable nm-applet}
-    ${utils.bash.checkFileIsExecutable xsetroot}
-    ${utils.bash.checkFileIsExecutable picom-exe}
+    ${utils.shellCheckers.fileIsExecutable bash}
+    ${utils.shellCheckers.fileIsExecutable input-setup-exe}
+    ${utils.shellCheckers.fileIsExecutable autolock-exe}
+    ${utils.shellCheckers.fileIsExecutable pactl}
+    ${utils.shellCheckers.fileIsExecutable gpaste-client}
+    ${utils.shellCheckers.fileIsExecutable nm-applet}
+    ${utils.shellCheckers.fileIsExecutable xsetroot}
+    ${utils.shellCheckers.fileIsExecutable picom-exe}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

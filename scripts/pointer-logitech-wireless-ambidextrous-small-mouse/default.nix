@@ -14,9 +14,9 @@ let
   bash = "${pkgs.bash}/bin/bash";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable bash}
-    ${utils.bash.checkFileIsExecutable "${pkgs.gnugrep}/bin/grep"}
-    ${utils.bash.checkFileIsExecutable "${pkgs.xlibs.xinput}/bin/xinput"}
+    ${utils.shellCheckers.fileIsExecutable bash}
+    ${utils.shellCheckers.fileIsExecutable "${pkgs.gnugrep}/bin/grep"}
+    ${utils.shellCheckers.fileIsExecutable "${pkgs.xlibs.xinput}/bin/xinput"}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

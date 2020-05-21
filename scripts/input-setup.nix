@@ -29,13 +29,13 @@ let
     "${pointer-razor-wired-ambidextrous-mouse}/bin/pointer-razor-wired-ambidextrous-mouse";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable bash}
-    ${utils.bash.checkFileIsExecutable xinput}
-    ${utils.bash.checkFileIsExecutable wenzels-keyboard-exe}
-    ${utils.bash.checkFileIsExecutable pointer-dell-latitude-laptop-dot-exe}
-    ${utils.bash.checkFileIsExecutable pointer-dell-latitude-laptop-touchpad-exe}
-    ${utils.bash.checkFileIsExecutable pointer-logitech-wireless-ambidextrous-small-mouse-exe}
-    ${utils.bash.checkFileIsExecutable pointer-razor-wired-ambidextrous-mouse-exe}
+    ${utils.shellCheckers.fileIsExecutable bash}
+    ${utils.shellCheckers.fileIsExecutable xinput}
+    ${utils.shellCheckers.fileIsExecutable wenzels-keyboard-exe}
+    ${utils.shellCheckers.fileIsExecutable pointer-dell-latitude-laptop-dot-exe}
+    ${utils.shellCheckers.fileIsExecutable pointer-dell-latitude-laptop-touchpad-exe}
+    ${utils.shellCheckers.fileIsExecutable pointer-logitech-wireless-ambidextrous-small-mouse-exe}
+    ${utils.shellCheckers.fileIsExecutable pointer-razor-wired-ambidextrous-mouse-exe}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

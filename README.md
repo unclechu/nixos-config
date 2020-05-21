@@ -25,7 +25,7 @@
 1. Install:
 
    ```sh
-   sudo nixos-install --root /mnt
+   sudo nix-shell -p git --run 'nixos-install --no-root-passwd --root /mnt'
    ```
 
 1. Change the password in order to be able to login:
@@ -40,7 +40,12 @@
    reboot
    ```
 
-**TODO** fill this README
+## Known issues
+
+1. In a new installed NixOS from this config I had to manually create
+   `/nix/var/nix/profiles/per-user/wenzel` directory and `chown` it to `wenzel:root` (as in the
+   first machine). Otherwise Home Manager systemd service was failing with error of that directory
+   doesn't exists. NixOS also couldn't be rebuilt before that directory has been created.
 
 ## Author
 

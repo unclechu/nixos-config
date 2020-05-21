@@ -5,7 +5,7 @@ args@
 }:
 let
   utils = import ../utils args;
-  inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (utils) esc wrapExecutable nameOfModuleFile;
 
   src = fetchGit {
     url = "https://github.com/unclechu/bashrc.git";
@@ -22,10 +22,12 @@ let
 
   vte-sh-file = "${pkgs.vte}/etc/profile.d/vte.sh";
   wenzel-nixos-pc = import ../hardware/wenzel-nixos-pc.nix args;
+  rw-wenzel-nixos-laptop = import ../hardware/rw-wenzel-nixos-laptop.nix args;
   hostName = config.networking.hostName or null;
 
   misc-setups =
     if hostName == wenzel-nixos-pc.networking.hostName
+    || hostName == rw-wenzel-nixos-laptop.networking.hostName
     then ''
       # miscellaneous setups
       . "''$${dirEnvVarName}/misc/setups/fuzzy-finder.bash"
@@ -36,6 +38,7 @@ let
 
   misc-aliases =
     if hostName == wenzel-nixos-pc.networking.hostName
+    || hostName == rw-wenzel-nixos-laptop.networking.hostName
     then ''
       # miscellaneous aliases
       . "''$${dirEnvVarName}/misc/aliases/skim.bash"
@@ -70,21 +73,21 @@ let
   bash = "${pkgs.bashInteractive_5}/bin/bash";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable dash}
-    ${utils.bash.checkFileIsExecutable bash}
-    ${utils.bash.checkFileIsReadable vte-sh-file}
-    ${utils.bash.checkValueIsNonEmptyString patched-bashrc}
-    ${utils.bash.checkValueIsNonEmptyString patched-aliases}
+    ${utils.shellCheckers.fileIsExecutable dash}
+    ${utils.shellCheckers.fileIsExecutable bash}
+    ${utils.shellCheckers.fileIsReadable vte-sh-file}
   '';
 
   dirEnvVarName = builtins.replaceStrings ["-"] ["_"] (pkgs.lib.toUpper dir.name);
 
-  pkg = writeCheckedExecutable name checkPhase ''
-    #! ${dash}
-    export ${esc dirEnvVarName}=${esc dir}
-    ${esc bash} --rcfile ${esc patched-bashrc-file} "$@"
-  '';
+  pkg = wrapExecutable bash {
+    inherit name checkPhase;
+    env = { "${dirEnvVarName}" = dir; };
+    args = [ "--rcfile" patched-bashrc-file ];
+  };
 in
+assert utils.valueCheckers.isNonEmptyString patched-bashrc;
+assert utils.valueCheckers.isNonEmptyString patched-aliases;
 {
   inherit
     name src dir

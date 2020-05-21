@@ -13,9 +13,9 @@ let
   pkill = "${pkgs.procps}/bin/pkill";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable dash}
-    ${utils.bash.checkFileIsExecutable picom}
-    ${utils.bash.checkFileIsExecutable pkill}
+    ${utils.shellCheckers.fileIsExecutable dash}
+    ${utils.shellCheckers.fileIsExecutable picom}
+    ${utils.shellCheckers.fileIsExecutable pkill}
   '';
 
   killPicom = ''${esc pkill} -x -U "$USER" -- ${esc (baseNameOf picom)} 2>/dev/null'';

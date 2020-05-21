@@ -13,8 +13,8 @@ let
   dzen-box-exe = "${dzen-box}/bin/dzen-box";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable bash}
-    ${utils.bash.checkFileIsExecutable dzen-box-exe}
+    ${utils.shellCheckers.fileIsExecutable bash}
+    ${utils.shellCheckers.fileIsExecutable dzen-box-exe}
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''

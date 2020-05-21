@@ -14,10 +14,10 @@ let
   pkill = "${pkgs.procps}/bin/pkill";
 
   checkPhase = ''
-    ${utils.bash.checkFileIsExecutable bash}
-    ${utils.bash.checkFileIsExecutable xautolock}
-    ${utils.bash.checkFileIsExecutable i3lock}
-    ${utils.bash.checkFileIsExecutable pkill}
+    ${utils.shellCheckers.fileIsExecutable bash}
+    ${utils.shellCheckers.fileIsExecutable xautolock}
+    ${utils.shellCheckers.fileIsExecutable i3lock}
+    ${utils.shellCheckers.fileIsExecutable pkill}
   '';
 
   minutes = 5;
