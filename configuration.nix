@@ -324,6 +324,7 @@ in
       pkgs.shutter
       pkgs.keepassx2
       pkgs.hledger pkgs.hledger-ui pkgs.hledger-web
+      pkgs.dfeet
 
       # antivirus
       pkgs.clamav
@@ -334,6 +335,7 @@ in
       pkgs.git
       pkgs.gnupg20
       pkgs.monkeysphere
+      pkgs.vagrant
     ];
   };
 
@@ -389,10 +391,24 @@ in
       permitRootLogin = "no";
       passwordAuthentication = false;
       startWhenNeeded = false;
+      forwardX11 = true;
     };
 
-    # CUPS to print documents (have no printer yet)
-    printing.enable = false;
+    # discover local machines
+    avahi = {
+      enable = true;
+      ipv4 = true;
+      ipv6 = true;
+      nssmdns = true;
+
+      publish = {
+        enable = true;
+        userServices = true;
+        domain = true;
+      };
+    };
+
+    printing.enable = false; # CUPS to print documents (have no printer yet)
 
     # X11
     xserver = {
