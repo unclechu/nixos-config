@@ -18,6 +18,9 @@ let
   #   "${xkb-switch} -n"
   #     shift + c:62
   #
+  # xkb-switch = "${pkgs.xkb-switch}/bin/xkb-switch";
+  # ${utils.shellCheckers.fileIsExecutable xkb-switch}
+  #
 
   xbindkeysrc = pkgs.writeText "xbindkeysrc" ''
     "${xautolock} -locknow"
@@ -28,14 +31,11 @@ let
       shift + XF86Eject
   '';
 
-  xkb-switch = "${pkgs.xkb-switch}/bin/xkb-switch";
   xautolock = "${pkgs.xautolock}/bin/xautolock";
-
   xbindkeys-origin = "${pkgs.xbindkeys}/bin/xbindkeys";
   xbindkeys_show-origin = "${pkgs.xbindkeys}/bin/xbindkeys_show";
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable xkb-switch}
     ${utils.shellCheckers.fileIsExecutable xautolock}
     ${utils.shellCheckers.fileIsExecutable xbindkeys-origin}
     ${utils.shellCheckers.fileIsExecutable xbindkeys_show-origin}

@@ -45,6 +45,7 @@ let
     (import apps/wenzels-xlib-keys-hack (moduleArgs // { inherit xlib-keys-hack; })).pkg;
 
   wenzels-xbindkeys = (import apps/wenzels-xbindkeys.nix moduleArgs).wenzels-xbindkeys;
+  gnome-screenshot = (import apps/gnome-screenshot.nix moduleArgs).pkg;
 
   grant-access-to-input-devices = (import utils/grant-access-to-input-devices moduleArgs).pkg;
   laptop-backlight              = (import utils/laptop-backlight              moduleArgs).pkg;
@@ -316,7 +317,7 @@ in
       pkgs.gnome3.gnome-system-monitor
       pkgs.gnome3.gnome-power-manager
       pkgs.gnome3.gnome-calendar
-      pkgs.gnome3.gnome-screenshot
+      gnome-screenshot
       pkgs.gnome3.gnome-calculator
       pkgs.gnome3.eog
       pkgs.gnome3.gpaste
