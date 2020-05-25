@@ -242,7 +242,8 @@ in
       pkgs.killall pkgs.lsof pkgs.inetutils pkgs.acl
       pkgs.inotify-tools
       pkgs.skim pkgs.fzf # fuzzy search
-      pkgs.zip
+      pkgs.zip pkgs.unzip
+      pkgs.parallel-rust
 
       # nix stuff
       pkgs.nix-index
