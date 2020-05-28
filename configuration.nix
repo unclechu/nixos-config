@@ -305,6 +305,7 @@ in
 
       # desktop environment
       pkgs.tk
+      pkgs.xlibs.xev
       pkgs.gmrun pkgs.dmenu pkgs.dzen2 pkgs.clipmenu
       pkgs.xsel pkgs.xdotool pkgs.numlockx pkgs.xkb-switch
       pkgs.xbindkeys
