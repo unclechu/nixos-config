@@ -1,35 +1,49 @@
-args@
-{ pkgs ? import <nixpkgs> { config = if builtins.hasAttr "config" args then args.config else {}; }
-, input-setup
-, autolock
-, picom
-, ...
-}:
+args@{ ... }:
+assert let k = "pkgs";  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+assert let k = "utils"; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
 let
-  utils = import ../utils args;
+  pkgs = args.pkgs or (import <nixpkgs> {
+    config = let k = "config"; in
+      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
+  });
+
+  input-setup = "input-setup";
+  autolock = "autolock";
+  picom = "picom";
+  appArgs = [ input-setup autolock picom ];
+
+  appArgsAssertion =
+    let f = a: k: assert builtins.hasAttr k args; assert pkgs.lib.isDerivation args."${k}"; a+1;
+    in builtins.foldl' f 0 appArgs;
+
+  appArgExe = k:
+    assert builtins.elem k appArgs;
+    let name = args."${k}".name; in "${builtins.getAttr k args}/bin/${name}";
+in
+assert appArgsAssertion == builtins.length appArgs;
+let
+  utils = args.utils or (import ../nix-utils-pick.nix args).pkg;
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
 
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile ./main.bash;
 
   bash = "${pkgs.bash}/bin/bash";
-  input-setup-exe = "${input-setup}/bin/${input-setup.name}";
-  autolock-exe = "${autolock}/bin/${autolock.name}";
   pactl = "${pkgs.pulseaudio}/bin/pactl";
   gpaste-client = "${pkgs.gnome3.gpaste}/bin/gpaste-client";
   nm-applet = "${pkgs.gnome3.networkmanagerapplet}/bin/nm-applet";
   xsetroot = "${pkgs.xlibs.xsetroot}/bin/xsetroot";
-  picom-exe = "${picom}/bin/${picom.name}";
 
   checkPhase = ''
     ${utils.shellCheckers.fileIsExecutable bash}
-    ${utils.shellCheckers.fileIsExecutable input-setup-exe}
-    ${utils.shellCheckers.fileIsExecutable autolock-exe}
     ${utils.shellCheckers.fileIsExecutable pactl}
     ${utils.shellCheckers.fileIsExecutable gpaste-client}
     ${utils.shellCheckers.fileIsExecutable nm-applet}
     ${utils.shellCheckers.fileIsExecutable xsetroot}
-    ${utils.shellCheckers.fileIsExecutable picom-exe}
+    ${
+      builtins.concatStringsSep "\n"
+        (map (k: utils.shellCheckers.fileIsExecutable (appArgExe k)) appArgs)
+    }
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''
@@ -41,11 +55,11 @@ let
     SCREENLAYOUT=~/.screenlayout/default.sh
     if [[ -f $SCREENLAYOUT && -x $SCREENLAYOUT ]]; then "$SCREENLAYOUT"; fi
 
-    ${esc input-setup-exe}
-    ${esc picom-exe}
+    ${esc (appArgExe input-setup)}
+    ${esc (appArgExe picom)}
     if [[ -f ~/.fehbg ]]; then . ~/.fehbg & fi
 
-    ${esc autolock-exe}
+    ${esc (appArgExe autolock)}
 
     ${esc gpaste-client} & # starting local gpaste daemon
     ${esc nm-applet} &

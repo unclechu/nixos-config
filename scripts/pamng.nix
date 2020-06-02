@@ -1,17 +1,30 @@
-args@
-{ pkgs ? import <nixpkgs> { config = if builtins.hasAttr "config" args then args.config else {}; }
-, dzen-box
-, ...
-}:
+args@{ ... }:
+assert let k = "pkgs";  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+assert let k = "utils"; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
 let
-  utils = import ../utils args;
+  pkgs = args.pkgs or (import <nixpkgs> {
+    config = let k = "config"; in
+      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
+  });
+
+  dzen-box = "dzen-box";
+  appArgs = [ dzen-box ];
+
+  appArgsAssertion =
+    let f = a: k: assert builtins.hasAttr k args; assert pkgs.lib.isDerivation args."${k}"; a+1;
+    in builtins.foldl' f 0 appArgs;
+
+  appArgExe = k: assert builtins.elem k appArgs; "${builtins.getAttr k args}/bin/${k}";
+in
+assert appArgsAssertion == builtins.length appArgs;
+let
+  utils = args.utils or (import ../nix-utils-pick.nix args).pkg;
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
 
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile "${(import ../apps/wenzels-i3.nix args).rc}/apps/${name}.sh";
 
   bash = "${pkgs.bash}/bin/bash";
-  dzen-box-exe = "${dzen-box}/bin/dzen-box";
   pactl = "${pkgs.pulseaudio}/bin/pactl";
   pacmd = "${pkgs.pulseaudio}/bin/pacmd";
   awk = "${pkgs.gawk}/bin/awk";
@@ -19,10 +32,14 @@ let
 
   checkPhase = ''
     ${utils.shellCheckers.fileIsExecutable bash}
-    ${utils.shellCheckers.fileIsExecutable dzen-box-exe}
     ${utils.shellCheckers.fileIsExecutable pactl}
     ${utils.shellCheckers.fileIsExecutable pacmd}
     ${utils.shellCheckers.fileIsExecutable awk}
+    ${utils.shellCheckers.fileIsExecutable xargs}
+    ${
+      builtins.concatStringsSep "\n"
+        (map (k: utils.shellCheckers.fileIsExecutable (appArgExe k)) appArgs)
+    }
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''
@@ -51,9 +68,9 @@ let
     if [[ $sinks =~ $re ]]; then
       re='^.* ([0-9]+)% .* ([0-9]+)% .*$'
       if [[ ''${BASH_REMATCH[4]} == yes ]]; then
-        ${esc dzen-box-exe} MUTE lightblue
+        ${esc (appArgExe dzen-box)} MUTE lightblue
       elif [[ ''${BASH_REMATCH[2]} =~ $re ]]; then
-        ${esc dzen-box-exe} $(( (''${BASH_REMATCH[1]} + ''${BASH_REMATCH[2]}) / 2 ))% lightblue
+        ${esc (appArgExe dzen-box)} $(( (''${BASH_REMATCH[1]} + ''${BASH_REMATCH[2]}) / 2 ))% lightblue
       fi
     fi
   '';

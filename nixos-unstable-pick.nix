@@ -1,4 +1,4 @@
-{ config ? null, ... }:
+args@{ ... }:
 let
   unstable-nixpkgs-src = fetchGit {
     url = "https://github.com/NixOS/nixpkgs.git";
@@ -7,7 +7,8 @@ let
   };
 
   unstable-nixpkgs = import unstable-nixpkgs-src {
-    config = if config == null then {} else config.nixpkgs.config;
+    config = let k = "config"; in
+      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
   };
 in
 {

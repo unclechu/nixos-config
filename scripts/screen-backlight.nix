@@ -1,20 +1,35 @@
-args@
-{ pkgs ? import <nixpkgs> { config = if builtins.hasAttr "config" args then args.config else {}; }
-, dzen-box
-, ...
-}:
+args@{ ... }:
+assert let k = "pkgs";  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+assert let k = "utils"; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
 let
-  utils = import ../utils args;
+  pkgs = args.pkgs or (import <nixpkgs> {
+    config = let k = "config"; in
+      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
+  });
+
+  dzen-box = "dzen-box";
+  appArgs = [ dzen-box ];
+
+  appArgsAssertion =
+    let f = a: k: assert builtins.hasAttr k args; assert pkgs.lib.isDerivation args."${k}"; a+1;
+    in builtins.foldl' f 0 appArgs;
+
+  appArgExe = k: assert builtins.elem k appArgs; "${builtins.getAttr k args}/bin/${k}";
+in
+assert appArgsAssertion == builtins.length appArgs;
+let
+  utils = args.utils or (import ../nix-utils-pick.nix args).pkg;
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
 
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-
   bash = "${pkgs.bash}/bin/bash";
-  dzen-box-exe = "${dzen-box}/bin/dzen-box";
 
   checkPhase = ''
     ${utils.shellCheckers.fileIsExecutable bash}
-    ${utils.shellCheckers.fileIsExecutable dzen-box-exe}
+    ${
+      builtins.concatStringsSep "\n"
+        (map (k: utils.shellCheckers.fileIsExecutable (appArgExe k)) appArgs)
+    }
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''
@@ -55,7 +70,7 @@ let
     (( $val < 0    )) && val=0
     (( $val > $MAX )) && val=$MAX
 
-    ${esc dzen-box-exe} $(( $val * 100 / $MAX ))% yellow
+    ${esc (appArgExe dzen-box)} $(( $val * 100 / $MAX ))% yellow
     laptop-backlight set "$val"
   '';
 in

@@ -1,7 +1,11 @@
-args@
-{ pkgs ? import <nixpkgs> { config = if builtins.hasAttr "config" args then args.config else {}; }
-, ...
-}:
+args@{ ... }:
+assert let k = "pkgs"; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+let
+  pkgs = args.pkgs or (import <nixpkgs> {
+    config = let k = "config"; in
+      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
+  });
+in
 rec {
   rc = fetchGit {
     url = "https://github.com/unclechu/i3rc.git";

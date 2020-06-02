@@ -1,17 +1,24 @@
-args@
-{ pkgs ? import <nixpkgs> { config = if builtins.hasAttr "config" args then args.config else {}; }
-, bashEnvFile ? null
-
-, neovimRC ? fetchGit {
+args@{ bashEnvFile ? null, ... }:
+assert let k = "pkgs";        in builtins.hasAttr k args -> builtins.isAttrs  args."${k}";
+assert let k = "utils";       in builtins.hasAttr k args -> builtins.isAttrs  args."${k}";
+assert let k = "bashEnvFile"; in builtins.hasAttr k args -> builtins.isString args."${k}";
+let neovimRC-name = "neovimRC"; in
+assert
+  let k = neovimRC-name; v = args."${k}";
+  in builtins.hasAttr k args -> builtins.isAttrs v || builtins.isPath v;
+let
+  neovimRC = args."${neovimRC-name}" or fetchGit {
     url = "https://github.com/unclechu/neovimrc.git";
     rev = "b36a8142070a03a850d4da8b51f2ec7c22212a0d"; # 21 May 2020
     ref = "master";
-  }
+  };
 
-, ...
-}:
-let
-  utils = import ../utils args;
+  pkgs = args.pkgs or (import <nixpkgs> {
+    config = let k = "config"; in
+      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
+  });
+
+  utils = args.utils or (import ../nix-utils-pick.nix args).pkg;
   inherit (utils) esc lines unlines nameOfModuleFile writeCheckedExecutable wrapExecutable;
 
   init  = builtins.readFile "${neovimRC}/init.vim";

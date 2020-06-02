@@ -1,4 +1,10 @@
-{ config ? {}, ... }:
+args:
+assert builtins.isAttrs args;
+let configName = "config"; in
+# WARNING! Never assert "config" argument, nowhere in the modules too, it's recursive self-reference.
+#          It refers to the configuration itself, to this module we're just about to construct.
+#          Otherwise it will fail with infinite recursion error.
+# assert let k = configName; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
 let
   wenzelUserName            = "wenzel";
   rawdevinputGroupName      = "rawdevinput";
@@ -14,8 +20,12 @@ let
     options = "eurosign:e,grp:shifts_toggle";
   };
 
-  stable-nixpkgs   = import ./nixos-stable-pick.nix   { inherit config; };
-  unstable-nixpkgs = import ./nixos-unstable-pick.nix { inherit config; };
+  withConfigArgs =
+    let k = configName; in if builtins.hasAttr k args then { "${k}" = args."${k}"; } else {};
+
+  stable-nixpkgs   =  import ./nixos-stable-pick.nix    withConfigArgs;
+  unstable-nixpkgs =  import ./nixos-unstable-pick.nix  withConfigArgs;
+  utils            = (import ./nix-utils-pick.nix      (withConfigArgs // { inherit pkgs; })).pkg;
 
   pkgs = stable-nixpkgs.pkgs // {
     # In the NixOS 20.03 nixpkgs "rakudo" package is 2017.01 version,
@@ -25,7 +35,9 @@ let
     rakudo = unstable-nixpkgs.pkgs.rakudo;
   };
 
-  moduleArgs = { inherit pkgs config; };
+  inherit (utils) esc wrapExecutable;
+
+  moduleArgs = withConfigArgs // { inherit pkgs utils; };
   home-manager = import ./home-manager-pick.nix;
 
   wenzels-bash       =  import apps/wenzels-bash.nix       moduleArgs;
@@ -138,8 +150,6 @@ let
       MOZ_USE_XINPUT2 = 1; # support touchscreen scrolling
     };
   };
-
-  inherit (import ./utils moduleArgs) esc wrapExecutable;
 in
 {
   imports = [

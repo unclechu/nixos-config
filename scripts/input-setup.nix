@@ -1,14 +1,36 @@
-args@
-{ pkgs ? import <nixpkgs> { config = if builtins.hasAttr "config" args then args.config else {}; }
-, wenzels-keyboard
-, pointer-dell-latitude-laptop-dot
-, pointer-dell-latitude-laptop-touchpad
-, pointer-logitech-wireless-ambidextrous-small-mouse
-, pointer-razor-wired-ambidextrous-mouse
-, ...
-}:
+args@{ ... }:
+assert let k = "pkgs";  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+assert let k = "utils"; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
 let
-  utils = import ../utils args;
+  pkgs = args.pkgs or (import <nixpkgs> {
+    config = let k = "config"; in
+      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
+  });
+
+  wenzels-keyboard = "wenzels-keyboard";
+  pointer-dell-latitude-laptop-dot = "pointer-dell-latitude-laptop-dot";
+  pointer-dell-latitude-laptop-touchpad = "pointer-dell-latitude-laptop-touchpad";
+  pointer-logitech-wireless-ambidextrous-small-mouse =
+    "pointer-logitech-wireless-ambidextrous-small-mouse";
+  pointer-razor-wired-ambidextrous-mouse = "pointer-razor-wired-ambidextrous-mouse";
+
+  appArgs = [
+    wenzels-keyboard
+    pointer-dell-latitude-laptop-dot
+    pointer-dell-latitude-laptop-touchpad
+    pointer-logitech-wireless-ambidextrous-small-mouse
+    pointer-razor-wired-ambidextrous-mouse
+  ];
+
+  appArgsAssertion =
+    let f = a: k: assert builtins.hasAttr k args; assert pkgs.lib.isDerivation args."${k}"; a+1;
+    in builtins.foldl' f 0 appArgs;
+
+  appArgExe = k: assert builtins.elem k appArgs; "${builtins.getAttr k args}/bin/${k}";
+in
+assert appArgsAssertion == builtins.length appArgs;
+let
+  utils = args.utils or (import ../nix-utils-pick.nix args).pkg;
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
 
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
@@ -16,26 +38,14 @@ let
 
   bash = "${pkgs.bash}/bin/bash";
   xinput = "${pkgs.xlibs.xinput}/bin/xinput";
-  wenzels-keyboard-exe = "${wenzels-keyboard}/bin/wenzels-keyboard";
-
-  pointer-dell-latitude-laptop-dot-exe =
-    "${pointer-dell-latitude-laptop-dot}/bin/pointer-dell-latitude-laptop-dot";
-  pointer-dell-latitude-laptop-touchpad-exe =
-    "${pointer-dell-latitude-laptop-touchpad}/bin/pointer-dell-latitude-laptop-touchpad";
-  pointer-logitech-wireless-ambidextrous-small-mouse-exe =
-    pointer-logitech-wireless-ambidextrous-small-mouse +
-      "/bin/pointer-logitech-wireless-ambidextrous-small-mouse";
-  pointer-razor-wired-ambidextrous-mouse-exe =
-    "${pointer-razor-wired-ambidextrous-mouse}/bin/pointer-razor-wired-ambidextrous-mouse";
 
   checkPhase = ''
     ${utils.shellCheckers.fileIsExecutable bash}
     ${utils.shellCheckers.fileIsExecutable xinput}
-    ${utils.shellCheckers.fileIsExecutable wenzels-keyboard-exe}
-    ${utils.shellCheckers.fileIsExecutable pointer-dell-latitude-laptop-dot-exe}
-    ${utils.shellCheckers.fileIsExecutable pointer-dell-latitude-laptop-touchpad-exe}
-    ${utils.shellCheckers.fileIsExecutable pointer-logitech-wireless-ambidextrous-small-mouse-exe}
-    ${utils.shellCheckers.fileIsExecutable pointer-razor-wired-ambidextrous-mouse-exe}
+    ${
+      builtins.concatStringsSep "\n"
+        (map (k: utils.shellCheckers.fileIsExecutable (appArgExe k)) appArgs)
+    }
   '';
 
   pkg = writeCheckedExecutable name checkPhase ''
@@ -43,13 +53,13 @@ let
     exec <&- &>/dev/null
 
     # keyboard
-    ${esc wenzels-keyboard-exe} &
+    ${esc (appArgExe wenzels-keyboard)} &
 
     # mouse
-    ${esc pointer-dell-latitude-laptop-dot-exe} &
-    ${pointer-dell-latitude-laptop-touchpad-exe} &
-    ${pointer-logitech-wireless-ambidextrous-small-mouse-exe} &
-    ${pointer-razor-wired-ambidextrous-mouse-exe} &
+    ${esc (appArgExe pointer-dell-latitude-laptop-dot)} &
+    ${esc (appArgExe pointer-dell-latitude-laptop-touchpad)} &
+    ${esc (appArgExe pointer-logitech-wireless-ambidextrous-small-mouse)} &
+    ${esc (appArgExe pointer-razor-wired-ambidextrous-mouse)} &
 
     # laptop touchscreen
     ${esc xinput} --map-to-output 'ELAN25B6:00 04F3:0732' eDP1
