@@ -258,6 +258,7 @@ in
       pkgs.nix-index
 
       # system stuff
+      pkgs.htop
       pkgs.dbus pkgs.upower
       pkgs.parted pkgs.gparted
       pkgs.pciutils
@@ -337,6 +338,7 @@ in
       pkgs.keepassx2
       pkgs.hledger pkgs.hledger-ui pkgs.hledger-web
       pkgs.dfeet
+      pkgs.obs-studio
 
       # antivirus
       pkgs.clamav
