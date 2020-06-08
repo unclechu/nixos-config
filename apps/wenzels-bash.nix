@@ -1,13 +1,14 @@
 args@{ ... }:
-assert let k = "pkgs";  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
-assert let k = "utils"; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
+assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
 let
-  pkgs = args.pkgs or (import <nixpkgs> {
-    config = let k = "config"; in
-      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
-  });
+  pkgs = args."${pkgs-k}" or (import <nixpkgs> (
+    let k = config-k; in
+    if builtins.hasAttr k args then { "${k}" = args."${k}".nixpkgs."${k}"; } else {}
+  ));
 
-  utils = args.utils or (import ../nix-utils-pick.nix args).pkg;
+  utils = args."${utils-k}" or (import ../nix-utils-pick.nix args).pkg;
   inherit (utils) esc wrapExecutable nameOfModuleFile;
 
   src = fetchGit {
@@ -26,7 +27,7 @@ let
   vte-sh-file = "${pkgs.vte}/etc/profile.d/vte.sh";
   wenzel-nixos-pc = import ../hardware/wenzel-nixos-pc.nix args;
   rw-wenzel-nixos-laptop = import ../hardware/rw-wenzel-nixos-laptop.nix args;
-  hostName = args.config.networking.hostName or null;
+  hostName = args."${config-k}".networking.hostName or null;
 
   misc-setups =
     if hostName == wenzel-nixos-pc.networking.hostName

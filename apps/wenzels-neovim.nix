@@ -1,24 +1,27 @@
-args@{ bashEnvFile ? null, ... }:
-assert let k = "pkgs";        in builtins.hasAttr k args -> builtins.isAttrs  args."${k}";
-assert let k = "utils";       in builtins.hasAttr k args -> builtins.isAttrs  args."${k}";
-assert let k = "bashEnvFile"; in builtins.hasAttr k args -> builtins.isString args."${k}";
-let neovimRC-name = "neovimRC"; in
+args@{ ... }:
+let
+  pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config";
+  neovimRC-k = "neovimRC"; bashEnvFile-k = "bashEnvFile";
+in
+assert let k = pkgs-k;        in builtins.hasAttr k args -> builtins.isAttrs  args."${k}";
+assert let k = utils-k;       in builtins.hasAttr k args -> builtins.isAttrs  args."${k}";
+assert let k = bashEnvFile-k; in builtins.hasAttr k args -> builtins.isString args."${k}";
 assert
-  let k = neovimRC-name; v = args."${k}";
+  let k = neovimRC-k; v = args."${k}";
   in builtins.hasAttr k args -> builtins.isAttrs v || builtins.isPath v;
 let
-  neovimRC = args."${neovimRC-name}" or fetchGit {
+  neovimRC = args."${neovimRC-k}" or fetchGit {
     url = "https://github.com/unclechu/neovimrc.git";
     rev = "b36a8142070a03a850d4da8b51f2ec7c22212a0d"; # 21 May 2020
     ref = "master";
   };
 
-  pkgs = args.pkgs or (import <nixpkgs> {
-    config = let k = "config"; in
-      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
-  });
+  pkgs = args."${pkgs-k}" or (import <nixpkgs> (
+    let k = config-k; in
+    if builtins.hasAttr k args then { "${k}" = args."${k}".nixpkgs."${k}"; } else {}
+  ));
 
-  utils = args.utils or (import ../nix-utils-pick.nix args).pkg;
+  utils = args."${utils-k}" or (import ../nix-utils-pick.nix args).pkg;
   inherit (utils) esc lines unlines nameOfModuleFile writeCheckedExecutable wrapExecutable;
 
   init  = builtins.readFile "${neovimRC}/init.vim";
@@ -32,9 +35,8 @@ let
       handleLine = line:
         if builtins.match "^let \\$BASH_ENV =.*" line != null
         then (
-          if bashEnvFile != null
-          then "let $BASH_ENV = '${bashEnvFile}'"
-          else ""
+          let k = bashEnvFile-k; in
+          if builtins.hasAttr k args then "let $BASH_ENV = '${builtins.getAttr k args}'" else ""
         )
         else line;
 

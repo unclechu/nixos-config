@@ -1,11 +1,12 @@
 args@{ ... }:
-assert let k = "pkgs";  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
-assert let k = "utils"; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
+assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
 let
-  pkgs = args.pkgs or (import <nixpkgs> {
-    config = let k = "config"; in
-      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
-  });
+  pkgs = args."${pkgs-k}" or (import <nixpkgs> (
+    let k = config-k; in
+    if builtins.hasAttr k args then { "${k}" = args."${k}".nixpkgs."${k}"; } else {}
+  ));
 
   wenzels-keyboard = "wenzels-keyboard";
   pointer-dell-latitude-laptop-dot = "pointer-dell-latitude-laptop-dot";
@@ -30,7 +31,7 @@ let
 in
 assert appArgsAssertion == builtins.length appArgs;
 let
-  utils = args.utils or (import ../nix-utils-pick.nix args).pkg;
+  utils = args."${utils-k}" or (import ../../nix-utils-pick.nix args).pkg;
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
 
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;

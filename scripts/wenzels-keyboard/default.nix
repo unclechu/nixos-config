@@ -1,10 +1,8 @@
 args@{ ... }:
-assert let k = "pkgs";  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
-assert let k = "utils"; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
-let
-  keyRepeat = "keyRepeat";
-  xkb = "xkb";
-in
+let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
+assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+let keyRepeat = "keyRepeat"; xkb = "xkb"; in
 assert builtins.hasAttr keyRepeat args;
 assert builtins.hasAttr xkb args;
 let
@@ -12,17 +10,17 @@ let
   keyRepeatInterval = args."${keyRepeat}".interval;
   xkbLayout = args."${xkb}".layout;
   xkbOptions = args."${xkb}".options;
-  utils = args.utils or (import ../nix-utils-pick.nix args).pkg;
+  utils = args."${utils-k}" or (import ../nix-utils-pick.nix args).pkg;
 in
 assert utils.valueCheckers.isPositiveNaturalNumber keyRepeatDelay;
 assert utils.valueCheckers.isPositiveNaturalNumber keyRepeatInterval;
 assert utils.valueCheckers.isNonEmptyString xkbLayout;
 assert utils.valueCheckers.isNonEmptyString xkbOptions;
 let
-  pkgs = args.pkgs or (import <nixpkgs> {
-    config = let k = "config"; in
-      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
-  });
+  pkgs = args."${pkgs-k}" or (import <nixpkgs> (
+    let k = config-k; in
+    if builtins.hasAttr k args then { "${k}" = args."${k}".nixpkgs."${k}"; } else {}
+  ));
 
   xbindkeys = "xbindkeys";
 
@@ -31,7 +29,9 @@ let
     assert builtins.hasAttr k args -> pkgs.lib.isDerivation args."${k}";
     assert builtins.hasAttr k pkgs;
     args."${k}" or pkgs."${k}";
-
+in
+assert let drv = xbindkeys-drv; in builtins.seq drv true; # force asserts inside at this line
+let
   xlib-keys-hack-starter = "xlib-keys-hack-starter";
   appArgs = [ xbindkeys xlib-keys-hack-starter ];
   optionalAppArgs = [ xbindkeys ];
@@ -53,7 +53,7 @@ let
   appArgExe = k:
     if builtins.elem k optionalAppArgs then (
       if k == xbindkeys
-      then "${xbindkeys-drv}/bin/${xbindkeys-drv.name}"
+      then let drv = xbindkeys-drv; in "${drv}/bin/${drv.name}"
       else throw "unexpected optional app key: '${k}'"
     ) else (
       assert builtins.elem k appArgs;
@@ -62,7 +62,7 @@ let
 in
 assert appArgsAssertion == builtins.length appArgs;
 let
-  utils = args.utils or (import ../../nix-utils-pick.nix args).pkg;
+  utils = args."${utils-k}" or (import ../../nix-utils-pick.nix args).pkg;
   inherit (utils) esc writeCheckedExecutable nameOfModuleWrapDir;
 
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;

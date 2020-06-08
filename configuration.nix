@@ -1,10 +1,9 @@
-args:
-assert builtins.isAttrs args;
-let configName = "config"; in
+args@{ ... }:
+let config-k = "config"; in
 # WARNING! Never assert "config" argument, nowhere in the modules too, it's recursive self-reference.
 #          It refers to the configuration itself, to this module we're just about to construct.
 #          Otherwise it will fail with infinite recursion error.
-# assert let k = configName; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+# assert let k = config-k; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
 let
   wenzelUserName            = "wenzel";
   rawdevinputGroupName      = "rawdevinput";
@@ -21,7 +20,7 @@ let
   };
 
   withConfigArgs =
-    let k = configName; in if builtins.hasAttr k args then { "${k}" = args."${k}"; } else {};
+    let k = config-k; in if builtins.hasAttr k args then { "${k}" = args."${k}"; } else {};
 
   stable-nixpkgs   =  import ./nixos-stable-pick.nix    withConfigArgs;
   unstable-nixpkgs =  import ./nixos-unstable-pick.nix  withConfigArgs;

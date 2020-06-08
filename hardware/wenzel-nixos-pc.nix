@@ -1,12 +1,13 @@
 # This file is supposed to be symlinked as "machine-specific.nix"
 # and imported in "configuration.nix".
 args@{ ... }:
-assert let k = "pkgs"; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+let pkgs-k = "pkgs"; config-k = "config"; in
+assert let k = pkgs-k; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
 let
-  pkgs = args.pkgs or (import <nixpkgs> {
-    config = let k = "config"; in
-      if builtins.hasAttr k args then {} else args."${k}".nixpkgs.config;
-  });
+  pkgs = args."${pkgs-k}" or (import <nixpkgs> (
+    let k = config-k; in
+    if builtins.hasAttr k args then { "${k}" = args."${k}".nixpkgs."${k}"; } else {}
+  ));
 in
 {
   boot = {
