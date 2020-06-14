@@ -51,19 +51,21 @@ let
     #! ${bash}
     exec <&- &>/dev/null
 
+    # audio
     ${esc pactl} stat # starting pulseaudio local user server
 
+    # displays
     SCREENLAYOUT=~/.screenlayout/default.sh
-    if [[ -f $SCREENLAYOUT && -x $SCREENLAYOUT ]]; then "$SCREENLAYOUT"; fi
-
-    ${esc (appArgExe input-setup)}
+    if [[ -f $SCREENLAYOUT && -x $SCREENLAYOUT ]]; then
+      if "$SCREENLAYOUT"; then sleep 1s; fi
+    fi
     ${esc (appArgExe picom)}
     if [[ -f ~/.fehbg ]]; then . ~/.fehbg & fi
 
+    ${esc (appArgExe input-setup)}
     ${esc (appArgExe autolock)}
-
     ${esc gpaste-client} & # starting local gpaste daemon
-    ${esc nm-applet} &
+    ${esc nm-applet} & # starting system tray network manager applet
 
     ${esc xsetroot} -cursor_name left_ptr # default cursor on an empty workspace
 
