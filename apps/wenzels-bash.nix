@@ -1,14 +1,17 @@
 args@{ ... }:
 let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
-assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
-assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
+assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
 let
-  pkgs = args."${pkgs-k}" or (import <nixpkgs> (
+  pkgs = args.${pkgs-k} or (import <nixpkgs> (
     let k = config-k; in
-    if builtins.hasAttr k args then { "${k}" = args."${k}".nixpkgs."${k}"; } else {}
+    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
   ));
 
-  utils = args."${utils-k}" or (import ../nix-utils-pick.nix args).pkg;
+  utils = args.${utils-k} or (import ../nix-utils-pick.nix (
+    pkgs.lib.filterAttrs (k: _: k == config-k) args // { inherit pkgs; }
+  )).pkg;
+
   inherit (utils) esc wrapExecutable nameOfModuleFile;
 
   src = fetchGit {
@@ -27,14 +30,14 @@ let
   vte-sh-file = "${pkgs.vte}/etc/profile.d/vte.sh";
   wenzel-nixos-pc = import ../hardware/wenzel-nixos-pc.nix args;
   rw-wenzel-nixos-laptop = import ../hardware/rw-wenzel-nixos-laptop.nix args;
-  hostName = args."${config-k}".networking.hostName or null;
+  hostName = args.${config-k}.networking.hostName or null;
 
   misc-setups =
     if hostName == wenzel-nixos-pc.networking.hostName
     || hostName == rw-wenzel-nixos-laptop.networking.hostName
     then ''
       # miscellaneous setups
-      . "''$${dirEnvVarName}/misc/setups/fuzzy-finder.bash"
+      . "''$${dirEnvVarName}"/misc/setups/fuzzy-finder.bash
       . ${esc pkgs.skim}/share/skim/completion.bash
       . ${esc pkgs.skim}/share/skim/key-bindings.bash
     ''
@@ -45,9 +48,9 @@ let
     || hostName == rw-wenzel-nixos-laptop.networking.hostName
     then ''
       # miscellaneous aliases
-      . "''$${dirEnvVarName}/misc/aliases/skim.bash"
-      . "''$${dirEnvVarName}/misc/aliases/fuzzy-finder.bash"
-      . "''$${dirEnvVarName}/misc/aliases/nvr.bash"
+      . "''$${dirEnvVarName}"/misc/aliases/skim.bash
+      . "''$${dirEnvVarName}"/misc/aliases/fuzzy-finder.bash
+      . "''$${dirEnvVarName}"/misc/aliases/nvr.bash
     ''
     else "";
 
@@ -86,7 +89,7 @@ let
 
   pkg = wrapExecutable bash {
     inherit name checkPhase;
-    env = { "${dirEnvVarName}" = dir; };
+    env = { ${dirEnvVarName} = dir; };
     args = [ "--rcfile" patched-bashrc-file ];
   };
 in

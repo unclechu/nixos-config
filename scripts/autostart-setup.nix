@@ -1,11 +1,11 @@
 args@{ ... }:
 let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
-assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
-assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
+assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
 let
-  pkgs = args."${pkgs-k}" or (import <nixpkgs> (
+  pkgs = args.${pkgs-k} or (import <nixpkgs> (
     let k = config-k; in
-    if builtins.hasAttr k args then { "${k}" = args."${k}".nixpkgs."${k}"; } else {}
+    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
   ));
 
   input-setup = "input-setup";
@@ -14,16 +14,19 @@ let
   appArgs = [ input-setup autolock picom ];
 
   appArgsAssertion =
-    let f = a: k: assert builtins.hasAttr k args; assert pkgs.lib.isDerivation args."${k}"; a+1;
+    let f = a: k: assert builtins.hasAttr k args; assert pkgs.lib.isDerivation args.${k}; a+1;
     in builtins.foldl' f 0 appArgs;
 
   appArgExe = k:
     assert builtins.elem k appArgs;
-    let name = args."${k}".name; in "${builtins.getAttr k args}/bin/${name}";
+    let name = args.${k}.name; in "${builtins.getAttr k args}/bin/${name}";
 in
 assert appArgsAssertion == builtins.length appArgs;
 let
-  utils = args."${utils-k}" or (import ../../nix-utils-pick.nix args).pkg;
+  utils = args.${utils-k} or (import ../nix-utils-pick.nix (
+    pkgs.lib.filterAttrs (k: _: k == config-k) args // { inherit pkgs; }
+  )).pkg;
+
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
 
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;

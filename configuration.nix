@@ -3,7 +3,7 @@ let config-k = "config"; in
 # WARNING! Never assert "config" argument, nowhere in the modules too, it's recursive self-reference.
 #          It refers to the configuration itself, to this module we're just about to construct.
 #          Otherwise it will fail with infinite recursion error.
-# assert let k = config-k; in builtins.hasAttr k args -> builtins.isAttrs args."${k}";
+# assert let k = config-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
 let
   wenzelUserName            = "wenzel";
   rawdevinputGroupName      = "rawdevinput";
@@ -20,7 +20,7 @@ let
   };
 
   withConfigArgs =
-    let k = config-k; in if builtins.hasAttr k args then { "${k}" = args."${k}"; } else {};
+    let k = config-k; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
 
   stable-nixpkgs   =  import ./nixos-stable-pick.nix    withConfigArgs;
   unstable-nixpkgs =  import ./nixos-unstable-pick.nix  withConfigArgs;
@@ -557,16 +557,16 @@ in
     };
 
     groups = {
-      "${wenzelUserName}".gid = 1989;
-      "${rawdevinputGroupName}".gid = 500;
-      "${backlightcontrolGroupName}".gid = 501;
+      ${wenzelUserName}.gid = 1989;
+      ${rawdevinputGroupName}.gid = 500;
+      ${backlightcontrolGroupName}.gid = 501;
     };
   };
 
   security.wrappers =
     let
       rootSuidGroup = source: group: {
-        "${source.name}" = {
+        ${source.name} = {
           source = source;
           permissions = "u+xs,g+x";
           owner = "root";
@@ -577,7 +577,7 @@ in
       rootSuidGroup grant-access-to-input-devices rawdevinputGroupName //
       rootSuidGroup laptop-backlight backlightcontrolGroupName;
 
-  home-manager.users."${wenzelUserName}" = {
+  home-manager.users.${wenzelUserName} = {
     programs.git = {
       enable = true;
       userName = "Viacheslav Lotsmanov";

@@ -10,7 +10,7 @@ let
 
   unstable-nixpkgs = import unstable-nixpkgs-src (
     let k = config-k; in
-    if builtins.hasAttr k args then { "${k}" = args."${k}".nixpkgs."${k}"; } else {}
+    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
   );
 in
 {

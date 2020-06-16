@@ -3,25 +3,28 @@ let
   pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config";
   neovimRC-k = "neovimRC"; bashEnvFile-k = "bashEnvFile";
 in
-assert let k = pkgs-k;        in builtins.hasAttr k args -> builtins.isAttrs  args."${k}";
-assert let k = utils-k;       in builtins.hasAttr k args -> builtins.isAttrs  args."${k}";
-assert let k = bashEnvFile-k; in builtins.hasAttr k args -> builtins.isString args."${k}";
+assert let k = pkgs-k;        in builtins.hasAttr k args -> builtins.isAttrs  args.${k};
+assert let k = utils-k;       in builtins.hasAttr k args -> builtins.isAttrs  args.${k};
+assert let k = bashEnvFile-k; in builtins.hasAttr k args -> builtins.isString args.${k};
 assert
-  let k = neovimRC-k; v = args."${k}";
+  let k = neovimRC-k; v = args.${k};
   in builtins.hasAttr k args -> builtins.isAttrs v || builtins.isPath v;
 let
-  neovimRC = args."${neovimRC-k}" or fetchGit {
+  neovimRC = args.${neovimRC-k} or fetchGit {
     url = "https://github.com/unclechu/neovimrc.git";
     rev = "b36a8142070a03a850d4da8b51f2ec7c22212a0d"; # 21 May 2020
     ref = "master";
   };
 
-  pkgs = args."${pkgs-k}" or (import <nixpkgs> (
+  pkgs = args.${pkgs-k} or (import <nixpkgs> (
     let k = config-k; in
-    if builtins.hasAttr k args then { "${k}" = args."${k}".nixpkgs."${k}"; } else {}
+    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
   ));
 
-  utils = args."${utils-k}" or (import ../nix-utils-pick.nix args).pkg;
+  utils = args.${utils-k} or (import ../nix-utils-pick.nix (
+    pkgs.lib.filterAttrs (k: _: k == config-k) args // { inherit pkgs; }
+  )).pkg;
+
   inherit (utils) esc lines unlines nameOfModuleFile writeCheckedExecutable wrapExecutable;
 
   init  = builtins.readFile "${neovimRC}/init.vim";
@@ -254,7 +257,7 @@ let
           pkgs.fetchFromGitHub ({
             owner = builtins.head plugin;
             repo = name;
-          } // pluginsOverrides."${name}");
+          } // pluginsOverrides.${name});
       in
         pkgs.runCommand "${name}-clean" {} ''
           set -Eeuo pipefail
@@ -293,10 +296,10 @@ let
 
                 renamed =
                   if builtins.hasAttr name pluginsRenames
-                  then pluginsRenames."${name}"
+                  then pluginsRenames.${name}
                   else builtins.substring 0 (builtins.stringLength name - 4) name + "-vim";
 
-                fromNixpkgs = pkgs.vimPlugins."${if hasRename then renamed else name}";
+                fromNixpkgs = pkgs.vimPlugins.${if hasRename then renamed else name};
               in
                 if hasOverride then mkGhPlugin p else fromNixpkgs;
           in
