@@ -4,7 +4,7 @@ let
 
   stable-nixpkgs-src = fetchGit {
     url = "https://github.com/NixOS/nixpkgs.git";
-    rev = "48723f48ab92381f0afd50143f38e45cf3080405"; # 22 May 2020
+    rev = "db31e48c5c8d99dcaf4e5883a96181f6ac4ad6f6"; # 11 June 2020
     ref = "nixos-20.03";
   };
 

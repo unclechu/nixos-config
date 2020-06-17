@@ -4,7 +4,7 @@ let
 
   unstable-nixpkgs-src = fetchGit {
     url = "https://github.com/NixOS/nixpkgs.git";
-    rev = "0f5ce2fac0c726036ca69a5524c59a49e2973dd4"; # 19 May 2020
+    rev = "0a146054bdf6f70f66de4426f84c9358521be31e"; # 9 June 2020
     ref = "nixos-unstable";
   };
 
