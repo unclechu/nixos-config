@@ -8,6 +8,8 @@ let
   wenzelUserName            = "wenzel";
   rawdevinputGroupName      = "rawdevinput";
   backlightcontrolGroupName = "backlightcontrol";
+  jackaudioGroupName        = "jackaudio";
+  audioGroupName            = "audio";
 
   keyRepeat = {
     delay    = 170;
@@ -224,6 +226,10 @@ in
 
   time.timeZone = "Europe/Helsinki";
 
+  # shellInit = ''
+  #   export FOO=bar
+  # '';
+
   environment = {
     variables = {
       EDITOR = "nvim";
@@ -290,9 +296,12 @@ in
 
       # audio
       pkgs.pavucontrol
+      pkgs.jack2
+      pkgs.qjackctl
       pkgs.audacious
       pkgs.audacity
       pkgs.ardour
+      unstable-nixpkgs.pkgs.guitarix
 
       # graphics
       pkgs.libtxc_dxtn_s2tc
@@ -381,6 +390,7 @@ in
     pulseaudio = {
       enable = true;
       support32Bit = true;
+      package = pkgs.pulseaudio.override { jackaudioSupport = true; };
     };
 
     opengl = rec {
@@ -480,6 +490,13 @@ in
     gnome3.gnome-keyring.enable = true;
     upower.enable = true;
     fwupd.enable = true;
+
+    # see also https://nixos.wiki/wiki/JACK
+    # jack = {
+    #   jackd.enable = true;
+    #   # alsa.enable = true; # support ALSA-only programs via ALSA JACK PCM plugin
+    #   # loopback.enable = true; # support ALSA-only programms via loopback device (e.g. Steam)
+    # };
   };
 
   virtualisation = {
@@ -519,6 +536,8 @@ in
         backlightcontrolGroupName
         "docker"
         "vboxusers"
+        jackaudioGroupName
+        audioGroupName
       ];
 
       packages = [
@@ -563,19 +582,28 @@ in
     };
   };
 
-  security.wrappers =
-    let
-      rootSuidGroup = source: group: {
-        ${source.name} = {
-          source = source;
-          permissions = "u+xs,g+x";
-          owner = "root";
-          group = group;
+  security = {
+    wrappers =
+      let
+        rootSuidGroup = source: group: {
+          ${source.name} = {
+            source = source;
+            permissions = "u+xs,g+x";
+            owner = "root";
+            group = group;
+          };
         };
-      };
-    in
-      rootSuidGroup grant-access-to-input-devices rawdevinputGroupName //
-      rootSuidGroup laptop-backlight backlightcontrolGroupName;
+      in
+        rootSuidGroup grant-access-to-input-devices rawdevinputGroupName //
+        rootSuidGroup laptop-backlight backlightcontrolGroupName;
+
+    pam.loginLimits = [
+      { domain = "@${audioGroupName}"; item = "memlock"; type = "-";    value = "unlimited"; }
+      { domain = "@${audioGroupName}"; item = "rtprio";  type = "-";    value = "99";        }
+      { domain = "@${audioGroupName}"; item = "nofile";  type = "soft"; value = "99999";     }
+      { domain = "@${audioGroupName}"; item = "nofile";  type = "hard"; value = "99999";     }
+    ];
+  };
 
   home-manager.users.${wenzelUserName} = {
     programs.git = {
