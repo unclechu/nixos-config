@@ -341,13 +341,14 @@ in
       pkgs.gnome3.gnome-calendar
       gnome-screenshot
       pkgs.gnome3.gnome-calculator
-      pkgs.gnome3.eog
-      pkgs.gnome3.gpaste
-      pkgs.scrot
-      pkgs.shutter
+      pkgs.gnome3.eog # Image viewer
+      pkgs.gnome3.evince # Document (e.g. PDF) viwer
+      pkgs.gnome3.gpaste # Clipboard history manager
+      pkgs.scrot # An alternative to "gnome-screenshot" (just in case, usually i don't use it)
+      pkgs.shutter # Advanced screenshot taking&editing tool with GUI (written in Perl)
       pkgs.keepassx2
       pkgs.hledger pkgs.hledger-ui pkgs.hledger-web
-      pkgs.dfeet
+      pkgs.dfeet # DBus inspector GUI
       pkgs.obs-studio
 
       # antivirus
