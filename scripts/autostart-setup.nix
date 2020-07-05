@@ -38,6 +38,14 @@ let
   nm-applet = "${pkgs.gnome3.networkmanagerapplet}/bin/nm-applet";
   xsetroot = "${pkgs.xlibs.xsetroot}/bin/xsetroot";
 
+  hostName = args.${config-k}.networking.hostName or null;
+  rw-wenzel-nixos-laptop = import ../hardware/rw-wenzel-nixos-laptop.nix args;
+
+  picom-exe =
+    if hostName != rw-wenzel-nixos-laptop.networking.hostName
+    then esc (appArgExe picom)
+    else "";
+
   checkPhase = ''
     ${utils.shellCheckers.fileIsExecutable bash}
     ${utils.shellCheckers.fileIsExecutable pactl}
@@ -62,7 +70,7 @@ let
     if [[ -f $SCREENLAYOUT && -x $SCREENLAYOUT ]]; then
       if "$SCREENLAYOUT"; then sleep 1s; fi
     fi
-    ${esc (appArgExe picom)}
+    ${picom-exe}
     if [[ -f ~/.fehbg ]]; then . ~/.fehbg & fi
 
     ${esc (appArgExe input-setup)}
