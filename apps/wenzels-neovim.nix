@@ -7,7 +7,7 @@ assert let k = bashEnvFile-k; in builtins.hasAttr k args -> builtins.isString ar
 let
   wenzels-neovim-src = fetchGit {
     url = "https://github.com/unclechu/neovimrc.git";
-    rev = "09312d7f69fb4e768f1f7cefcb1afb5b4ed6970a"; # 6 July 2020
+    rev = "827cb29360076609a581a98e987fd76a01843a09"; # 6 July 2020
     ref = "master";
   };
 
