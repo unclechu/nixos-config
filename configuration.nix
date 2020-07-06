@@ -545,9 +545,9 @@ in
         wenzels-bash.pkg
         wenzels-neovim.neovim
         wenzels-neovim.neovim-qt
-        wenzels-neovim.scripts.clean-vim.pkg
-        wenzels-neovim.scripts.git-grep-nvr.pkg
-        wenzels-neovim.scripts.nvimd.pkg
+        wenzels-neovim.scripts.clean-vim
+        wenzels-neovim.scripts.git-grep-nvr
+        wenzels-neovim.scripts.nvimd
         wenzels-termite.default
         wenzels-termite.dark
         wenzels-termite.light
