@@ -119,8 +119,8 @@ let
   screen-backlight =
     (import scripts/screen-backlight.nix (moduleArgs // { inherit dzen-box; })).pkg;
 
-  hsc2hs-pipe = (import scripts/hsc2hs-pipe.nix (moduleArgs // { inherit ghc gcc; })).pkg;
-  timer = (import scripts/timer.nix moduleArgs).pkg;
+  hsc2hs-pipe = (import scripts/hsc2hs-pipe.nix (moduleArgs // { inherit ghc gcc; }));
+  timer = (import scripts/timer.nix moduleArgs);
   genpass = (import scripts/genpass.nix moduleArgs).pkg;
   picom = import scripts/picom.nix moduleArgs;
 
@@ -248,7 +248,7 @@ in
       pkgs.bash
       pkgs.dash
       pkgs.zsh
-      wenzels-bash.pkg
+      wenzels-bash
     ];
 
     systemPackages = [
@@ -527,7 +527,7 @@ in
       uid = 1989;
       isNormalUser = true;
       group = wenzelUserName;
-      shell = wenzels-bash.pkg;
+      shell = wenzels-bash;
 
       extraGroups = [
         "users"
@@ -542,7 +542,7 @@ in
       ];
 
       packages = [
-        wenzels-bash.pkg
+        wenzels-bash
         wenzels-neovim.neovim
         wenzels-neovim.neovim-qt
         wenzels-neovim.scripts.clean-vim
