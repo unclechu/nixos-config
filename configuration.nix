@@ -34,6 +34,8 @@ let
     # (before the language has been renamed).
     # Whilst in unstable nixpkgs it's 2020.05.
     rakudo = unstable-nixpkgs.pkgs.rakudo;
+
+    psi-plus = unstable-nixpkgs.pkgs.psi-plus; # Just newer snapshot version
   };
 
   inherit (utils) esc wrapExecutable;
@@ -350,6 +352,7 @@ in
       pkgs.hledger pkgs.hledger-ui pkgs.hledger-web
       pkgs.dfeet # DBus inspector GUI
       pkgs.obs-studio
+      pkgs.psi-plus
 
       # antivirus
       pkgs.clamav
