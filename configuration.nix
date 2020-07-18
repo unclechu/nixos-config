@@ -37,13 +37,13 @@ let
 
     # Latest on July 15, 2020
     psi-plus = unstable-nixpkgs.pkgs.psi-plus.overrideAttrs (srcAttrs: srcAttrs // rec {
-      version = "1.4.1463";
+      version = "1.4.1466";
 
       src = pkgs.fetchFromGitHub {
         owner = "psi-plus";
         repo = "psi-plus-snapshots";
         rev = version;
-        sha256 = "0x1ck2rdk51n99jzv291qg745y8f42prpm11xgn9m3li0hn47di7";
+        sha256 = "1gmd6zdvc0g7b6jxwszlsa7hn1nsqn66liwhx24m4ia48n6ra820";
       };
 
       cmakeFlags = [
