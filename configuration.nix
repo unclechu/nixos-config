@@ -61,7 +61,7 @@ let
   wenzels-bash       =  import apps/wenzels-bash.nix       moduleArgs;
   wenzels-i3         =  import apps/wenzels-i3.nix         moduleArgs;
   wenzels-termite    =  import apps/wenzels-termite.nix    moduleArgs;
-  place-cursor-at    = (import apps/place-cursor-at.nix    moduleArgs).pkg;
+  place-cursor-at    =  import apps/place-cursor-at.nix    moduleArgs;
   unclechu-i3-status = (import apps/unclechu-i3-status.nix moduleArgs).pkg;
   xlib-keys-hack     = (import apps/xlib-keys-hack.nix     moduleArgs).pkg;
   gpaste-gui         = (import apps/gpaste-gui.nix         moduleArgs).pkg;
