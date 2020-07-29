@@ -46,6 +46,7 @@ let
     #! ${bash}
     ${esc (appArgExe dzen-box)} LOCK orangered
     ${esc (appArgExe wenzels-keyboard)} --no-xlib-hack
+    if [[ -x ~/.screenlayout/only-laptop.sh ]]; then ~/.screenlayout/only-laptop.sh; fi
     if ! ${esc xautolock} -locknow; then ${esc i3lock} -c 111111; fi
   '';
 in
