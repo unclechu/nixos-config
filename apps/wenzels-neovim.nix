@@ -5,10 +5,11 @@ in
 assert let k = pkgs-k;        in builtins.hasAttr k args -> builtins.isAttrs  args.${k};
 assert let k = bashEnvFile-k; in builtins.hasAttr k args -> builtins.isString args.${k};
 let
-  wenzels-neovim-src = fetchGit {
-    url = "https://github.com/unclechu/neovimrc.git";
-    rev = "827cb29360076609a581a98e987fd76a01843a09"; # 6 July 2020
-    ref = "master";
+  wenzels-neovim-src = pkgs.fetchFromGitHub {
+    owner = "unclechu";
+    repo = "neovimrc";
+    rev = "2c40e114e36e8831ee8f2dc099c15f7d7f0c8ad9"; # ref "master", 29 July 2020
+    sha256 = "05aagxkd9yl7ddbrkdzv5mhclmv876iaajpf3wbaj3h6izqd14p3";
   };
 
   pkgs = args.${pkgs-k} or (import <nixpkgs> (

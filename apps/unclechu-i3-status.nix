@@ -14,10 +14,11 @@ let
 
   inherit (utils) esc wrapExecutable nameOfModuleFile;
 
-  src = fetchGit {
-    url = "https://github.com/unclechu/unclechu-i3-status.git";
-    rev = "848170821a9499c84772c7df793888ce45bfa999"; # 8 March 2020
-    ref = "master";
+  src = pkgs.fetchFromGitHub {
+    owner = "unclechu";
+    repo = "unclechu-i3-status";
+    rev = "848170821a9499c84772c7df793888ce45bfa999"; # ref "master", 8 March 2020
+    sha256 = "0r239k55gfa0z9nrqsg04p8iwh1wf7d32fkfv0accw05gaikqdsd";
   };
 
   hs = pkgs.haskellPackages.extend (self: super: {

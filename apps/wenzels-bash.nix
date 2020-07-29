@@ -9,10 +9,11 @@ let
 
   inherit (utils) esc;
 
-  bashRC = fetchGit {
-    url = "https://github.com/unclechu/bashrc.git";
-    rev = "c5e5f6cdd33c5160bad9747f2cc37010b99106d3"; # 9 July 2020
-    ref = "master";
+  bashRC = pkgs.fetchFromGitHub {
+    owner = "unclechu";
+    repo = "bashrc";
+    rev = "6164205a3d3006c7216c67ec3644c44737c6241e"; # ref "master", 29 July 2020
+    sha256 = "107l0qq4hnc6yb0xwd2x4ac7qrmbx7zz6zhq19w9470yhqmcm5jg";
   };
 
   pkgs = args.${pkgs-k} or (import <nixpkgs> (

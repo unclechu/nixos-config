@@ -8,10 +8,11 @@ let
   ));
 in
 rec {
-  rc = fetchGit {
-    url = "https://github.com/unclechu/i3rc.git";
-    rev = "8ec6a1b1ba23cad1178acc66b375eefc81d97826"; # 5 May 2020
-    ref = "master";
+  rc = pkgs.fetchFromGitHub {
+    owner = "unclechu";
+    repo = "i3rc";
+    rev = "8ec6a1b1ba23cad1178acc66b375eefc81d97826"; # ref "master", 5 May 2020
+    sha256 = "1dn4l8gi06id147bnrnclpfbv87p6p63mj2f4f6zmnlpsclmdk6w";
   };
 
   configFileSrc = builtins.readFile "${rc}/config";

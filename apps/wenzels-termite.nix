@@ -14,10 +14,11 @@ let
 
   inherit (utils) esc wrapExecutable;
 
-  rc = fetchGit {
-    url = "https://github.com/unclechu/termiterc.git";
-    rev = "d127c04277308468828dec17d20f195521dd33ab"; # 21 March 2017
-    ref = "master";
+  rc = pkgs.fetchFromGitHub {
+    owner = "unclechu";
+    repo = "termiterc";
+    rev = "d127c04277308468828dec17d20f195521dd33ab"; # ref "master", 21 March 2017
+    sha256 = "1l71fcjf3dqx0494a3awd63qz9dmim0dzd8f2p91xhhcv4kssm78";
   };
 
   dash = "${pkgs.dash}/bin/dash";

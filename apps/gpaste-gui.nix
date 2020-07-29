@@ -14,10 +14,11 @@ let
 
   inherit (utils) esc writeCheckedExecutable wrapExecutable nameOfModuleFile;
 
-  src = fetchGit {
-    url = "https://github.com/unclechu/gpaste-gui.git";
-    rev = "b7a9d702a06ed7448e98661b7fa162922c29e17f"; # 28 April 2019
-    ref = "master";
+  src = pkgs.fetchFromGitHub {
+    owner = "unclechu";
+    repo = "gpaste-gui";
+    rev = "b7a9d702a06ed7448e98661b7fa162922c29e17f"; # ref "master", 28 April 2019
+    sha256 = "0926ffw7lhvd2ihzwjis9nd9by6dwxkz85vsl2d7vxdq349al8q7";
   };
 
   srcFile = builtins.readFile "${src}/${name}.pl";
