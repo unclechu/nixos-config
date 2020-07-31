@@ -35,15 +35,15 @@ let
     # Whilst in unstable nixpkgs it's 2020.05.
     rakudo = unstable-nixpkgs.pkgs.rakudo;
 
-    # Latest on July 15, 2020
+    # Latest on July 28, 2020
     psi-plus = unstable-nixpkgs.pkgs.psi-plus.overrideAttrs (srcAttrs: srcAttrs // rec {
-      version = "1.4.1466";
+      version = "1.4.1472";
 
       src = pkgs.fetchFromGitHub {
         owner = "psi-plus";
         repo = "psi-plus-snapshots";
         rev = version;
-        sha256 = "1gmd6zdvc0g7b6jxwszlsa7hn1nsqn66liwhx24m4ia48n6ra820";
+        sha256 = "1ipgb3m4d5fm21gcyj1k5m7shmdysmdc1dx3gylp2y2ndkp8q8g6";
       };
 
       cmakeFlags = [
