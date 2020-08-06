@@ -304,6 +304,8 @@ in
       pkgs.perl pkgs.rakudo
       ## c
       gcc
+      ## bash
+      pkgs.shellcheck
       ## etc
       pkgs.gnumake
 
