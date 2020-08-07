@@ -28,7 +28,7 @@ let
   unstable-nixpkgs =  import ./nixos-unstable-pick.nix  withConfigArgs;
   utils            = (import ./nix-utils-pick.nix      (withConfigArgs // { inherit pkgs; })).pkg;
 
-  pkgs = stable-nixpkgs.pkgs // {
+  pkgs = stable-nixpkgs.pkgs // rec {
     # In the NixOS 20.03 nixpkgs "rakudo" package is 2017.01 version,
     # very old one, it's not even Raku yet but Perl6
     # (before the language has been renamed).
@@ -51,6 +51,21 @@ let
         "-DCHAT_TYPE=BASIC"
       ];
     });
+
+    # Released on August 6, 2020
+    neovim-unwrapped =
+      unstable-nixpkgs.pkgs.neovim-unwrapped.overrideAttrs (srcAttrs: srcAttrs // rec {
+        version = "0.4.4";
+
+        src = pkgs.fetchFromGitHub {
+          owner = "neovim";
+          repo = "neovim";
+          rev = "v${version}";
+          sha256 = "11zyj6jvkwas3n6w1ckj3pk6jf81z1g7ngg4smmwm7c27y2a6f2m";
+        };
+      });
+
+    neovim = unstable-nixpkgs.pkgs.wrapNeovim neovim-unwrapped {};
   };
 
   inherit (utils) esc wrapExecutable;
