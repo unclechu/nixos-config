@@ -275,9 +275,6 @@ in
       XMODIFIERS = "@im=none";
       QT_IM_MODULE = "xim";
       GTK_IM_MODULE = "xim";
-
-      QT_QPA_PLATFORMTHEME = "qt5ct";
-      GTK_THEME = "Adwaita:dark";
     };
 
     shells = [
@@ -401,6 +398,23 @@ in
       pkgs.monkeysphere
       pkgs.vagrant
     ];
+
+    etc = {
+      "xdg/gtk-2.0/gtkrc".text = ''
+        gtk-theme-name = Adwaita
+      '';
+      "xdg/gtk-3.0/settings.ini".text = ''
+        [Settings]
+        gtk-theme-name = Adwaita
+        gtk-application-prefer-dark-theme = true
+      '';
+    };
+  };
+
+  qt5 = {
+    enable = true;
+    platformTheme = "gnome";
+    style = "adwaita-dark";
   };
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -448,7 +462,7 @@ in
       enable = true;
       driSupport = true;
       driSupport32Bit = true;
-      s3tcSupport = true;
+      # s3tcSupport = true; # in nixos-unstable it’s no longer needed
 
       extraPackages = [
         pkgs.mesa
@@ -528,6 +542,7 @@ in
           pkgs.i3status
           pkgs.i3lock
           unclechu-i3-status
+          pkgs.gnome3.adwaita-icon-theme
         ];
 
         configFile = wenzels-i3.configFile {

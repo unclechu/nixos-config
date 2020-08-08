@@ -2,6 +2,16 @@
 
 ## Usage
 
+**WARNING!** Mind that at the moment of 9 August 2020 it relies on **nixos-unstable** channel
+because I needed `config.qt5.style = "adwaita-dark"` option to work. **nixos-20.03** wouldn’t
+compile with this option. So you would like to run this first in order to make it work:
+
+```sh
+nix-channel --remove nixos
+nix-channel --add https://nixos.org/channels/nixos-unstable nixos
+nix-channel --update nixos
+```
+
 1. Load into [NixOS Live CD](https://nixos.org/download.html)
 
 1. Prepare file system according to a hardware configuration of a machine
