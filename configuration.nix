@@ -242,11 +242,15 @@ in
     #   noProxy = "127.0.0.1,localhost,internal.domain";
     # };
 
-    # Open ports in the firewall.
-    # firewall.allowedTCPPorts = [ ... ];
-    # firewall.allowedUDPPorts = [ ... ];
-    # Or disable the firewall altogether.
-    # firewall.enable = false;
+    firewall = {
+      enable = true;
+      allowedTCPPorts = [
+        # 80 443
+      ];
+      allowedTCPPortRanges = [
+        # { from = 8000; to = 8010; }
+      ];
+    };
   };
 
   i18n.defaultLocale = "en_US.UTF-8";
