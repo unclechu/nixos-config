@@ -409,6 +409,17 @@ in
       pinentryFlavor = "gnome3";
     };
 
+    ssh.knownHosts = {
+      "wenzel-nixos-pc.local" = {
+        publicKey =
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOmL8yMVM5zEkU3v3BEBdGRKeTUE23SLM0cQpmZ7KsWy";
+      };
+      "rw-wenzel-nixos-laptop.local" = {
+        publicKey =
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINuEudWImNcFDrEfvfUipPBBcpVHj0YsWiqh0qLURPIo";
+      };
+    };
+
     seahorse.enable = true;
     dconf.enable = true;
     bash.enableCompletion = true;
@@ -608,6 +619,13 @@ in
         pa-add-mono-sink
         picom.run-picom
         picom.no-picom
+      ];
+
+      openssh.authorizedKeys.keys = [
+        # wenzel-nixos-pc
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDL2A7YiBrYwyxx9HTa8YVGeS8et1ae1K7VuwYtqL+pV41GeQdpug7crGbM9U2NQ4zXBxpcV0Wu/Fxa4KcecBuw2PTv8bJO6+38U39iOWtJ6ArxC0dkAPTssVpWw1Bvc61WUvLsP8PtgauZjO18HAOJD62yPmqOgf/IIY9TCAv2QuQD+nSaPVn3TSVUDhBCFM/ZC7I/D0pdgWTkSUKEoNgXF47sVYs14BN8ey87UQd9OK02gbcGUMXaLXGQfa5BezHHiwpyVCnkujpaKkiNOvcmb5bVyhT8bnds2zmEOu6wmFEyiK0Cozb6b7vpnjtKV+U4M+IJzSkV9RjeoJaEN79e0SC1YHusKE5EZlcgvVt5+sR9G1mXlXaqL/g3rMuDy4gECDa0PGSFj6tiYqlk22Pdcx8dzK1yMzroeCD0++umChyRm6xM8sb7vRm+j3ZnRdeSq77VX66q0oJaVeCCXF4BGf+RJgf0SApKfg9Xts0EekZylYyerXw1i4R8eV9WIr4oA7vCTg/QuAa7U0lezDBNjf+cb9eZu4kgyi/Cft06T17DS3t7Nqe2cgsGqfJpnSPTTV6HduLmQAhfcDGbJ5QuzMswUbgCh4ZbMDinBPXRwoCyfQa+L21gcFYd9QkTt6KEuciAd9L8AzyzhhJCid85Ku7DNcRCz7epFwYdkKT+Iw== (none)"
+        # rw-wenzel-nixos-laptop
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/7GGxP+9Y0oiCPFuFWVgYfQV26K4yLbVOWXaVjhl8ydZykgGZ1BHt/IHeq7FpJimwFbCj1JiFi/iAW4oY5yQs5YKR/rJ5zlyUeOfVFZHV1mONN8hyDOyftO/KGGWWPdEB6bLlMyeP2bNjrSulvljp/zHix1be00dfoKA+D9i0haYQX4kJT1H3j9Ouf4Ea5kQmxLlksQIwEOTIsyi/UWU2U9NmBBi88oQwluIAZjOPUeijq3jnGti0yWPHnXqoD0ssfcBt+z8kdB1eYqUYxn80dDgid0Pllp6EWBBZr1mhzUkkKeVWGt0cHnItt9YxiDqHVpD0RzXbLDWTgDNwHjJX (none)"
       ];
     };
 
