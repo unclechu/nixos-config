@@ -32,10 +32,12 @@ let
   bash = "${pkgs.bash}/bin/bash";
   xautolock = "${pkgs.xautolock}/bin/xautolock";
   i3lock = "${pkgs.i3lock}/bin/i3lock";
+  jack_control = "${pkgs.jack2}/bin/jack_control";
 
   checkPhase = ''
     ${utils.shellCheckers.fileIsExecutable bash}
     ${utils.shellCheckers.fileIsExecutable xautolock}
+    ${utils.shellCheckers.fileIsExecutable jack_control}
     ${
       builtins.concatStringsSep "\n"
         (map (k: utils.shellCheckers.fileIsExecutable (appArgExe k)) appArgs)
@@ -46,6 +48,7 @@ let
     #! ${bash}
     ${esc (appArgExe dzen-box)} LOCK orangered
     ${esc (appArgExe wenzels-keyboard)} --no-xlib-hack
+    ${esc jack_control} stop
     if [[ -x ~/.screenlayout/only-laptop.sh ]]; then ~/.screenlayout/only-laptop.sh; fi
     if ! ${esc xautolock} -locknow; then ${esc i3lock} -c 111111; fi
   '';
