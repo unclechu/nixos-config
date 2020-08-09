@@ -24,52 +24,9 @@ let
   withConfigArgs =
     let k = config-k; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
 
-  stable-nixpkgs   =  import ./nixos-stable-pick.nix    withConfigArgs;
-  unstable-nixpkgs =  import ./nixos-unstable-pick.nix  withConfigArgs;
-  utils            = (import ./nix-utils-pick.nix      (withConfigArgs // { inherit pkgs; })).pkg;
-
-  pkgs = stable-nixpkgs.pkgs // rec {
-    # In the NixOS 20.03 nixpkgs "rakudo" package is 2017.01 version,
-    # very old one, it's not even Raku yet but Perl6
-    # (before the language has been renamed).
-    # Whilst in unstable nixpkgs it's 2020.05.
-    rakudo = unstable-nixpkgs.pkgs.rakudo;
-
-    # Latest on July 28, 2020
-    psi-plus = unstable-nixpkgs.pkgs.psi-plus.overrideAttrs (srcAttrs: srcAttrs // rec {
-      version = "1.4.1472";
-
-      src = pkgs.fetchFromGitHub {
-        owner = "psi-plus";
-        repo = "psi-plus-snapshots";
-        rev = version;
-        sha256 = "1ipgb3m4d5fm21gcyj1k5m7shmdysmdc1dx3gylp2y2ndkp8q8g6";
-      };
-
-      cmakeFlags = [
-        "-DENABLE_PLUGINS=ON"
-        "-DCHAT_TYPE=BASIC"
-      ];
-    });
-
-    # Released on August 6, 2020
-    neovim-unwrapped =
-      unstable-nixpkgs.pkgs.neovim-unwrapped.overrideAttrs (srcAttrs: srcAttrs // rec {
-        version = "0.4.4";
-
-        src = pkgs.fetchFromGitHub {
-          owner = "neovim";
-          repo = "neovim";
-          rev = "v${version}";
-          sha256 = "11zyj6jvkwas3n6w1ckj3pk6jf81z1g7ngg4smmwm7c27y2a6f2m";
-        };
-      });
-
-    neovim = unstable-nixpkgs.pkgs.wrapNeovim neovim-unwrapped {};
-  };
-
+  pkgs = import ./pkgs.nix withConfigArgs;
+  utils = (import ./nix-utils-pick.nix (withConfigArgs // { inherit pkgs; })).pkg;
   inherit (utils) esc wrapExecutable;
-
   moduleArgs = withConfigArgs // { inherit pkgs utils; };
   home-manager = import ./home-manager-pick.nix;
 
@@ -338,7 +295,7 @@ in
       pkgs.audacious
       pkgs.audacity
       pkgs.ardour
-      unstable-nixpkgs.pkgs.guitarix
+      pkgs.guitarix
 
       # graphics
       pkgs.libtxc_dxtn_s2tc
