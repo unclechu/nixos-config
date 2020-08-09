@@ -403,12 +403,14 @@ in
 
     etc = {
       "xdg/gtk-2.0/gtkrc".text = ''
-        gtk-theme-name = Adwaita
+        gtk-theme-name = "Adwaita-dark"
+        gtk-icon-theme-name = "Adwaita"
       '';
       "xdg/gtk-3.0/settings.ini".text = ''
         [Settings]
-        gtk-theme-name = Adwaita
+        gtk-theme-name = Adwaita-dark
         gtk-application-prefer-dark-theme = true
+        gtk-icon-theme-name = Adwaita
       '';
     };
   };
