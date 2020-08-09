@@ -25,10 +25,10 @@ let
     let k = config-k; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
 
   pkgs = import ./pkgs.nix withConfigArgs;
-  utils = (import ./nix-utils-pick.nix (withConfigArgs // { inherit pkgs; })).pkg;
+  utils = (import ./picks/nix-utils.nix (withConfigArgs // { inherit pkgs; })).pkg;
   inherit (utils) esc wrapExecutable;
   moduleArgs = withConfigArgs // { inherit pkgs utils; };
-  home-manager = import ./home-manager-pick.nix;
+  home-manager = import ./picks/home-manager.nix;
 
   wenzels-bash       =  import apps/wenzels-bash.nix       moduleArgs;
   wenzels-i3         =  import apps/wenzels-i3.nix         moduleArgs;

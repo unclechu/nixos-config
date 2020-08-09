@@ -16,7 +16,7 @@ let
     if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
   ));
 
-  utils = args.${utils-k} or (import ../../nix-utils-pick.nix (
+  utils = args.${utils-k} or (import ../../picks/nix-utils.nix (
     pkgs.lib.filterAttrs (k: _: k == config-k) args // { inherit pkgs; }
   )).pkg;
 in

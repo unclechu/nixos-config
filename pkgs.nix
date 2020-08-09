@@ -5,8 +5,8 @@ let
   withConfigArgs =
     let k = config-k; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
 
-  stable-pkgs   = (import ./nixos-stable-pick.nix   withConfigArgs).pkgs;
-  unstable-pkgs = (import ./nixos-unstable-pick.nix withConfigArgs).pkgs;
+  stable-pkgs   = (import ./picks/nixos-stable.nix   withConfigArgs).pkgs;
+  unstable-pkgs = (import ./picks/nixos-unstable.nix withConfigArgs).pkgs;
   inherit (stable-pkgs) fetchFromGitHub;
 in
 stable-pkgs // rec {

@@ -20,7 +20,7 @@ let
 in
 assert appArgsAssertion == builtins.length appArgs;
 let
-  utils = args.${utils-k} or (import ../nix-utils-pick.nix (
+  utils = args.${utils-k} or (import ../picks/nix-utils.nix (
     pkgs.lib.filterAttrs (k: _: k == config-k) args // { inherit pkgs; }
   )).pkg;
 
