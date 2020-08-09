@@ -442,6 +442,7 @@ in
 
     seahorse.enable = true;
     dconf.enable = true;
+    gpaste.enable = true;
     bash.enableCompletion = true;
     zsh.enable = true;
     zsh.enableCompletion = true;
