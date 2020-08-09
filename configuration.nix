@@ -275,6 +275,8 @@ in
       XMODIFIERS = "@im=none";
       QT_IM_MODULE = "xim";
       GTK_IM_MODULE = "xim";
+
+      GTK_THEME = "Adwaita:dark";
     };
 
     shells = [
