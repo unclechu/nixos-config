@@ -374,5 +374,9 @@ in
       userName = "Viacheslav Lotsmanov";
       userEmail = "lotsmanov89@gmail.com";
     };
+
+    home.file.".bashrc".text = ''
+      . ${esc wenzels-bash.history-settings-file-path}
+    '';
   };
 }
