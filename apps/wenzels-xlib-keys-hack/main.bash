@@ -64,17 +64,30 @@ for x in "${ERGODOX_EZ[@]}"; do
 	fi
 done
 
+PLANK_EZ=(
+	'--disable-xinput-device-name=ZSA Planck EZ'
+	/dev/input/by-id/usb-ZSA_Planck_EZ_0-event-kbd
+)
+
+HAS_PLANK_EZ=0
+for x in "${PLANK_EZ[@]}"; do
+	if [[ $x =~ ^/dev/input/ && -r $x ]]; then
+		HAS_PLANK_EZ=1
+		break
+	fi
+done
+
 MODE=${1:-}
 
 if [[ $MODE == gaming ]]; then
 	echo '[ GAMING MODE ON ]'
-	if (( HAS_ERGODOX_EZ == 0 )); then
+	if (( HAS_ERGODOX_EZ == 0 && HAS_PLANK_EZ == 0 )); then
 		FLAGS+=(
 			--real-capslock
 			--no-additional-controls
 		)
 	fi
-elif (( HAS_ERGODOX_EZ == 0 )); then
+elif (( HAS_ERGODOX_EZ == 0 && HAS_PLANK_EZ == 0 )); then
 	FLAGS+=(
 		--hold-alt-for-alternative-mode
 		--ergonomic-mode
@@ -82,7 +95,7 @@ elif (( HAS_ERGODOX_EZ == 0 )); then
 fi
 
 # Turn off embedded keyboard if there's external one
-if (( HAS_DUCKY == 0 && HAS_ERGODOX_EZ == 0 )); then
+if (( HAS_DUCKY == 0 && HAS_ERGODOX_EZ == 0 && HAS_PLANK_EZ == 0 )); then
 	EMBEDDED+=(
 		'/dev/input/by-path/platform-i8042-serio-0-event-kbd'
 		'/dev/input/by-path/platform-i8042-serio-1-event-mouse'
@@ -90,7 +103,7 @@ if (( HAS_DUCKY == 0 && HAS_ERGODOX_EZ == 0 )); then
 	)
 fi
 
-if (( HAS_ERGODOX_EZ == 0 )); then
+if (( HAS_ERGODOX_EZ == 0 && HAS_PLANK_EZ == 0 )); then
 	FLAGS+=(
 		--shift-hjkl
 		'--software-debouncer=90'
@@ -126,6 +139,7 @@ ALL_XKH_ARGS=(
 	"${DUCKY[@]}"
 	"${CORSAIR[@]}"
 	"${ERGODOX_EZ[@]}"
+	"${PLANK_EZ[@]}"
 )
 
 xlib-keys-hack "${ALL_XKH_ARGS[@]}" &
