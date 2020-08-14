@@ -116,11 +116,14 @@ if (( HAS_ERGODOX_EZ == 0 && HAS_PLANK_EZ == 0 )); then
 else
 	FLAGS+=(
 		--real-capslock
-		--no-additional-controls
 		--ergonomic-ergodox-mode
 		--f24-as-vertical-bar
 		--reset-by-real-escape
 	)
+	# Keep additional controls feature for Plank EZ
+	if (( HAS_PLANK_EZ == 0 )); then
+		FLAGS+=( --no-additional-controls )
+	fi
 	if [[ $MODE == gaming ]]; then
 		FLAGS+=(
 			--disable-super-double-press
