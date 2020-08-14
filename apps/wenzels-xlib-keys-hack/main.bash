@@ -16,7 +16,7 @@ FLAGS+=(
 )
 
 DUCKY=(
-	--disable-xinput-device-name='Ducky Ducky One2 Mini RGB'
+	'--disable-xinput-device-name=Ducky Ducky One2 Mini RGB'
 	'/dev/input/by-id/usb-Ducky_Ducky_One2_Mini_RGB_DK-V1.08-190201-event-if03'
 	'/dev/input/by-id/usb-Ducky_Ducky_One2_Mini_RGB_DK-V1.08-190201-event-kbd'
 	'/dev/input/by-id/usb-Ducky_Ducky_One2_Mini_RGB_DK-V1.08-190201-if01-event-mouse'
@@ -25,16 +25,16 @@ DUCKY=(
 )
 
 CORSAIR=(
-	--disable-xinput-device-name='Corsair Corsair Gaming K63 Keyboard'
-	--disable-xinput-device-name='Corsair Corsair Gaming K63 Keyboard Keyboard'
-	--disable-xinput-device-name='Corsair Corsair Gaming K64 Keyboard Consumer Control'
+	'--disable-xinput-device-name=Corsair Corsair Gaming K63 Keyboard'
+	'--disable-xinput-device-name=Corsair Corsair Gaming K63 Keyboard Keyboard'
+	'--disable-xinput-device-name=Corsair Corsair Gaming K64 Keyboard Consumer Control'
 	'/dev/input/by-id/usb-Corsair_Corsair_Gaming_K63_Keyboard_0B008012AF0C1D2558ED9875F5001945-event-if01'
 	'/dev/input/by-id/usb-Corsair_Corsair_Gaming_K63_Keyboard_0B008012AF0C1D2558ED9875F5001945-event-kbd'
 	'/dev/input/by-id/usb-Corsair_Corsair_Gaming_K63_Keyboard_0B008012AF0C1D2558ED9875F5001945-if01-event-kbd'
 )
 
 EMBEDDED=(
-	--disable-xinput-device-name='AT Translated Set 2 keyboard'
+	'--disable-xinput-device-name=AT Translated Set 2 keyboard'
 	# See below for devices list
 )
 
@@ -48,11 +48,11 @@ done
 
 ERGODOX_EZ=(
 	# old firmware
-	--disable-xinput-device-name='ErgoDox EZ ErgoDox EZ'
+	'--disable-xinput-device-name=ErgoDox EZ ErgoDox EZ'
 	/dev/input/by-id/usb-ErgoDox_EZ_ErgoDox_EZ_0-event-kbd
 
 	# new firmware
-	--disable-xinput-device-name='ZSA Ergodox EZ'
+	'--disable-xinput-device-name=ZSA Ergodox EZ'
 	/dev/input/by-id/usb-ZSA_Ergodox_EZ_0-event-kbd
 )
 
@@ -68,13 +68,13 @@ MODE=${1:-}
 
 if [[ $MODE == gaming ]]; then
 	echo '[ GAMING MODE ON ]'
-	if (( $HAS_ERGODOX_EZ == 0 )); then
+	if (( HAS_ERGODOX_EZ == 0 )); then
 		FLAGS+=(
 			--real-capslock
 			--no-additional-controls
 		)
 	fi
-elif (( $HAS_ERGODOX_EZ == 0 )); then
+elif (( HAS_ERGODOX_EZ == 0 )); then
 	FLAGS+=(
 		--hold-alt-for-alternative-mode
 		--ergonomic-mode
@@ -82,7 +82,7 @@ elif (( $HAS_ERGODOX_EZ == 0 )); then
 fi
 
 # Turn off embedded keyboard if there's external one
-if (( $HAS_DUCKY == 0 && $HAS_ERGODOX_EZ == 0 )); then
+if (( HAS_DUCKY == 0 && HAS_ERGODOX_EZ == 0 )); then
 	EMBEDDED+=(
 		'/dev/input/by-path/platform-i8042-serio-0-event-kbd'
 		'/dev/input/by-path/platform-i8042-serio-1-event-mouse'
@@ -90,10 +90,10 @@ if (( $HAS_DUCKY == 0 && $HAS_ERGODOX_EZ == 0 )); then
 	)
 fi
 
-if (( $HAS_ERGODOX_EZ == 0 )); then
+if (( HAS_ERGODOX_EZ == 0 )); then
 	FLAGS+=(
 		--shift-hjkl
-		--software-debouncer=90
+		'--software-debouncer=90'
 		--right-control-as-super
 	)
 
@@ -132,11 +132,11 @@ xlib-keys-hack "${ALL_XKH_ARGS[@]}" &
 XKH_PID=$!
 
 cleanup() { kill -- "$XKH_PID"; }
-trap cleanup ABRT EXIT HUP INT PIPE QUIT STOP TERM TRAP
+trap cleanup ABRT EXIT HUP INT PIPE QUIT TERM TRAP
 
 exit_status=0
 if ! wait -- "$XKH_PID"; then exit_status=$?; fi
-DATE=`date`
+DATE=$(date)
 printf -- '->> Ended with exit code: %d (at %s) <<-\n' "$exit_status" "$DATE"
 
 # --disable-xinput-device-name='Telink Wireless Receiver'
