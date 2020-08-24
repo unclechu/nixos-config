@@ -1,7 +1,7 @@
 let
-  commit = "318bc0754ed6370cfcae13183a7f13f7aa4bc73f"; # ref "release-20.03", 5 July 2020
+  commit = "4a8d6280544d9b061c0b785d2470ad6eeda47b02"; # ref "release-20.03", 24 August 2020
 in
 fetchTarball {
   url = "https://github.com/rycee/home-manager/archive/${commit}.tar.gz";
-  sha256 = "0hgn85yl7gixw1adjfa9nx8axmlpw5y1883lzg3zigknx6ff5hsr";
+  sha256 = "0m9zhp94ckzzxsgx5xdi374ndr3bh1d84344rncn9qzgnm2pzfj0";
 }
