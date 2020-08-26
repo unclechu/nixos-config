@@ -155,6 +155,7 @@ in
       pkgs.ag
       pkgs.zip pkgs.unzip pkgs.p7zip
       pkgs.parallel-rust
+      pkgs.file
 
       # nix stuff
       pkgs.nix-index
