@@ -295,6 +295,7 @@ in
   };
 
   fonts = {
+    enableDefaultFonts = true;
     enableFontDir = true;
 
     fonts = [
