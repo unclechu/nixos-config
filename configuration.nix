@@ -295,8 +295,9 @@ in
   };
 
   fonts = {
-    enableDefaultFonts = true;
     enableFontDir = true;
+    enableDefaultFonts = true;
+    enableGhostscriptFonts = true;
 
     fonts = [
       pkgs.hack-font
@@ -307,8 +308,19 @@ in
     ];
 
     fontconfig = {
-      defaultFonts = let font = ["Hack"]; in { monospace = font; sansSerif = font; serif = font; };
+      antialias = true;
+      hinting.enable = true;
       subpixel.rgba = "none";
+
+      defaultFonts =
+        let
+          font = ["Hack"];
+        in {
+          monospace = font;
+          sansSerif = font;
+          serif = font;
+          emoji = ["Noto Color Emoji"];
+        };
     };
   };
 
