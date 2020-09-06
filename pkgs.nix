@@ -49,4 +49,5 @@ stable-pkgs // rec {
   neovim = unstable-pkgs.wrapNeovim neovim-unwrapped {};
 
   guitarix = unstable-pkgs.guitarix;
+  ardour = unstable-pkgs.ardour; # 6.x version of Ardour
 }

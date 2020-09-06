@@ -125,6 +125,8 @@ in
       GTK_THEME = "Adwaita:dark";
     };
 
+    sessionVariables.LV2_PATH = "/run/current-system/sw/lib/lv2";
+
     etc = {
       "xdg/gtk-2.0/gtkrc".text = ''
         gtk-theme-name = "Adwaita-dark"

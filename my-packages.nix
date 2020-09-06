@@ -201,6 +201,25 @@ in
       pkgs.ardour
       pkgs.guitarix
 
+      # lv2 plugins
+      pkgs.calf
+      pkgs.artyFX
+      pkgs.drumgizmo
+      pkgs.eq10q
+      pkgs.fmsynth
+      pkgs.fomp
+      pkgs.infamousPlugins
+      pkgs.mda_lv2
+      pkgs.metersLv2
+      pkgs.mod-distortion
+      pkgs.noise-repellent
+      pkgs.rkrlv2
+      pkgs.sorcer
+      pkgs.speech-denoiser
+      pkgs.swh_lv2
+      pkgs.x42-plugins
+      pkgs.zam-plugins
+
       # graphics
       pkgs.libtxc_dxtn_s2tc
       pkgs.glxinfo
