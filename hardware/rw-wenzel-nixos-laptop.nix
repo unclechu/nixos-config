@@ -21,7 +21,7 @@ in
 
     kernelModules = [ "kvm-intel" "fuse" ];
     kernelParams = [];
-    kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages = pkgs.linuxPackages_5_7;
   };
 
   fileSystems = {

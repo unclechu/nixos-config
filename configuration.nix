@@ -293,11 +293,10 @@ in
   virtualisation = {
     docker.enable = true;
 
-    # FIXME for some reason it’s has compilation errors
-    # virtualbox.host = {
-    #   enable = true;
-    #   headless = false;
-    # };
+    virtualbox.host = {
+      enable = true;
+      headless = false;
+    };
   };
 
   fonts = {

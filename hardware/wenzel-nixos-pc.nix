@@ -22,7 +22,7 @@ in
     kernelModules = ["kvm-intel" "kvm-amd" "fuse"];
     # kernelParams = ["radeon.si_support=0" "amdgpu.si_support=1" "amdgpu.dc=1"];
     kernelParams = ["radeon.cik_support=0" "amdgpu.cik_support=1" "amdgpu.dc=1"];
-    kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages = pkgs.linuxPackages_5_7;
   };
 
   fileSystems = {
