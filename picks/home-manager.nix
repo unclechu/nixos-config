@@ -1,7 +1,8 @@
 let
-  commit = "4a8d6280544d9b061c0b785d2470ad6eeda47b02"; # ref "release-20.03", 24 August 2020
+  # ref "master" (20.09 isn’t released yet), 13 September 2020
+  commit = "472ca211cac604efdf621337067a237be9df389e";
 in
 fetchTarball {
-  url = "https://github.com/rycee/home-manager/archive/${commit}.tar.gz";
-  sha256 = "0m9zhp94ckzzxsgx5xdi374ndr3bh1d84344rncn9qzgnm2pzfj0";
+  url = "https://github.com/nix-community/home-manager/archive/${commit}.tar.gz";
+  sha256 = "1gbfsnd7zsxwqryxd4r6jz9sgdz6ghlkapws1cdxshrbxlwhqad1";
 }

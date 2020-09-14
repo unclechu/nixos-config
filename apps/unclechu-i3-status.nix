@@ -21,12 +21,8 @@ let
     sha256 = "0r239k55gfa0z9nrqsg04p8iwh1wf7d32fkfv0accw05gaikqdsd";
   };
 
-  hs = pkgs.haskellPackages.extend (self: super: {
-    base-unicode-symbols = super.base-unicode-symbols_0_2_4_2;
-  });
-
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  pkg = hs.callCabal2nix name src {};
+  pkg = pkgs.haskellPackages.callCabal2nix name src {};
   pkg-exe = "${pkgs.haskell.lib.justStaticExecutables pkg}/bin/${name}";
 
   dzen2 = "${pkgs.dzen2}/bin/dzen2";
@@ -42,5 +38,4 @@ in
   inherit name src;
   haskell-pkg = pkg;
   pkg = wrapper;
-  haskellPackages = hs;
 }

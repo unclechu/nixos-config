@@ -37,7 +37,7 @@ in
   ];
 
   system = {
-    stateVersion = "20.03";
+    stateVersion = "20.09";
     fsPackages = [pkgs.xfsprogs.bin];
   };
 
@@ -193,7 +193,6 @@ in
       enable = true;
       driSupport = true;
       driSupport32Bit = true;
-      # s3tcSupport = true; # in nixos-unstable it’s no longer needed
 
       extraPackages = [
         pkgs.mesa
@@ -293,7 +292,12 @@ in
 
   virtualisation = {
     docker.enable = true;
-    virtualbox.host.enable = true;
+
+    # FIXME for some reason it’s has compilation errors
+    # virtualbox.host = {
+    #   enable = true;
+    #   headless = false;
+    # };
   };
 
   fonts = {

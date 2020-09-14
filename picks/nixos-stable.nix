@@ -1,11 +1,13 @@
 args@{ ... }:
 let
   config-k = "config";
-  commit = "feff2fa6659799fe7439038b3eba453d62a16e69"; # ref "nixos-20.03", 26 August 2020
+
+  # ref "nixos-20.09", 13 September 2020
+  commit = "e0508c81809b12013bce95562d556b1e672e3541";
 
   stable-nixpkgs-src = fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/${commit}.tar.gz";
-    sha256 = "0vlnrwlxl6xf6b8rmiy7as2lhi015nklyj2xdiy3ly8xznq69ll9";
+    sha256 = "0y4p9rbyc5zmzfcpjmhbbhpxrp808wcnp2100fvgc0nyvkyl112b";
   };
 
   stable-nixpkgs = import stable-nixpkgs-src (

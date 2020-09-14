@@ -152,9 +152,10 @@ in
       pkgs.killall pkgs.lsof pkgs.inetutils pkgs.acl
       pkgs.inotify-tools
       pkgs.skim pkgs.fzf # fuzzy search
+      pkgs.bat
       pkgs.ag
       pkgs.zip pkgs.unzip pkgs.p7zip
-      pkgs.parallel-rust
+      pkgs.parallel
       pkgs.file
 
       # nix stuff
@@ -221,7 +222,6 @@ in
       pkgs.zam-plugins
 
       # graphics
-      pkgs.libtxc_dxtn_s2tc
       pkgs.glxinfo
       pkgs.libva-utils
       pkgs.picom
@@ -276,7 +276,7 @@ in
 
       # etc
       pkgs.git
-      pkgs.gnupg20
+      pkgs.gnupg
       pkgs.monkeysphere
       pkgs.vagrant
     ];
