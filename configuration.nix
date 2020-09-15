@@ -121,11 +121,12 @@ in
       XMODIFIERS = "@im=none";
       QT_IM_MODULE = "xim";
       GTK_IM_MODULE = "xim";
-
-      GTK_THEME = "Adwaita:dark";
     };
 
-    sessionVariables.LV2_PATH = "/run/current-system/sw/lib/lv2";
+    sessionVariables = {
+      LV2_PATH = "/run/current-system/sw/lib/lv2";
+      GTK_THEME = "Adwaita:dark";
+    };
 
     etc = {
       "xdg/gtk-2.0/gtkrc".text = ''
