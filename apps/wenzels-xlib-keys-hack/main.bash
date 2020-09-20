@@ -32,6 +32,13 @@ EMBEDDED=(
 	# See below for devices list
 )
 
+JETACCESS_SLIM_LINE_K9_WIRELESS=(
+	'--disable-xinput-device-name=Telink Wireless Receiver'
+	'/dev/input/by-id/usb-Telink_Wireless_Receiver-event-kbd'
+	'/dev/input/by-id/usb-Telink_Wireless_Receiver-if01-event-mouse'
+	'/dev/input/by-id/usb-Telink_Wireless_Receiver-if01-mouse'
+)
+
 # Ducky One 2 Mini RGB keyboard
 DUCKY=(
 	'--disable-xinput-device-name=Ducky Ducky One2 Mini RGB'
@@ -180,6 +187,7 @@ fi
 ALL_XKH_ARGS=(
 	"${FLAGS[@]}"
 	"${EMBEDDED[@]}"
+	"${JETACCESS_SLIM_LINE_K9_WIRELESS[@]}"
 	"${DUCKY[@]}"
 	"${CORSAIR[@]}"
 	"${ERGODOX_EZ[@]}"
@@ -217,11 +225,6 @@ printf -- '->> Ended with exit code: %d (at %s) <<-\n' "$exit_status" "$DATE"
 # '/dev/input/by-path/pci-0000:00:14.0-usb-0:3:1.1-event'
 # '/dev/input/by-path/pci-0000:00:14.0-usb-0:3:1.1-event-mouse'
 # '/dev/input/by-path/pci-0000:00:14.0-usb-0:3:1.1-mouse'
-
-# --disable-xinput-device-name='Telink Wireless Receiver'
-# '/dev/input/by-id/usb-Telink_Wireless_Receiver-event-kbd'
-# '/dev/input/by-id/usb-Telink_Wireless_Receiver-if01-event-mouse'
-# '/dev/input/by-id/usb-Telink_Wireless_Receiver-if01-mouse'
 
 # --disable-xinput-device-name='Apple Inc. Apple Keyboard'
 # '/dev/input/by-id/usb-Apple_Inc._Apple_Keyboard-event-kbd'
