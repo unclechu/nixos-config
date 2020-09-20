@@ -139,6 +139,12 @@ in
         gtk-application-prefer-dark-theme = true
         gtk-icon-theme-name = Adwaita
       '';
+
+      # Qt4
+      "xdg/Trolltech.conf".text = ''
+        [Qt]
+        style=GTK+
+      '';
     };
   };
 
