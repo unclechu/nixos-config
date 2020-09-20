@@ -92,7 +92,6 @@ in
       enable = true;
       allowedTCPPorts = [
         # 80 443
-        4713 # PulseAudio server listener
       ];
       allowedTCPPortRanges = [
         # { from = 8000; to = 8010; }
