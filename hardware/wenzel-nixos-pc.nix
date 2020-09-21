@@ -21,7 +21,12 @@ in
 
     kernelModules = ["kvm-intel" "kvm-amd" "fuse"];
     # kernelParams = ["radeon.si_support=0" "amdgpu.si_support=1" "amdgpu.dc=1"];
-    kernelParams = ["radeon.cik_support=0" "amdgpu.cik_support=1" "amdgpu.dc=1"];
+    kernelParams = [
+      "radeon.cik_support=0"
+      "amdgpu.cik_support=1"
+      "amdgpu.dc=1"
+      "amdgpu.ppfeaturemask=0xffffffff" # allows to adjust clocks and voltages via sysfs
+    ];
     kernelPackages = pkgs.linuxPackages_5_7;
   };
 
@@ -66,7 +71,7 @@ in
     '';
 
     screenSection = ''
-      DefaultDepth 30
+      DefaultDepth 24
     '';
   };
 
