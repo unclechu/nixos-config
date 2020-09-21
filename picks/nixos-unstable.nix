@@ -2,12 +2,12 @@ args@{ ... }:
 let
   config-k = "config";
 
-  # ref "nixos-unstable", 12 September 2020
-  commit = "e0759a49733dfc3aa225b8a7423c00da6e1ecb67";
+  # ref "nixos-unstable", 19 September 2020
+  commit = "2a35f664394b379e0c0785cc769ff6ccc791be39";
 
   unstable-nixpkgs-src = fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/${commit}.tar.gz";
-    sha256 = "1lnaifrbdmvbmz25404z7xpfwaagscs1i80805fyrrs1g27h21qb";
+    sha256 = "1ac01hyvniiwrwgqlvmx76dxc7aqg71nx3d05d0dc35lbyjq7acf";
   };
 
   unstable-nixpkgs = import unstable-nixpkgs-src (
