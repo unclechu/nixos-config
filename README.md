@@ -2,12 +2,19 @@
 
 ## Usage
 
-Mind the required channels:
+This config is designed to be used with own precise `nixos` channel pick.
+Not that it wouldn’t work with default `nixos-20.09` channel
+but I like to manually update it and to store the precise pick in the repo
+in order to be sure my machines are 100% in sync.
+In short, to have better reproducibility.
 
+Please see `--help` info from [this script](channels/manage.raku):
+
+``` sh
+channels/manage.raku --help
 ```
-λ sudo nix-channel --list
-nixos https://nixos.org/channels/nixos-20.09
-```
+
+**TODO** Add a subcommand to that script which would automatically redefine `nixos` channel.
 
 1. Load into [NixOS Live CD](https://nixos.org/download.html)
 
