@@ -214,6 +214,8 @@ multi sub MAIN('override', *@channel-names) {
     "SUCCESS (for “{channel-name}” channel)".say
   }
 
+  "Updating channels: {log-channels @channel-names}…".say;
+  run «sudo nix-channel --update --», @channel-names;
   "SUCCESS".say
 }
 
