@@ -14,7 +14,14 @@ Please see `--help` info from [this script](channels/manage.raku):
 channels/manage.raku --help
 ```
 
-**TODO** Add a subcommand to that script which would automatically redefine `nixos` channel.
+In order to fully setup channels you just have to run:
+
+``` sh
+channels/manage.raku upgrade
+channels/manage.raku override
+```
+
+*P.S. Mind that the second command (`override`) requires “sudo” access.*
 
 1. Load into [NixOS Live CD](https://nixos.org/download.html)
 
