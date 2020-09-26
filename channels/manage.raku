@@ -117,7 +117,7 @@ multi sub MAIN('fetch', Bool:D :f(:$force) = False, *@channel-names) {
 }
 
 #| Upgrade channel(s) to the latest version
-multi sub MAIN('upgrade', *@channel-names) {
+multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
   @channel-names = default-channel-names @channel-names;
   "Upgrading these channels: {log-channels @channel-names}…".say;
 
@@ -131,8 +131,20 @@ multi sub MAIN('upgrade', *@channel-names) {
     », :out).out.slurp(:close);
 
     my Str:D \release-link-file-path = channel-file channel-name, release-link-file-name;
-    "Resolved to “{release-link}”, saving to “{release-link-file-path}”…".say;
+    "Resolved to “{release-link}”.".say;
     mkdir channel-file channel-name unless (channel-file channel-name).IO.d;
+
+    if !$force {
+      "Checking whether an upgrade is needed…".say;
+
+      if (my \file = release-link-file-path.IO).f && file.slurp.chomp eq release-link {
+        "“{channel-name}” is already latest version, nothing to upgrade.".say;
+        "SUCCESS (for “{channel-name}” channel)".say;
+        next
+      }
+    }
+
+    "Saving “{release-link}” to “{release-link-file-path}” file…".say;
     spurt release-link-file-path, release-link;
 
     say
@@ -237,24 +249,28 @@ sub USAGE {
      Will resolve to a link that looks like this:
      https://releases.nixos.org/nixos/20.09/nixos-20.09alpha290.3b8ddb2f1ee
 
-  2. The resolved link will be saved to
+  2. Check whether an upgrade is needed by comparing link from
+     “{file release-link-file-name}” file
+     with the resolved link (if you did’t set “--force” of course)
+
+  3. The resolved link will be saved to
      “{file release-link-file-name}” file
 
-  3. From HTML document by that link SHA-256 checksum
+  4. From HTML document by that link SHA-256 checksum
      for “{nixexprs-file-name}” file will be extracted and saved to
      “{file nixexprs-checksum-file-name}” file
 
-  4. From the same HTML document release date will be extracted
+  5. From the same HTML document release date will be extracted
      and saved to “{file release-date-file-name}” file
 
-  5. These two files will be downloaded:
+  6. These two files will be downloaded:
 
      1. {git-revision-file-name}
      2. {nixexprs-file-name}
 
-     and saved to {file ''}
+     and saved to “{file ''}”
 
-  6. “{file nixexprs-file-name}”
+  7. “{file nixexprs-file-name}”
      file will be verified that it’s matching checksum from
      “{file nixexprs-checksum-file-name}” file
 
@@ -270,6 +286,7 @@ sub USAGE {
   2. New channel will be added to the system pointing to local directory
 
   The “sudo nix-channel --list | column -t” would look like this after:
+
     nixos           file:///etc/nixos/channels/nixos
     nixos-unstable  file:///etc/nixos/channels/nixos-unstable
 
