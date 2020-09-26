@@ -17,7 +17,7 @@ channels/manage.raku --help
 In order to fully setup channels you just have to run:
 
 ``` sh
-channels/manage.raku upgrade
+channels/manage.raku fetch
 channels/manage.raku override
 ```
 
