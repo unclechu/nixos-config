@@ -1,4 +1,4 @@
-args@{ ... }:
+args@{ config, pkgs, ... }:
 let
   config-k = "config";
 
@@ -14,7 +14,7 @@ let
   withConfigArgs =
     let k = config-k; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
 
-  pkgs = import ./pkgs.nix withConfigArgs;
+  pkgs = import ./pkgs.nix (withConfigArgs // { inherit (args) pkgs; });
   utils = (import ./picks/nix-utils.nix (withConfigArgs // { inherit pkgs; })).pkg;
   inherit (utils) esc;
   moduleArgs = withConfigArgs // { inherit pkgs utils; };

@@ -1,15 +1,14 @@
-args@{ ... }:
+args@{ pkgs, ... }:
 let
   config-k = "config";
 
   withConfigArgs =
     let k = config-k; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
 
-  stable-pkgs   = (import ./picks/nixos-stable.nix   withConfigArgs).pkgs;
-  unstable-pkgs = (import ./picks/nixos-unstable.nix withConfigArgs).pkgs;
-  inherit (stable-pkgs) fetchFromGitHub;
+  unstable-pkgs = import <nixos-unstable> withConfigArgs;
+  inherit (pkgs) fetchFromGitHub;
 in
-stable-pkgs // {
+pkgs // {
   # Latest on August 26, 2020
   psi-plus = unstable-pkgs.psi-plus.overrideAttrs (srcAttrs: srcAttrs // rec {
     version = "1.4.1511";
@@ -30,7 +29,7 @@ stable-pkgs // {
   neovim-qt =
     let
       unwrapped =
-        stable-pkgs.neovim-qt.unwrapped.overrideAttrs (a: a // rec {
+        pkgs.neovim-qt.unwrapped.overrideAttrs (a: a // rec {
           version = "0.2.16.1";
 
           src = fetchFromGitHub {
@@ -46,7 +45,7 @@ stable-pkgs // {
           ];
         });
     in
-      stable-pkgs.makeOverridable ({ neovim }: stable-pkgs.neovim-qt.overrideAttrs (a: a // {
+      pkgs.makeOverridable ({ neovim }: pkgs.neovim-qt.overrideAttrs (a: a // {
         version = unwrapped.version;
 
         buildCommand = ''
@@ -64,5 +63,5 @@ stable-pkgs // {
         };
 
         inherit (unwrapped) meta;
-      })) { inherit (stable-pkgs) neovim; };
+      })) { inherit (pkgs) neovim; };
 }
