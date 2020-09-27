@@ -1,9 +1,10 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -i raku -E
-#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2];c=\"3b8ddb2f1ee6f4c0794fb6dfbd273c3599492b76\";h=\"06hgvyd8ry4i49dmjxh5n6wv1j5ifpp7i3a7bjz62san0q6d0j35\";s=fetchTarball{url=\"https://github.com/NixOS/nixpkgs/archive/${c}.tar.gz\";sha256=h;};p=import s {};in p.mkShell{buildInputs=d;}"
+#! nix-shell --pure -i raku -E
+#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];c=\"d447429cc2407f7e76b09299439991d777914f4e\";h=\"1dhn94g6g2ay8vi3ihjl0cfb7xmazs671610c8xx04ss4ph69pzy\";s=fetchTarball{url=\"https://github.com/NixOS/nixpkgs/archive/${c}.tar.gz\";sha256=h;};p=import s {};in p.mkShell{buildInputs=d;}"
 #↑ The pick from above is taken from branch nixos-20.09
 use v6.d;
 $*PROGRAM.dirname.&*chdir;
+constant \sudo = '/run/wrappers/bin/sudo'; # Make it work with “--pure”
 
 constant %channels =
   'nixos'          => 'nixos-20.09',
@@ -187,7 +188,8 @@ multi sub MAIN('override', *@channel-names) {
   "Requesting current system channels list (you might be asked for “sudo” password)…".say;
 
   my Str:D %current-channels =
-    run(<sudo nix-channel --list>, :out).out.slurp(:close).chomp.lines.map(*.split: /\s+/).flat;
+    run(«"{sudo}" nix-channel --list», :out)
+      .out.slurp(:close).chomp.lines.map(*.split: /\s+/).flat;
 
   for @channel-names -> \channel-name {
     "Overriding “{channel-name}” channel…".say;
@@ -204,18 +206,18 @@ multi sub MAIN('override', *@channel-names) {
         "“{channel-name}” channel already exists but it points to " ~
         "“{%current-channels{channel-name}}” whilst we need it to point to “{path}”, removing it…";
 
-      run «sudo nix-channel --remove -- "{channel-name}"»;
+      run «"{sudo}" nix-channel --remove -- "{channel-name}"»;
     } else {
       "“{channel-name}” doesn’t exists (it’s okay).".say;
     }
 
     "Adding new channel “{channel-name}” and pointing it to “{path}”…".say;
-    run «sudo nix-channel --add -- "{path}" "{channel-name}"»;
+    run «"{sudo}" nix-channel --add -- "{path}" "{channel-name}"»;
     "SUCCESS (for “{channel-name}” channel)".say
   }
 
   "Updating channels: {log-channels @channel-names}…".say;
-  run «sudo nix-channel --update --», @channel-names;
+  run «"{sudo}" nix-channel --update --», @channel-names;
   "SUCCESS".say
 }
 
