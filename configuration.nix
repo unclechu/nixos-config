@@ -14,7 +14,6 @@ let
   withConfigArgs =
     let k = config-k; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
 
-  pkgs = import ./pkgs.nix (withConfigArgs // { inherit (args) pkgs; });
   utils = (import ./picks/nix-utils.nix (withConfigArgs // { inherit pkgs; })).pkg;
   inherit (utils) esc;
   moduleArgs = withConfigArgs // { inherit pkgs utils; };
@@ -42,6 +41,12 @@ in
     stateVersion = "20.09";
     fsPackages = [pkgs.xfsprogs.bin];
   };
+
+  nix.nixPath =
+    options.nix.nixPath.default ++
+    [ "nixpkgs-overlays=/etc/nixos/overlays-compat/" ];
+
+  nixpkgs.overlays = import ./overlays;
 
   i18n.defaultLocale = "en_US.UTF-8";
 
