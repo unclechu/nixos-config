@@ -4,13 +4,17 @@ self: super:
     let
       unwrapped =
         super.neovim-qt.unwrapped.overrideAttrs (srcAttrs: srcAttrs // rec {
-          version = "0.2.16.1";
+          # Testing ligatures support, it’s planned to be released with 0.2.17 later.
+          # See https://github.com/equalsraf/neovim-qt/issues/166#issuecomment-700994778
+          version = "master";
+          # version = "0.2.16.1";
 
           src = super.fetchFromGitHub {
             owner  = "equalsraf";
             repo   = "neovim-qt";
-            rev    = "v${version}";
-            sha256 = "0x5brrim3f21bzdmh6wyrhrislwpx1248wbx56csvic6v78hzqny";
+            # rev    = "v${version}";
+            rev    = "5038ad11d27100889a69b079f1c0c2515687565a"; # September 30, 2020
+            sha256 = "0vcqrbbk6p1q6vlmqa2nsf3pn46r3wmf0rpv9l75pln7xav0qbn0";
           };
 
           cmakeFlags = [
