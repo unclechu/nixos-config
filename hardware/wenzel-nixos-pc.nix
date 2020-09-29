@@ -27,7 +27,7 @@ in
       "amdgpu.dc=1"
       "amdgpu.ppfeaturemask=0xffffffff" # allows to adjust clocks and voltages via sysfs
     ];
-    kernelPackages = pkgs.linuxPackages_5_7;
+    kernelPackages = pkgs.linuxPackages_latest;
   };
 
   fileSystems = {
