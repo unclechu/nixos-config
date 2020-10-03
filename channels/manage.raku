@@ -66,7 +66,19 @@ sub extract-nixexprs-checksum(Str:D \html) of Str:D {
   found-hash
 }
 
-sub verify-nixexprs-file-match-checksum(Str:D \channel-name) {
+class FileChecksumMismatch is Exception {
+  has Str $.expected-checksum           is readonly;
+  has Str $.expected-checksum-file-path is readonly;
+  has Str $.file-path                   is readonly;
+  has Str $.actual-checksum             is readonly;
+
+  method message() {
+    "Actual checksum of “{$!file-path}” which is “{$!actual-checksum}” doesn’t match " ~
+    "expected “{$!expected-checksum}” checksum from “{$!expected-checksum-file-path}” file!"
+  }
+}
+
+sub verify-nixexprs-file-matches-checksum(Str:D \channel-name) {
   my Str:D \nixexprs-file-path          = channel-file channel-name, nixexprs-file-name;
   my Str:D \nixexprs-checksum-file-path = channel-file channel-name, nixexprs-checksum-file-name;
   my Str:D \checksum                    = nixexprs-checksum-file-path.IO.slurp.chomp;
@@ -76,10 +88,12 @@ sub verify-nixexprs-file-match-checksum(Str:D \channel-name) {
   my Str:D \actual-checksum =
     run(«sha256sum -- "{nixexprs-file-path}"», :out).out.slurp(:close).chomp.split(/\s+/)[0];
 
-  fail
-    "Actual checksum of “{nixexprs-file-path}” which is “{actual-checksum}” " ~
-    "doesn’t match “{checksum}” checksum from “{nixexprs-checksum-file-path}” file!"
-      if actual-checksum ne checksum
+  FileChecksumMismatch.new(
+    expected-checksum           => checksum,
+    expected-checksum-file-path => nixexprs-checksum-file-path,
+    file-path                   => nixexprs-file-path,
+    actual-checksum             => actual-checksum,
+  ).throw if actual-checksum ne checksum
 }
 
 sub log-channels(*@channel-names) of Str:D { @channel-names.map('“'~*~'”').join: ', ' }
@@ -101,16 +115,34 @@ multi sub MAIN('fetch', Bool:D :f(:$force) = False, *@channel-names) {
     "Fetching “{nixexprs-file-name}” for “{channel-name}” channel…".say;
     my Str:D \nixexprs-file-path = channel-file channel-name, nixexprs-file-name;
 
-    if nixexprs-file-path.IO.f && !$force {
-      "“{nixexprs-file-path}” file already exists, downloading is skipped.".say
-    } else {
+    sub download {
       my Str:D \release-link = (channel-file channel-name, release-link-file-name).IO.slurp.chomp;
       my Str:D \url = "{release-link}/{nixexprs-file-name}";
       "Downloading “{url}” and saving to “{nixexprs-file-path}” file…".say;
       run «curl --fail --output "{nixexprs-file-path}" -- "{url}"»;
+      verify-nixexprs-file-matches-checksum channel-name;
     }
 
-    verify-nixexprs-file-match-checksum channel-name;
+    if nixexprs-file-path.IO.f && !$force {
+      say
+        "“{nixexprs-file-path}” file already exists, checking that it matches its checksum " ~
+        'in order to check whether we need to download a different version of it ' ~
+        '(it usually happens when you update a pick and try to “fetch” on an another machine ' ~
+        'where it’s still an older version previously downloaded)…';
+
+      try verify-nixexprs-file-matches-checksum channel-name;
+      given $! {
+        when FileChecksumMismatch {
+          "“{nixexprs-file-name}” is outdated, downloading it…".say;
+          download
+        }
+        when .so { .throw } # Rethrow unexpected exception
+        default { "“{nixexprs-file-name}” is up to date.".say }
+      }
+    } else {
+      download
+    }
+
     "SUCCESS (for “{channel-name}” channel)".say
   }
 
@@ -174,7 +206,7 @@ multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
       run «curl --fail --output "{file-path}" -- "{url}"»;
     }
 
-    verify-nixexprs-file-match-checksum channel-name;
+    verify-nixexprs-file-matches-checksum channel-name;
     "SUCCESS (for “{channel-name}” channel)".say
   }
 
