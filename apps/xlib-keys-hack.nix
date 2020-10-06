@@ -10,8 +10,8 @@ let
   src = pkgs.fetchFromGitHub {
     owner = "unclechu";
     repo = "xlib-keys-hack";
-    rev = "4acba410efbe29729244da82a45d2c58f64a9462"; # ref "master", 24 August 2020
-    sha256 = "1jxcmj6y5f88jb7445xq64rz8k7b70h9ifdj7r7hfl55d07rcj3d";
+    rev = "74566012ff4d365f56633bdfdc0a69f717d96a97"; # ref "master", 6 October 2020
+    sha256 = "14jb2b4sj777zd69ssvdk9s2yz78jx3jhy7fzbzkrqc0abldxj40";
   };
 in
 import src { inherit pkgs; }

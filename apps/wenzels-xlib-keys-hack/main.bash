@@ -167,6 +167,10 @@ else
 	# Keep additional controls feature for Planck EZ
 	if (( HAS_PLANCK_EZ == 0 )); then
 		FLAGS+=( --no-additional-controls )
+	# On Planck it’s Escape key which is right before A key,
+	# making it work as an additional control.
+	else
+		FLAGS+=( --escape-is-additional-control )
 	fi
 	# Super double press feature may stand in your way if you press Super key too often in a game
 	if [[ $MODE == gaming ]]; then
