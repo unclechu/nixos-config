@@ -153,6 +153,7 @@ in
       pkgs.inotify-tools
       pkgs.skim pkgs.fzf # fuzzy search
       pkgs.bat
+      pkgs.lf
       pkgs.ag
       pkgs.zip pkgs.unzip pkgs.p7zip
       pkgs.parallel
