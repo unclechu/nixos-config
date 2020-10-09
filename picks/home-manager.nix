@@ -1,8 +1,8 @@
 let
-  # ref "master" (20.09 isn’t released yet), 21 September 2020
-  commit = "96d7de6db18d9a5bf254ddf3525bb4ef1d2a6bda";
+  # ref "release-20.09", 1 October 2020
+  commit = "9ff2188c5d2c65b20ded3f2e7a759319866313d3";
 in
 fetchTarball {
   url = "https://github.com/nix-community/home-manager/archive/${commit}.tar.gz";
-  sha256 = "0dc4zji0vhmlbnx9fh5iihd3jbn0j2knq5s6ryly70k7mnzrm4ml";
+  sha256 = "05kmx79ms7akx5a7cay57ng8rj3ysgprfbnidb4srr46fbiyf0p2";
 }
