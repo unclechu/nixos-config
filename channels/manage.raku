@@ -1,6 +1,6 @@
 #! /usr/bin/env nix-shell
 #! nix-shell --pure -i raku -E
-#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];c=\"a9226f2b3a52fcbbc5587d2fa030729e714f40fe\";h=\"0xlzkymfrkj7z7b6hwliq2zn6pbjw08zka0qyv5bbnkhnv16x1dh\";s=fetchTarball{url=\"https://github.com/NixOS/nixpkgs/archive/${c}.tar.gz\";sha256=h;};p=import s {};in p.mkShell{buildInputs=d;}"
+#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];c=\"7badbf18c45b7490d893452beb8950d966327831\";h=\"0snk9dvj4hxg1ch704symxfz2kic06l0vf1b5aax9gdlflzg8fmj\";s=fetchTarball{url=\"https://github.com/NixOS/nixpkgs/archive/${c}.tar.gz\";sha256=h;};p=import s {};in p.mkShell{buildInputs=d;}"
 #↑ The pick from above is taken from branch nixos-20.09
 use v6.d;
 $*PROGRAM.dirname.&*chdir;
