@@ -20,5 +20,6 @@ xinput list --short \
 		then
 			if [[ $HAND == left ]]; then x=1; else x=0; fi
 			xinput set-prop "$id" 'libinput Left Handed Enabled' "$x"
+			xinput set-prop "$id" 'libinput Accel Speed' -0.7
 		fi
 	done
