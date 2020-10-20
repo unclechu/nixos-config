@@ -273,7 +273,7 @@ in
       # antivirus
       pkgs.clamav
       pkgs.lynis
-      # pkgs.vulnix # FIXME broken python-ZODB depedency
+      pkgs.vulnix
 
       # etc
       pkgs.git
