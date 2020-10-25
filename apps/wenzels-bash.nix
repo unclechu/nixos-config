@@ -12,8 +12,8 @@ let
   bashRC = pkgs.fetchFromGitHub {
     owner = "unclechu";
     repo = "bashrc";
-    rev = "4dff2670876eb07ff59181e6ffcb0f34f9326847"; # ref "master", 12 August 2020
-    sha256 = "081qn64p4xjivlza0d9d8qiybydvrzh4cj8308gpibs3a76456nz";
+    rev = "4f17aaf6ebbc95c8bcfcd62799358564fe5c505b"; # ref "master", 25 October 2020
+    sha256 = "091lz03znh9ckwfp9g9r6xbz66l2j8b804rr524im39li1hpr1qv";
   };
 
   pkgs = args.${pkgs-k} or (import <nixpkgs> (
