@@ -111,6 +111,7 @@ let
       pointer-dell-latitude-laptop-dot
       pointer-dell-latitude-laptop-touchpad
       pointer-logitech-wireless-ambidextrous-small-mouse
+      pointer-logitech-wireless-t650-touchpad
       pointer-razor-wired-ambidextrous-mouse;
   })).pkg;
 
@@ -126,6 +127,9 @@ let
 
   pointer-logitech-wireless-ambidextrous-small-mouse =
     (import scripts/pointer-logitech-wireless-ambidextrous-small-mouse moduleArgs).pkg;
+
+  pointer-logitech-wireless-t650-touchpad =
+    (import scripts/pointer-logitech-wireless-t650-touchpad moduleArgs).pkg;
 
   pointer-razor-wired-ambidextrous-mouse =
     (import scripts/pointer-razor-wired-ambidextrous-mouse moduleArgs).pkg;
@@ -305,6 +309,7 @@ in
       pointer-dell-latitude-laptop-dot
       pointer-dell-latitude-laptop-touchpad
       pointer-logitech-wireless-ambidextrous-small-mouse
+      pointer-logitech-wireless-t650-touchpad
       pointer-razor-wired-ambidextrous-mouse
       input-setup
       autostart-setup

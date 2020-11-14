@@ -13,6 +13,7 @@ let
   pointer-dell-latitude-laptop-touchpad = "pointer-dell-latitude-laptop-touchpad";
   pointer-logitech-wireless-ambidextrous-small-mouse =
     "pointer-logitech-wireless-ambidextrous-small-mouse";
+  pointer-logitech-wireless-t650-touchpad = "pointer-logitech-wireless-t650-touchpad";
   pointer-razor-wired-ambidextrous-mouse = "pointer-razor-wired-ambidextrous-mouse";
 
   appArgs = [
@@ -20,6 +21,7 @@ let
     pointer-dell-latitude-laptop-dot
     pointer-dell-latitude-laptop-touchpad
     pointer-logitech-wireless-ambidextrous-small-mouse
+    pointer-logitech-wireless-t650-touchpad
     pointer-razor-wired-ambidextrous-mouse
   ];
 
@@ -63,6 +65,7 @@ let
     ${esc (appArgExe pointer-dell-latitude-laptop-dot)} &
     ${esc (appArgExe pointer-dell-latitude-laptop-touchpad)} &
     ${esc (appArgExe pointer-logitech-wireless-ambidextrous-small-mouse)} &
+    ${esc (appArgExe pointer-logitech-wireless-t650-touchpad)} &
     ${esc (appArgExe pointer-razor-wired-ambidextrous-mouse)} &
 
     # laptop touchscreen
