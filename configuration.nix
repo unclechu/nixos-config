@@ -267,6 +267,7 @@ in
       pkgs.hack-font
       pkgs.fira-code-symbols
       pkgs.iosevka
+      pkgs.ibm-plex
       pkgs.nerdfonts
       pkgs.terminus_font # for "place-cursor-at"
     ];
