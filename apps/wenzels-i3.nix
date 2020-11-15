@@ -11,8 +11,8 @@ rec {
   rc = pkgs.fetchFromGitHub {
     owner = "unclechu";
     repo = "i3rc";
-    rev = "354d65c7ff5300a78728183a432d2aa83bc4067b"; # ref "master", 11 November 2020
-    sha256 = "1vzmndkcrvfvhgmg0v6dmhnm592ywgdqlm45xn8igdw4imv2qmn2";
+    rev = "aacfdc9d0f7875faf37ccb3aeaa99cfafd10189e"; # ref "master", 15 November 2020
+    sha256 = "073wc37d7rx44z0jyiwn1dsynafj70rgc6izhbf44a6arf354w4p";
   };
 
   configFileSrc = builtins.readFile "${rc}/config";
