@@ -8,8 +8,8 @@ let
   wenzels-neovim-src = pkgs.fetchFromGitHub {
     owner = "unclechu";
     repo = "neovimrc";
-    rev = "852aa8cca403126adef6ffde489dced1deab0fee"; # ref "master", 19 November 2020
-    sha256 = "1yl4nfwlj0a8429plxs3jdm24nyxiwm9akqq99b8mbv2zfz2cnhq";
+    rev = "40b88de768723c12ded9c520cdcda3c99de84ee6"; # ref "master", 22 November 2020
+    sha256 = "0hf13irdfin1bi0cxgvqjqkm59d1mysqxl68vyn83k460h53qav1";
   };
 
   pkgs = args.${pkgs-k} or (import <nixpkgs> (
