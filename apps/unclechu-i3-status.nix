@@ -17,8 +17,8 @@ let
   src = pkgs.fetchFromGitHub {
     owner = "unclechu";
     repo = "unclechu-i3-status";
-    rev = "848170821a9499c84772c7df793888ce45bfa999"; # ref "master", 8 March 2020
-    sha256 = "0r239k55gfa0z9nrqsg04p8iwh1wf7d32fkfv0accw05gaikqdsd";
+    rev = "fe8744725175f5304f9dd70f7aeb91cda1f99a3a"; # ref "master", 22 November 2020
+    sha256 = "1qssfqc7sxm12j0m08nbgknxzxs3q68wdyljqjlwyb4bfhpqrcqm";
   };
 
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
