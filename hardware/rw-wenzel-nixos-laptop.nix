@@ -21,7 +21,13 @@ in
 
     kernelModules = [ "kvm-intel" "fuse" ];
     kernelParams = [];
-    kernelPackages = pkgs.linuxPackages_latest;
+
+    # FIXME use latest when this error is fixed:
+    #       error: Package ‘virtualbox-modules-6.1.14-5.9.11’ in
+    #       /nix/store/nbmlij2phd1fk639qbv0ls6wkgpzshl9-nixos/nixos/pkgs/os-specific/linux/virtualbox/default.nix:20
+    #       is marked as broken, refusing to evaluate.
+    # kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages = pkgs.linuxPackages_5_8;
   };
 
   fileSystems = {
