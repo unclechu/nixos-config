@@ -10,8 +10,8 @@ let
   src = pkgs.fetchFromGitHub {
     owner = "unclechu";
     repo = "nix-utils";
-    rev = "377b3b35a50d482b9968d8d19bcb98cc4c37d6bd"; # ref "master", 9 July 2020
-    sha256 = "1cikgl25a0x497v3hc7yxri2jbdm6cn7ld891ak7fhxrdb6bmlpl";
+    rev = "9d5fabedd99843b86d2bdee40f6b0447fabb20cb"; # ref “master”, 07 January 2021
+    sha256 = "0ry8fg94fz9gljcy0m4yi331wzy2zrh80414dfp4xhbzdiyjwa37";
   };
 in
 {
