@@ -165,6 +165,8 @@ in
 
       # nix stuff
       pkgs.nix-index
+      pkgs.niv
+      pkgs.direnv
 
       # system stuff
       pkgs.htop
