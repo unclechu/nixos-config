@@ -41,7 +41,7 @@ let
   wenzels-termite    =  import apps/wenzels-termite.nix    moduleArgs;
   gpaste-gui         = (import apps/gpaste-gui.nix         moduleArgs).pkg;
 
-  xlib-keys-hack     =  import apps/xlib-keys-hack.nix     moduleArgs;
+  xlib-keys-hack     =  import sources.xlib-keys-hack  { inherit pkgs; };
   place-cursor-at    =  import sources.place-cursor-at { inherit pkgs; };
   gnome-screenshot   = (import apps/gnome-screenshot.nix   moduleArgs).pkg;
   unclechu-i3-status = (import apps/unclechu-i3-status.nix moduleArgs).pkg;

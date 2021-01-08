@@ -46,5 +46,17 @@
         "type": "tarball",
         "url": "https://github.com/unclechu/place-cursor-at/archive/16bac15dcb045c3e066fe8e7a0582cf2e183e676.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "xlib-keys-hack": {
+        "branch": "master",
+        "description": "Keyboard behavior customization utility",
+        "homepage": "",
+        "owner": "unclechu",
+        "repo": "xlib-keys-hack",
+        "rev": "74566012ff4d365f56633bdfdc0a69f717d96a97",
+        "sha256": "14jb2b4sj777zd69ssvdk9s2yz78jx3jhy7fzbzkrqc0abldxj40",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/xlib-keys-hack/archive/74566012ff4d365f56633bdfdc0a69f717d96a97.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
