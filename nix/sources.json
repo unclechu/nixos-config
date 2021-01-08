@@ -34,5 +34,17 @@
         "type": "tarball",
         "url": "https://github.com/unclechu/nix-utils/archive/9d5fabedd99843b86d2bdee40f6b0447fabb20cb.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "place-cursor-at": {
+        "branch": "master",
+        "description": "Utility for X11 that helps to move cursor using only keyboard written in Haskell",
+        "homepage": null,
+        "owner": "unclechu",
+        "repo": "place-cursor-at",
+        "rev": "16bac15dcb045c3e066fe8e7a0582cf2e183e676",
+        "sha256": "03624ddp87c3yql0s615hrnlvgafygx9msx270z90ayanj5sn88g",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/place-cursor-at/archive/16bac15dcb045c3e066fe8e7a0582cf2e183e676.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
