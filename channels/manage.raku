@@ -1,7 +1,7 @@
 #! /usr/bin/env nix-shell
 #! nix-shell --pure -i raku -E
-#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];c=\"7badbf18c45b7490d893452beb8950d966327831\";h=\"0snk9dvj4hxg1ch704symxfz2kic06l0vf1b5aax9gdlflzg8fmj\";s=fetchTarball{url=\"https://github.com/NixOS/nixpkgs/archive/${c}.tar.gz\";sha256=h;};p=import s {};in p.mkShell{buildInputs=d;}"
-#↑ The pick from above is taken from branch nixos-20.09
+#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];c=\"4a75ca4a4e7d14e7b0b0230b3ea57b5bd7c16218\";h=\"1jqhmwyslwcj6l4lmdiklb1byaz0gcl4q0mym3ahzmmr6l0j4dr1\";s=fetchTarball{url=\"https://github.com/NixOS/nixpkgs/archive/${c}.tar.gz\";sha256=h;};p=import s {};in p.mkShell{buildInputs=d;}"
+#↑ The pin from above is taken from branch nixos-20.09
 use v6.d;
 $*PROGRAM.dirname.&*chdir;
 constant \sudo = '/run/wrappers/bin/sudo'; # Make it work with “--pure”
@@ -127,7 +127,7 @@ multi sub MAIN('fetch', Bool:D :f(:$force) = False, *@channel-names) {
       say
         "“{nixexprs-file-path}” file already exists, checking that it matches its checksum " ~
         'in order to check whether we need to download a different version of it ' ~
-        '(it usually happens when you update a pick and try to “fetch” on an another machine ' ~
+        '(it usually happens when you update a pin and try to “fetch” on an another machine ' ~
         'where it’s still an older version previously downloaded)…';
 
       try verify-nixexprs-file-matches-checksum channel-name;
@@ -279,7 +279,7 @@ sub USAGE {
   If you call “upgrade” subcommand it will
   (for all the channels if you didn’t specify particular one):
 
-  1. Resolve latest channel version link to a link of particular version/pick
+  1. Resolve latest channel version link to a link of particular version/pin
      (will follow redirects). For example this:
      {channel-url nixos-channel}
      Will resolve to a link that looks like this:

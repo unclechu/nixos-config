@@ -12,9 +12,8 @@ let
 
   pkgs = args.${pkgs-k} or (import ./pkgs.nix withConfigArgs);
 
-  utils = args.${utils-k} or (
-    import ./picks/nix-utils.nix (withConfigArgs // { inherit pkgs; })
-  ).pkg;
+  sources = import nix/sources.nix;
+  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
 
   inherit (utils) wrapExecutable;
   moduleArgs = withConfigArgs // { inherit pkgs utils; };

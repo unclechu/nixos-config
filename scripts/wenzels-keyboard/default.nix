@@ -16,9 +16,8 @@ let
     if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
   ));
 
-  utils = args.${utils-k} or (import ../../picks/nix-utils.nix (
-    pkgs.lib.filterAttrs (k: _: k == config-k) args // { inherit pkgs; }
-  )).pkg;
+  sources = import ../../nix/sources.nix;
+  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
 in
 assert utils.valueCheckers.isPositiveNaturalNumber keyRepeatDelay;
 assert utils.valueCheckers.isPositiveNaturalNumber keyRepeatInterval;

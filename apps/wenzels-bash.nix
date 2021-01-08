@@ -3,10 +3,8 @@ let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
 assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
 assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
 let
-  utils = args.${utils-k} or (import ../picks/nix-utils.nix (
-    pkgs.lib.filterAttrs (k: _: k == config-k) args // { inherit pkgs; }
-  )).pkg;
-
+  sources = import ../nix/sources.nix;
+  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
   inherit (utils) esc;
 
   bashRC = pkgs.fetchFromGitHub {

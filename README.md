@@ -2,9 +2,9 @@
 
 ## Usage
 
-This config is designed to be used with own precise `nixos` channel pick.
+This config is designed to be used with own precise `nixos` channel pin.
 Not that it wouldn’t work with default `nixos-20.09` channel
-but I like to manually update it and to store the precise pick in the repo
+but I like to manually update it and to store the precise pin in the repo
 in order to be sure my machines are 100% in sync.
 In short, to have better reproducibility.
 

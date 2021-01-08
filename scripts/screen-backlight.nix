@@ -19,10 +19,8 @@ let
 in
 assert appArgsAssertion == builtins.length appArgs;
 let
-  utils = args.${utils-k} or (import ../picks/nix-utils.nix (
-    pkgs.lib.filterAttrs (k: _: k == config-k) args // { inherit pkgs; }
-  )).pkg;
-
+  sources = import ../nix/sources.nix;
+  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
 
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
