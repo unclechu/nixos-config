@@ -1,0 +1,38 @@
+{
+    "home-manager": {
+        "branch": "release-20.09",
+        "description": "Manage a user environment using Nix  [maintainer=@rycee] ",
+        "homepage": "https://nix-community.github.io/home-manager/",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "22f6736e628958f05222ddaadd7df7818fe8f59d",
+        "sha256": "1j4hyjd3kgvwym5jjazzyn554ngrm05ca9wl1a7z1bid22asr99p",
+        "type": "tarball",
+        "url": "https://github.com/nix-community/home-manager/archive/22f6736e628958f05222ddaadd7df7818fe8f59d.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "niv": {
+        "branch": "master",
+        "description": "Easy dependency management for Nix projects",
+        "homepage": "https://github.com/nmattia/niv",
+        "owner": "nmattia",
+        "repo": "niv",
+        "rev": "62fcf7d0859628f1834d84a7a0706ace0223c27e",
+        "sha256": "06ghvcsarvi32awxvgdxivaji8fsdhv46p49as8xx8whwia9d3rh",
+        "type": "tarball",
+        "url": "https://github.com/nmattia/niv/archive/62fcf7d0859628f1834d84a7a0706ace0223c27e.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nix-utils": {
+        "branch": "master",
+        "description": "My own Nix utils",
+        "homepage": null,
+        "owner": "unclechu",
+        "repo": "nix-utils",
+        "rev": "9d5fabedd99843b86d2bdee40f6b0447fabb20cb",
+        "sha256": "0ry8fg94fz9gljcy0m4yi331wzy2zrh80414dfp4xhbzdiyjwa37",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/nix-utils/archive/9d5fabedd99843b86d2bdee40f6b0447fabb20cb.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    }
+}

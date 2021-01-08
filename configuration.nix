@@ -11,13 +11,16 @@ in
 #          Otherwise it will fail with infinite recursion error.
 # assert let k = config-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
 let
-  withConfigArgs =
-    let k = config-k; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
-
-  utils = (import ./picks/nix-utils.nix (withConfigArgs // { inherit pkgs; })).pkg;
+  sources = import nix/sources.nix;
+  utils = import sources.nix-utils { inherit pkgs; };
   inherit (utils) esc;
-  moduleArgs = withConfigArgs // { inherit pkgs utils; };
-  home-manager = import ./picks/home-manager.nix;
+
+  moduleArgs =
+    let
+      withConfigArgs =
+        let k = config-k; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
+    in
+      withConfigArgs // { inherit pkgs utils; };
 
   wenzels-i3 = import apps/wenzels-i3.nix moduleArgs;
 
@@ -30,7 +33,7 @@ let
 in
 {
   imports = [
-    (import "${home-manager}/nixos")
+    (import "${sources.home-manager}/nixos")
     my-packages.configuration
     ./boot.nix
     ./network.nix
