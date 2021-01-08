@@ -12,6 +12,6 @@ let
     sha256 = "03624ddp87c3yql0s615hrnlvgafygx9msx270z90ayanj5sn88g";
   };
 
-  place-cursor-at = import src {};
+  place-cursor-at = import src { inherit pkgs; };
 in
 place-cursor-at // { inherit src; }
