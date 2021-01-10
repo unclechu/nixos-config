@@ -1,17 +1,8 @@
-args@{ ... }:
-let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
-assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
+{ pkgs  ? import <nixpkgs> {}
+, utils ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+}:
 let
-  pkgs = args.${pkgs-k} or (import <nixpkgs> (
-    let k = config-k; in
-    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
-  ));
-
-  sources = import ../nix/sources.nix;
-  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
   inherit (utils) nameOfModuleFile wrapExecutable esc;
-
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
 
   # previously i was confused with some weird behavior like layouts were rotating not sequentially.
@@ -27,7 +18,6 @@ let
   #
   # xkb-switch = "${pkgs.xkb-switch}/bin/xkb-switch";
   # ${utils.shellCheckers.fileIsExecutable xkb-switch}
-  #
 
   xbindkeysrc = pkgs.writeText "xbindkeysrc" ''
     "${xautolock} -locknow"
@@ -61,19 +51,17 @@ let
     name = "${name}_show";
     args = configArgs;
   };
-
-  wenzels-xbindkeys = pkgs.runCommand name {} ''
-    set -Eeuo pipefail
-    mkdir -p -- "$out/bin"
-
-    cp -- \
-      ${esc xbindkeys}/bin/${esc xbindkeys.name} \
-      ${esc xbindkeys_show}/bin/${esc xbindkeys_show.name} \
-      "$out"/bin/
-
-    chmod +x -- "$out"/bin/${esc xbindkeys.name} "$out"/bin/${esc xbindkeys_show.name}
-  '';
 in
-{
-  inherit name xbindkeys xbindkeys_show xbindkeysrc wenzels-xbindkeys;
+pkgs.runCommand name {} ''
+  set -Eeuo pipefail
+  mkdir -p -- "$out/bin"
+
+  cp -- \
+    ${esc xbindkeys}/bin/${esc xbindkeys.name} \
+    ${esc xbindkeys_show}/bin/${esc xbindkeys_show.name} \
+    "$out"/bin/
+
+  chmod +x -- "$out"/bin/${esc xbindkeys.name} "$out"/bin/${esc xbindkeys_show.name}
+'' // {
+  inherit xbindkeys xbindkeys_show;
 }

@@ -1,17 +1,10 @@
-args@{ ... }:
-let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
-assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
+{ pkgs  ? import <nixpkgs> {}
+, utils ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+}:
 let
-  pkgs = args.${pkgs-k} or (import <nixpkgs> (
-    let k = config-k; in
-    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
-  ));
-
-  sources = import ../nix/sources.nix;
-  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
   inherit (utils) esc wrapExecutable;
 
+  # TODO Pin using “niv”
   rc = pkgs.fetchFromGitHub {
     owner = "unclechu";
     repo = "termiterc";
@@ -36,8 +29,7 @@ let
     args = [ "--config=${config}" ];
   };
 in {
-  inherit rc checkPhase;
-  default = termite "termite" darkConfig;
-  dark = termite "termite-dark" darkConfig;
-  light = termite "termite-light" lightConfig;
+  default = termite "termite"       darkConfig;
+  dark    = termite "termite-dark"  darkConfig;
+  light   = termite "termite-light" lightConfig;
 }

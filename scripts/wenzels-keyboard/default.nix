@@ -1,79 +1,34 @@
-args@{ ... }:
-let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
-assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-let keyRepeat = "keyRepeat"; xkb = "xkb"; in
-assert builtins.hasAttr keyRepeat args;
-assert builtins.hasAttr xkb args;
+let constants = import ../../constants.nix; in
+{ pkgs                   ? import <nixpkgs> {}
+, utils                  ? import (import ../../nix/sources.nix).nix-utils { inherit pkgs; }
+, xbindkeys              ? import ../../apps/wenzels-xbindkeys.nix { inherit pkgs; }
+, keyRepeat              ? constants.keyRepeat
+, xkb                    ? constants.xkb
+, xlib-keys-hack-starter ? import ../../apps/wenzels-xlib-keys-hack { inherit pkgs; }
+}:
+assert pkgs.lib.isDerivation xbindkeys;
+assert pkgs.lib.isDerivation xlib-keys-hack-starter;
 let
-  keyRepeatDelay = args.${keyRepeat}.delay;
-  keyRepeatInterval = args.${keyRepeat}.interval;
-  xkbLayout = args.${xkb}.layout;
-  xkbOptions = args.${xkb}.options;
-
-  pkgs = args.${pkgs-k} or (import <nixpkgs> (
-    let k = config-k; in
-    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
-  ));
-
-  sources = import ../../nix/sources.nix;
-  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
+  keyRepeatDelay    = keyRepeat.delay;
+  keyRepeatInterval = keyRepeat.interval;
+  xkbLayout         = xkb.layout;
+  xkbOptions        = xkb.options; # "eurosign:e"
 in
 assert utils.valueCheckers.isPositiveNaturalNumber keyRepeatDelay;
 assert utils.valueCheckers.isPositiveNaturalNumber keyRepeatInterval;
-assert utils.valueCheckers.isNonEmptyString xkbLayout;
-assert utils.valueCheckers.isNonEmptyString xkbOptions;
-let
-  xbindkeys = "xbindkeys";
-
-  xbindkeys-drv =
-    let k = xbindkeys; in
-    assert builtins.hasAttr k args -> pkgs.lib.isDerivation args.${k};
-    assert builtins.hasAttr k pkgs;
-    args.${k} or pkgs.${k};
-in
-assert let drv = xbindkeys-drv; in builtins.seq drv true; # force asserts inside at this line
-let
-  xlib-keys-hack-starter = "xlib-keys-hack-starter";
-  appArgs = [ xbindkeys xlib-keys-hack-starter ];
-  optionalAppArgs = [ xbindkeys ];
-
-  appArgsAssertion =
-    let
-      f = a: k:
-        assert ! builtins.elem k optionalAppArgs -> builtins.hasAttr k args;
-        assert ! builtins.elem k optionalAppArgs -> pkgs.lib.isDerivation args.${k};
-        assert builtins.elem k optionalAppArgs -> (
-          if k == xbindkeys
-          then pkgs.lib.isDerivation xbindkeys-drv
-          else throw "unexpected optional app key: '${k}'"
-        );
-        a+1;
-    in
-      builtins.foldl' f 0 appArgs;
-
-  appArgExe = k:
-    if builtins.elem k optionalAppArgs then (
-      if k == xbindkeys
-      then let drv = xbindkeys-drv; in "${drv}/bin/${drv.name}"
-      else throw "unexpected optional app key: '${k}'"
-    ) else (
-      assert builtins.elem k appArgs;
-      let name = args.${k}.name; in "${builtins.getAttr k args}/bin/${name}"
-    );
-in
-assert appArgsAssertion == builtins.length appArgs;
+assert utils.valueCheckers.isNonEmptyString        xkbLayout;
+assert utils.valueCheckers.isNonEmptyString        xkbOptions;
 let
   inherit (utils) esc writeCheckedExecutable nameOfModuleWrapDir;
-
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-
   src = builtins.readFile ./main.raku;
   raku = "${pkgs.rakudo}/bin/raku";
   xset = "${pkgs.xorg.xset}/bin/xset";
   setxkbmap = "${pkgs.xorg.setxkbmap}/bin/setxkbmap";
   numlockx = "${pkgs.numlockx}/bin/numlockx";
   pkill = "${pkgs.procps}/bin/pkill";
+  xbindkeys-exe = "${xbindkeys}/bin/${xbindkeys.name}";
+  xlib-keys-hack-starter-exe = "${xlib-keys-hack-starter}/bin/${xlib-keys-hack-starter.name}";
 
   checkPhase = ''
     ${utils.shellCheckers.fileIsExecutable raku}
@@ -81,30 +36,24 @@ let
     ${utils.shellCheckers.fileIsExecutable setxkbmap}
     ${utils.shellCheckers.fileIsExecutable numlockx}
     ${utils.shellCheckers.fileIsExecutable pkill}
-    ${
-      builtins.concatStringsSep "\n"
-        (map (k: utils.shellCheckers.fileIsExecutable (appArgExe k)) appArgs)
-    }
-  '';
-
-  pkg = writeCheckedExecutable name checkPhase ''
-    #! ${raku}
-    use v6.d;
-    close $*IN;
-    my \xset := q<${xset}>;
-    my \keyRepeatDelay := q<${toString keyRepeatDelay}>;
-    my \keyRepeatInterval := q<${toString keyRepeatInterval}>;
-    my \setxkbmap := q<${setxkbmap}>;
-    my \xkbLayout := q<${xkbLayout}>;
-    my \xkbOptions := q<${xkbOptions}>;
-    my \numlockx := q<${numlockx}>;
-    my \pkill := q<${pkill}>;
-    my \xbindkeys := q<${appArgExe xbindkeys}>;
-    my \xlib-keys-hack-starter-exe := q<${appArgExe xlib-keys-hack-starter}>;
-    my \xlib-keys-hack-starter-name := q<${baseNameOf (appArgExe xlib-keys-hack-starter)}>;
-    ${src}
+    ${utils.shellCheckers.fileIsExecutable xbindkeys-exe}
+    ${utils.shellCheckers.fileIsExecutable xlib-keys-hack-starter-exe}
   '';
 in
-{
-  inherit src name pkg checkPhase;
-}
+writeCheckedExecutable name checkPhase ''
+  #! ${raku}
+  use v6.d;
+  close $*IN;
+  my \xset := q<${xset}>;
+  my \keyRepeatDelay := q<${toString keyRepeatDelay}>;
+  my \keyRepeatInterval := q<${toString keyRepeatInterval}>;
+  my \setxkbmap := q<${setxkbmap}>;
+  my \xkbLayout := q<${xkbLayout}>;
+  my \xkbOptions := q<${xkbOptions}>;
+  my \numlockx := q<${numlockx}>;
+  my \pkill := q<${pkill}>;
+  my \xbindkeys := q<${xbindkeys-exe}>;
+  my \xlib-keys-hack-starter-exe := q<${xlib-keys-hack-starter-exe}>;
+  my \xlib-keys-hack-starter-name := q<${baseNameOf xlib-keys-hack-starter-exe}>;
+  ${src}
+''

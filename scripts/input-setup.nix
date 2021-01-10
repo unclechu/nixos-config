@@ -1,77 +1,46 @@
-args@{ ... }:
-let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
-assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
+{ pkgs             ? import <nixpkgs> {}
+, utils            ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+, wenzels-keyboard ? import ./wenzels-keyboard { inherit pkgs; }
+
+, pointers ? [
+    (import ./pointer-dell-latitude-laptop-dot { inherit pkgs; })
+    (import ./pointer-dell-latitude-laptop-touchpad { inherit pkgs; })
+    (import ./pointer-logitech-wireless-ambidextrous-small-mouse { inherit pkgs; })
+    (import ./pointer-logitech-wireless-t650-touchpad { inherit pkgs; })
+    (import ./pointer-razor-wired-ambidextrous-mouse { inherit pkgs; })
+  ]
+}:
 let
-  pkgs = args.${pkgs-k} or (import <nixpkgs> (
-    let k = config-k; in
-    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
-  ));
-
-  wenzels-keyboard = "wenzels-keyboard";
-  pointer-dell-latitude-laptop-dot = "pointer-dell-latitude-laptop-dot";
-  pointer-dell-latitude-laptop-touchpad = "pointer-dell-latitude-laptop-touchpad";
-  pointer-logitech-wireless-ambidextrous-small-mouse =
-    "pointer-logitech-wireless-ambidextrous-small-mouse";
-  pointer-logitech-wireless-t650-touchpad = "pointer-logitech-wireless-t650-touchpad";
-  pointer-razor-wired-ambidextrous-mouse = "pointer-razor-wired-ambidextrous-mouse";
-
-  appArgs = [
-    wenzels-keyboard
-    pointer-dell-latitude-laptop-dot
-    pointer-dell-latitude-laptop-touchpad
-    pointer-logitech-wireless-ambidextrous-small-mouse
-    pointer-logitech-wireless-t650-touchpad
-    pointer-razor-wired-ambidextrous-mouse
-  ];
-
-  appArgsAssertion =
-    let f = a: k: assert builtins.hasAttr k args; assert pkgs.lib.isDerivation args.${k}; a+1;
-    in builtins.foldl' f 0 appArgs;
-
-  appArgExe = k: assert builtins.elem k appArgs; "${builtins.getAttr k args}/bin/${k}";
-in
-assert appArgsAssertion == builtins.length appArgs;
-let
-  sources = import ../nix/sources.nix;
-  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
-
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile ./main.bash;
-
   bash = "${pkgs.bash}/bin/bash";
   xinput = "${pkgs.xlibs.xinput}/bin/xinput";
+  exe = drv: "${drv}/bin/${drv.name}";
+  wenzels-keyboard-exe = exe wenzels-keyboard;
 
   checkPhase = ''
     ${utils.shellCheckers.fileIsExecutable bash}
     ${utils.shellCheckers.fileIsExecutable xinput}
+    ${utils.shellCheckers.fileIsExecutable wenzels-keyboard-exe}
     ${
       builtins.concatStringsSep "\n"
-        (map (k: utils.shellCheckers.fileIsExecutable (appArgExe k)) appArgs)
+        (map (x: utils.shellCheckers.fileIsExecutable (exe x)) pointers)
     }
   '';
-
-  pkg = writeCheckedExecutable name checkPhase ''
-    #! ${bash}
-    exec <&- &>/dev/null
-
-    # keyboard
-    ${esc (appArgExe wenzels-keyboard)} &
-
-    # mouse
-    ${esc (appArgExe pointer-dell-latitude-laptop-dot)} &
-    ${esc (appArgExe pointer-dell-latitude-laptop-touchpad)} &
-    ${esc (appArgExe pointer-logitech-wireless-ambidextrous-small-mouse)} &
-    ${esc (appArgExe pointer-logitech-wireless-t650-touchpad)} &
-    ${esc (appArgExe pointer-razor-wired-ambidextrous-mouse)} &
-
-    # laptop touchscreen
-    ${esc xinput} --map-to-output 'ELAN25B6:00 04F3:0732' eDP1
-
-    exit 0 # prevent returning exit status of the latest command
-  '';
 in
-{
-  inherit name pkg checkPhase;
-}
+writeCheckedExecutable name checkPhase ''
+  #! ${bash}
+  exec <&- &>/dev/null
+
+  # keyboard
+  ${esc wenzels-keyboard-exe} &
+
+  # mouse
+  ${builtins.concatStringsSep "\n" (map (x: "${esc (exe x)} &") pointers)}
+
+  # laptop touchscreen
+  ${esc xinput} --map-to-output 'ELAN25B6:00 04F3:0732' eDP1
+
+  exit 0 # prevent returning exit status of the latest command
+''

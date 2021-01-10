@@ -1,17 +1,10 @@
-args@{ ... }:
-let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
-assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
+{ pkgs  ? import <nixpkgs> {}
+, utils ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+}:
 let
-  pkgs = args.${pkgs-k} or (import <nixpkgs> (
-    let k = config-k; in
-    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
-  ));
-
-  sources = import ../nix/sources.nix;
-  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
   inherit (utils) esc wrapExecutable nameOfModuleFile;
 
+  # TODO Pin using “niv”
   src = pkgs.fetchFromGitHub {
     owner = "unclechu";
     repo = "unclechu-i3-status";
@@ -22,18 +15,11 @@ let
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   pkg = pkgs.haskellPackages.callCabal2nix name src {};
   pkg-exe = "${pkgs.haskell.lib.justStaticExecutables pkg}/bin/${name}";
-
   dzen2 = "${pkgs.dzen2}/bin/dzen2";
 
   checkPhase = ''
     ${utils.shellCheckers.fileIsExecutable dzen2}
     ${utils.shellCheckers.fileIsExecutable pkg-exe}
   '';
-
-  wrapper = wrapExecutable pkg-exe { deps = [ pkgs.dzen2 ]; inherit checkPhase; };
 in
-{
-  inherit name src;
-  haskell-pkg = pkg;
-  pkg = wrapper;
-}
+wrapExecutable pkg-exe { deps = [ pkgs.dzen2 ]; inherit checkPhase; }

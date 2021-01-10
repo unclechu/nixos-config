@@ -1,20 +1,12 @@
-args@{ ... }:
-let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
-assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
+{ pkgs       ? import <nixpkgs> {}
+, utils      ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+, wenzels-i3 ? import ../apps/wenzels-i3.nix { inherit pkgs; }
+}:
+assert builtins.isPath wenzels-i3.rc || pkgs.lib.isDerivation wenzels-i3.rc;
 let
-  pkgs = args.${pkgs-k} or (import <nixpkgs> (
-    let k = config-k; in
-    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
-  ));
-
-  sources = import ../nix/sources.nix;
-  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
-
-  src = builtins.readFile "${(import ../apps/wenzels-i3.nix args).rc}/apps/${name}.pl";
+  src = builtins.readFile "${wenzels-i3.rc}/apps/${name}.pl";
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-
   perl = "${pkgs.perl}/bin/perl";
 
   checkPhase = ''
@@ -22,15 +14,11 @@ let
     ${utils.shellCheckers.fileIsExecutable "${pkgs.xlibs.xrandr}/bin/xrandr"}
     ${utils.shellCheckers.fileIsExecutable "${pkgs.xdotool}/bin/xdotool"}
   '';
-
-  pkg = writeCheckedExecutable name checkPhase ''
-    #! ${perl}
-    use v5.10; use strict; use warnings;
-    $ENV{PATH} = q<${pkgs.xlibs.xrandr}/bin:>.$ENV{PATH};
-    $ENV{PATH} = q<${pkgs.xdotool}/bin:>.$ENV{PATH};
-    ${src}
-  '';
 in
-{
-  inherit name src pkg checkPhase;
-}
+writeCheckedExecutable name checkPhase ''
+  #! ${perl}
+  use v5.10; use strict; use warnings;
+  $ENV{PATH} = q<${pkgs.xlibs.xrandr}/bin:>.$ENV{PATH};
+  $ENV{PATH} = q<${pkgs.xdotool}/bin:>.$ENV{PATH};
+  ${src}
+''

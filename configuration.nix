@@ -1,16 +1,9 @@
 args@{ config, pkgs, options, ... }:
 let
-  config-k = "config";
-
   inherit (import ./constants.nix)
     wenzelUserName xkb keyRepeat
     rawdevinputGroupName backlightcontrolGroupName jackaudioGroupName audioGroupName;
-in
-# WARNING! Never assert "config" argument, nowhere in the modules too, it's recursive self-reference.
-#          It refers to the configuration itself, to this module we're just about to construct.
-#          Otherwise it will fail with infinite recursion error.
-# assert let k = config-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-let
+
   sources = import nix/sources.nix;
   utils = import sources.nix-utils { inherit pkgs; };
   inherit (utils) esc;
@@ -18,14 +11,14 @@ let
   moduleArgs =
     let
       withConfigArgs =
-        let k = config-k; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
+        let k = "config"; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
     in
       withConfigArgs // { inherit pkgs utils; };
 
-  wenzels-i3 = import apps/wenzels-i3.nix moduleArgs;
+  wenzels-i3 = import apps/wenzels-i3.nix { inherit pkgs; };
 
-  grant-access-to-input-devices = (import utils/grant-access-to-input-devices moduleArgs).pkg;
-  laptop-backlight              = (import utils/laptop-backlight              moduleArgs).pkg;
+  grant-access-to-input-devices = import utils/grant-access-to-input-devices { inherit pkgs; };
+  laptop-backlight              = import utils/laptop-backlight              { inherit pkgs; };
 
   my-packages = import ./my-packages.nix moduleArgs;
 

@@ -1,13 +1,6 @@
-args@{ ... }:
-let pkgs-k = "pkgs"; config-k = "config"; in
-assert let k = pkgs-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-let
-  pkgs = args.${pkgs-k} or (import <nixpkgs> (
-    let k = config-k; in
-    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
-  ));
-in
+{ pkgs ? import <nixpkgs> {} }:
 rec {
+  # TODO Pin using “niv”
   rc = pkgs.fetchFromGitHub {
     owner = "unclechu";
     repo = "i3rc";

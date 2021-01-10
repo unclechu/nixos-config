@@ -1,20 +1,15 @@
-args@{ ... }:
 let
-  config-k = "config"; pkgs-k = "pkgs"; utils-k = "utils";
-  inherit (import ./constants.nix) keyRepeat xkb wenzelUserName;
-in
-# FIXME asserts cause infinite recursion for some reason
-# assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-# assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-let
-  withConfigArgs =
-    let k = config-k; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
-
-  pkgs = args.${pkgs-k} or (import ./pkgs.nix withConfigArgs); # FIXME
+  constants = import ./constants.nix;
   sources = import nix/sources.nix;
-  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
+in
+{ pkgs           ? import <nixpkgs> {}
+, utils          ? import sources.nix-utils { inherit pkgs; }
+, wenzelUserName ? constants.wenzelUserName
+, config         # Needed by some modules (set to “null” to use in Nix REPL)
+, ...
+}:
+let
   inherit (utils) wrapExecutable;
-  moduleArgs = withConfigArgs // { inherit pkgs utils; };
 
   system-vim = rec {
     vim = pkgs.vim_configurable.customize {
@@ -37,36 +32,22 @@ let
 
   # *** apps ***
 
-  wenzels-bash       =  import apps/wenzels-bash.nix       moduleArgs;
-  wenzels-termite    =  import apps/wenzels-termite.nix    moduleArgs;
-  gpaste-gui         = (import apps/gpaste-gui.nix         moduleArgs).pkg;
+  wenzels-bash       = import apps/wenzels-bash.nix       { inherit pkgs config; };
+  wenzels-termite    = import apps/wenzels-termite.nix    { inherit pkgs; };
+  gpaste-gui         = import apps/gpaste-gui.nix         { inherit pkgs; };
+  xlib-keys-hack     = import sources.xlib-keys-hack      { inherit pkgs; };
+  place-cursor-at    = import sources.place-cursor-at     { inherit pkgs; };
+  gnome-screenshot   = import apps/gnome-screenshot.nix   { inherit pkgs; };
+  unclechu-i3-status = import apps/unclechu-i3-status.nix { inherit pkgs; };
 
-  xlib-keys-hack     =  import sources.xlib-keys-hack  { inherit pkgs; };
-  place-cursor-at    =  import sources.place-cursor-at { inherit pkgs; };
-  gnome-screenshot   = (import apps/gnome-screenshot.nix   moduleArgs).pkg;
-  unclechu-i3-status = (import apps/unclechu-i3-status.nix moduleArgs).pkg;
+  wenzels-neovim = import apps/wenzels-neovim.nix {
+    inherit pkgs;
+    bashEnvFile = "${wenzels-bash.dir}/.bash_aliases";
+  };
 
-  wenzels-neovim =
-    import apps/wenzels-neovim.nix (moduleArgs // {
-      bashEnvFile = "${wenzels-bash.dir}/.bash_aliases";
-    });
-
-  wenzels-xlib-keys-hack =
-    (import apps/wenzels-xlib-keys-hack (moduleArgs // { inherit xlib-keys-hack; })).pkg;
-
-  wenzels-keyboard = xlib-keys-hack-starter:
-    import scripts/wenzels-keyboard (moduleArgs // {
-      inherit keyRepeat xlib-keys-hack-starter;
-
-      # layout rotation is provided by "wenzels-xbindkeys"
-      # FIXME this doesn't help to reset it
-      xkb = xkb // { options = "eurosign:e"; };
-
-      xbindkeys = wenzels-xbindkeys;
-    });
-
-  wenzels-keyboard-script = (wenzels-keyboard wenzels-xlib-keys-hack).pkg;
-  wenzels-xbindkeys = (import apps/wenzels-xbindkeys.nix moduleArgs).wenzels-xbindkeys;
+  wenzels-xlib-keys-hack = import apps/wenzels-xlib-keys-hack { inherit pkgs; };
+  wenzels-keyboard-script = import scripts/wenzels-keyboard { inherit pkgs; };
+  wenzels-xbindkeys = import apps/wenzels-xbindkeys.nix { inherit pkgs; };
 
   firefox = wrapExecutable "${pkgs.firefox}/bin/firefox" {
     env = {
@@ -76,60 +57,34 @@ let
 
   # *** scripts ***
 
-  autolock = (import scripts/autolock.nix moduleArgs).pkg;
-  cursor-to-display = (import scripts/cursor-to-display.nix moduleArgs).pkg;
-  dzen-box = (import scripts/dzen-box moduleArgs).pkg;
-
-  hsc2hs-pipe = (import scripts/hsc2hs-pipe.nix (moduleArgs // {
-    inherit (pkgs.haskellPackages) ghc;
-    inherit (pkgs) gcc;
-  }));
-
-  screen-backlight =
-    (import scripts/screen-backlight.nix (moduleArgs // { inherit dzen-box; })).pkg;
-
-  locktop = (import scripts/locktop.nix (moduleArgs // {
-    inherit dzen-box;
-    wenzels-keyboard = wenzels-keyboard-script;
-  })).pkg;
-
-  pamng = (import scripts/pamng.nix (moduleArgs // { inherit dzen-box; })).pkg;
-  pa-add-mono-sink = (import scripts/pa-add-mono-sink.nix moduleArgs).pkg;
-
-  autostart-setup = (import scripts/autostart-setup.nix (moduleArgs // {
-    inherit input-setup autolock;
-    picom = picom.run-picom;
-  })).pkg;
-
-  input-setup = (import scripts/input-setup.nix (moduleArgs // {
-    wenzels-keyboard = wenzels-keyboard-script;
-
-    inherit
-      pointer-dell-latitude-laptop-dot
-      pointer-dell-latitude-laptop-touchpad
-      pointer-logitech-wireless-ambidextrous-small-mouse
-      pointer-logitech-wireless-t650-touchpad
-      pointer-razor-wired-ambidextrous-mouse;
-  })).pkg;
-
-  picom = import scripts/picom.nix moduleArgs;
-  timer = (import scripts/timer.nix moduleArgs);
-  genpass = (import scripts/genpass.nix moduleArgs).pkg;
+  autolock = import scripts/autolock.nix { inherit pkgs; };
+  cursor-to-display = import scripts/cursor-to-display.nix { inherit pkgs; };
+  dzen-box = import scripts/dzen-box { inherit pkgs; };
+  hsc2hs-pipe = import scripts/hsc2hs-pipe.nix { inherit pkgs config; };
+  screen-backlight = import scripts/screen-backlight.nix { inherit pkgs; };
+  locktop = import scripts/locktop.nix { inherit pkgs; };
+  pamng = import scripts/pamng.nix { inherit pkgs; };
+  pa-add-mono-sink = import scripts/pa-add-mono-sink.nix { inherit pkgs; };
+  autostart-setup = import scripts/autostart-setup.nix { inherit pkgs config; };
+  input-setup = import scripts/input-setup.nix { inherit pkgs; };
+  picom = import scripts/picom.nix { inherit pkgs; };
+  timer = import scripts/timer.nix { inherit pkgs config; };
+  genpass = import scripts/genpass.nix { inherit pkgs; };
 
   pointer-dell-latitude-laptop-dot =
-    (import scripts/pointer-dell-latitude-laptop-dot moduleArgs).pkg;
+    import scripts/pointer-dell-latitude-laptop-dot { inherit pkgs; };
 
   pointer-dell-latitude-laptop-touchpad =
-    (import scripts/pointer-dell-latitude-laptop-touchpad moduleArgs).pkg;
+    import scripts/pointer-dell-latitude-laptop-touchpad { inherit pkgs; };
 
   pointer-logitech-wireless-ambidextrous-small-mouse =
-    (import scripts/pointer-logitech-wireless-ambidextrous-small-mouse moduleArgs).pkg;
+    import scripts/pointer-logitech-wireless-ambidextrous-small-mouse { inherit pkgs; };
 
   pointer-logitech-wireless-t650-touchpad =
-    (import scripts/pointer-logitech-wireless-t650-touchpad moduleArgs).pkg;
+    import scripts/pointer-logitech-wireless-t650-touchpad { inherit pkgs; };
 
   pointer-razor-wired-ambidextrous-mouse =
-    (import scripts/pointer-razor-wired-ambidextrous-mouse moduleArgs).pkg;
+    import scripts/pointer-razor-wired-ambidextrous-mouse { inherit pkgs; };
 in
 {
   my-apps = {

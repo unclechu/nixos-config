@@ -1,20 +1,10 @@
-args@{ ... }:
-let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
-assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
+{ pkgs  ? import <nixpkgs> {}
+, utils ? import (import ../../nix/sources.nix).nix-utils { inherit pkgs; }
+}:
 let
-  pkgs = args.${pkgs-k} or (import <nixpkgs> (
-    let k = config-k; in
-    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
-  ));
-
-  sources = import ../../nix/sources.nix;
-  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
   inherit (utils) esc writeCheckedExecutable nameOfModuleWrapDir;
-
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile ./main.raku;
-
   raku = "${pkgs.rakudo}/bin/raku";
   xinput = "${pkgs.xlibs.xinput}/bin/xinput";
 
@@ -22,15 +12,11 @@ let
     ${utils.shellCheckers.fileIsExecutable raku}
     ${utils.shellCheckers.fileIsExecutable xinput}
   '';
-
-  pkg = writeCheckedExecutable name checkPhase ''
-    #! ${raku}
-    use v6.d;
-    close $*IN;
-    my \xinput := q<${xinput}>;
-    ${src}
-  '';
 in
-{
-  inherit name pkg checkPhase;
-}
+writeCheckedExecutable name checkPhase ''
+  #! ${raku}
+  use v6.d;
+  close $*IN;
+  my \xinput := q<${xinput}>;
+  ${src}
+''

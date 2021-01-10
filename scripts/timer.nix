@@ -1,12 +1,7 @@
-args@{ ... }:
-let pkgs-k = "pkgs"; config-k = "config"; in
-assert let k = pkgs-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-let
-  pkgs = args.${pkgs-k} or (import <nixpkgs> (
-    let k = config-k; in
-    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
-  ));
+{ pkgs         ? import <nixpkgs> {}
+, wenzels-bash ? import ../apps/wenzels-bash.nix { inherit pkgs config; }
 
-  wenzels-bash = import ../apps/wenzels-bash.nix args;
-in
+, config # Needed for “wenzels-bash” (set to “null” to use in Nix REPL)
+}:
+assert builtins.isPath wenzels-bash.bashRC || pkgs.lib.isDerivation wenzels-bash.bashRC;
 import "${wenzels-bash.bashRC}/nix/scripts/timer.nix" { inherit pkgs; }

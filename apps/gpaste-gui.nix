@@ -1,17 +1,11 @@
-args@{ ... }:
-let pkgs-k = "pkgs"; utils-k = "utils"; config-k = "config"; in
-assert let k = pkgs-k;  in builtins.hasAttr k args -> builtins.isAttrs args.${k};
-assert let k = utils-k; in builtins.hasAttr k args -> builtins.isAttrs args.${k};
+# TODO Move this Nix config to “gpaste-gui” repo
+{ pkgs  ? import <nixpkgs> {}
+, utils ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+}:
 let
-  pkgs = args.${pkgs-k} or (import <nixpkgs> (
-    let k = config-k; in
-    if builtins.hasAttr k args then { ${k} = args.${k}.nixpkgs.${k}; } else {}
-  ));
-
-  sources = import ../nix/sources.nix;
-  utils = args.${utils-k} or (import sources.nix-utils { inherit pkgs; });
   inherit (utils) esc writeCheckedExecutable wrapExecutable nameOfModuleFile;
 
+  # TODO Pin using “niv”
   src = pkgs.fetchFromGitHub {
     owner = "unclechu";
     repo = "gpaste-gui";
@@ -48,13 +42,9 @@ let
     $ENV{PATH} = q<${pkgs.gnome3.gpaste}/bin:>.$ENV{PATH};
     ${srcFile}
   '';
-
-  pkg = wrapExecutable "${perlScript}/bin/${name}" {
-    env = { PERL5LIB = pkgs.perlPackages.makePerlPath perlDependencies; };
-    inherit checkPhase;
-  };
 in
 assert utils.valueCheckers.isNonEmptyString srcFile;
-{
-  inherit name src srcFile perlDependencies perlScript pkg;
+wrapExecutable "${perlScript}/bin/${name}" {
+  env = { PERL5LIB = pkgs.perlPackages.makePerlPath perlDependencies; };
+  inherit checkPhase;
 }
