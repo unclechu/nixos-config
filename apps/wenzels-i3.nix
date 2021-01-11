@@ -1,13 +1,6 @@
 { pkgs ? import <nixpkgs> {} }:
 rec {
-  # TODO Pin using “niv”
-  rc = pkgs.fetchFromGitHub {
-    owner = "unclechu";
-    repo = "i3rc";
-    rev = "aacfdc9d0f7875faf37ccb3aeaa99cfafd10189e"; # ref "master", 15 November 2020
-    sha256 = "073wc37d7rx44z0jyiwn1dsynafj70rgc6izhbf44a6arf354w4p";
-  };
-
+  rc = (import ../nix/sources.nix).i3rc;
   configFileSrc = builtins.readFile "${rc}/config";
 
   configFile =

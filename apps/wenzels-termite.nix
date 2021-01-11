@@ -1,21 +1,14 @@
+let sources = import ../nix/sources.nix; in
 { pkgs  ? import <nixpkgs> {}
-, utils ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+, utils ? import sources.nix-utils { inherit pkgs; }
 }:
 let
   inherit (utils) esc wrapExecutable;
-
-  # TODO Pin using “niv”
-  rc = pkgs.fetchFromGitHub {
-    owner = "unclechu";
-    repo = "termiterc";
-    rev = "d127c04277308468828dec17d20f195521dd33ab"; # ref "master", 21 March 2017
-    sha256 = "1l71fcjf3dqx0494a3awd63qz9dmim0dzd8f2p91xhhcv4kssm78";
-  };
-
+  inherit (sources) termiterc;
   dash = "${pkgs.dash}/bin/dash";
   termiteBin = "${pkgs.termite}/bin/termite";
-  darkConfig = "${rc}/config";
-  lightConfig = "${rc}/config-light";
+  darkConfig = "${termiterc}/config";
+  lightConfig = "${termiterc}/config-light";
 
   checkPhase = ''
     ${utils.shellCheckers.fileIsExecutable dash}

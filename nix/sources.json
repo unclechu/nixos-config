@@ -1,4 +1,28 @@
 {
+    "bashrc": {
+        "branch": "master",
+        "description": "bash configs",
+        "homepage": null,
+        "owner": "unclechu",
+        "repo": "bashrc",
+        "rev": "4479fea368d371ffa97ed74f530e006224a0cd2d",
+        "sha256": "0zcbz1ypdqyv80z0jqgr4yr99nkqicb255pl6wwf7lc8sm48gszi",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/bashrc/archive/4479fea368d371ffa97ed74f530e006224a0cd2d.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "gpaste-gui": {
+        "branch": "master",
+        "description": "Simple and handy GUI for managing clipboard history of GPaste daemon",
+        "homepage": null,
+        "owner": "unclechu",
+        "repo": "gpaste-gui",
+        "rev": "b7a9d702a06ed7448e98661b7fa162922c29e17f",
+        "sha256": "0926ffw7lhvd2ihzwjis9nd9by6dwxkz85vsl2d7vxdq349al8q7",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/gpaste-gui/archive/b7a9d702a06ed7448e98661b7fa162922c29e17f.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "home-manager": {
         "branch": "release-20.09",
         "description": "Manage a user environment using Nix  [maintainer=@rycee] ",
@@ -9,6 +33,30 @@
         "sha256": "1j4hyjd3kgvwym5jjazzyn554ngrm05ca9wl1a7z1bid22asr99p",
         "type": "tarball",
         "url": "https://github.com/nix-community/home-manager/archive/22f6736e628958f05222ddaadd7df7818fe8f59d.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "i3rc": {
+        "branch": "master",
+        "description": "my i3 window manager configs",
+        "homepage": null,
+        "owner": "unclechu",
+        "repo": "i3rc",
+        "rev": "aacfdc9d0f7875faf37ccb3aeaa99cfafd10189e",
+        "sha256": "073wc37d7rx44z0jyiwn1dsynafj70rgc6izhbf44a6arf354w4p",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/i3rc/archive/aacfdc9d0f7875faf37ccb3aeaa99cfafd10189e.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "neovimrc": {
+        "branch": "master",
+        "description": "My NeoVim configs",
+        "homepage": null,
+        "owner": "unclechu",
+        "repo": "neovimrc",
+        "rev": "db4cb18cd423a830c6804947ccb2be0a23d549bc",
+        "sha256": "13yql3ji91hginr4bzdymkz0n0h1b5bzhylphjz7rzhfq36kp00v",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/neovimrc/archive/db4cb18cd423a830c6804947ccb2be0a23d549bc.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
@@ -45,6 +93,30 @@
         "sha256": "03624ddp87c3yql0s615hrnlvgafygx9msx270z90ayanj5sn88g",
         "type": "tarball",
         "url": "https://github.com/unclechu/place-cursor-at/archive/16bac15dcb045c3e066fe8e7a0582cf2e183e676.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "termiterc": {
+        "branch": "master",
+        "description": "My Termite terminal emulator config",
+        "homepage": null,
+        "owner": "unclechu",
+        "repo": "termiterc",
+        "rev": "d127c04277308468828dec17d20f195521dd33ab",
+        "sha256": "1l71fcjf3dqx0494a3awd63qz9dmim0dzd8f2p91xhhcv4kssm78",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/termiterc/archive/d127c04277308468828dec17d20f195521dd33ab.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "unclechu-i3-status": {
+        "branch": "master",
+        "description": "my own i3 status-bar generator",
+        "homepage": null,
+        "owner": "unclechu",
+        "repo": "unclechu-i3-status",
+        "rev": "fe8744725175f5304f9dd70f7aeb91cda1f99a3a",
+        "sha256": "1qssfqc7sxm12j0m08nbgknxzxs3q68wdyljqjlwyb4bfhpqrcqm",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/unclechu-i3-status/archive/fe8744725175f5304f9dd70f7aeb91cda1f99a3a.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "xlib-keys-hack": {

@@ -1,5 +1,6 @@
+let sources = import ../nix/sources.nix; in
 { pkgs   ? import <nixpkgs> {}
-, utils  ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+, utils  ? import sources.nix-utils { inherit pkgs; }
 
 , # System config (e.g. self-reference) to extract machine host name.
   # Set to “null” to use in Nix REPL.
@@ -7,14 +8,7 @@
 }:
 let
   inherit (utils) esc;
-
-  # TODO Pin using “niv”
-  bashRC = pkgs.fetchFromGitHub {
-    owner = "unclechu";
-    repo = "bashrc";
-    rev = "4479fea368d371ffa97ed74f530e006224a0cd2d"; # ref "master", 3 November 2020
-    sha256 = "0zcbz1ypdqyv80z0jqgr4yr99nkqicb255pl6wwf7lc8sm48gszi";
-  };
+  inherit (sources) bashrc;
 
   wenzel-nixos-pc        = import ../hardware/wenzel-nixos-pc.nix        { inherit pkgs; };
   rw-wenzel-nixos-laptop = import ../hardware/rw-wenzel-nixos-laptop.nix { inherit pkgs; };
@@ -40,7 +34,7 @@ let
     ''
     else "";
 in
-import bashRC {
+import bashrc {
   inherit pkgs miscSetups miscAliases;
 } // {
   inherit miscSetups miscAliases hostName;

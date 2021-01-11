@@ -1,21 +1,12 @@
 # TODO Move this Nix config to “gpaste-gui” repo
+let sources = import ../nix/sources.nix; in
 { pkgs  ? import <nixpkgs> {}
-, utils ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+, utils ? import sources.nix-utils { inherit pkgs; }
 }:
 let
   inherit (utils) esc writeCheckedExecutable wrapExecutable nameOfModuleFile;
-
-  # TODO Pin using “niv”
-  src = pkgs.fetchFromGitHub {
-    owner = "unclechu";
-    repo = "gpaste-gui";
-    rev = "b7a9d702a06ed7448e98661b7fa162922c29e17f"; # ref "master", 28 April 2019
-    sha256 = "0926ffw7lhvd2ihzwjis9nd9by6dwxkz85vsl2d7vxdq349al8q7";
-  };
-
-  srcFile = builtins.readFile "${src}/${name}.pl";
+  srcFile = builtins.readFile "${sources.gpaste-gui}/${name}.pl";
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-
   dash = "${pkgs.dash}/bin/dash";
   perl = "${pkgs.perl}/bin/perl";
   gpaste-client = "${pkgs.gnome3.gpaste}/bin/gpaste-client";

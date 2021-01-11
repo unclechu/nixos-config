@@ -2,7 +2,10 @@
 , utils      ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
 , wenzels-i3 ? import ../apps/wenzels-i3.nix { inherit pkgs; }
 }:
-assert builtins.isPath wenzels-i3.rc || pkgs.lib.isDerivation wenzels-i3.rc;
+assert
+  builtins.isPath wenzels-i3.rc ||
+  pkgs.lib.isDerivation wenzels-i3.rc ||
+  builtins.isString wenzels-i3.rc.outPath;
 let
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
   src = builtins.readFile "${wenzels-i3.rc}/apps/${name}.pl";

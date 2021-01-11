@@ -4,7 +4,10 @@
 , wenzels-i3 ? import ../apps/wenzels-i3.nix { inherit pkgs; }
 }:
 assert pkgs.lib.isDerivation dzen-box;
-assert builtins.isPath wenzels-i3.rc || pkgs.lib.isDerivation wenzels-i3.rc;
+assert
+  builtins.isPath wenzels-i3.rc ||
+  pkgs.lib.isDerivation wenzels-i3.rc ||
+  builtins.isString wenzels-i3.rc.outPath;
 let
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
