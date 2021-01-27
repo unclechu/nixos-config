@@ -53,10 +53,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "db4cb18cd423a830c6804947ccb2be0a23d549bc",
-        "sha256": "13yql3ji91hginr4bzdymkz0n0h1b5bzhylphjz7rzhfq36kp00v",
+        "rev": "c2fe3d0474ca76e892516623c1485c37d7e1f3ff",
+        "sha256": "14fx86yrndmb8n8yy7zpzmwk5ac4iqw76yyv5ylavdv3b972jx87",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/db4cb18cd423a830c6804947ccb2be0a23d549bc.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/c2fe3d0474ca76e892516623c1485c37d7e1f3ff.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
