@@ -1,17 +1,19 @@
+let sources = import ../nix/sources.nix; in
 { pkgs       ? import <nixpkgs> {}
-, utils      ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+, utils      ? import sources.nix-utils { inherit pkgs; }
 , dzen-box   ? import ./dzen-box { inherit pkgs; }
-, wenzels-i3 ? import ../apps/wenzels-i3.nix { inherit pkgs; }
+, wenzels-i3 ? sources.i3rc
 }:
 assert pkgs.lib.isDerivation dzen-box;
 assert
-  builtins.isPath wenzels-i3.rc ||
-  pkgs.lib.isDerivation wenzels-i3.rc ||
-  builtins.isString wenzels-i3.rc.outPath;
+  builtins.isPath wenzels-i3 ||
+  pkgs.lib.isDerivation wenzels-i3 ||
+  builtins.isString wenzels-i3 ||
+  builtins.isString wenzels-i3.outPath;
 let
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  src = builtins.readFile "${wenzels-i3.rc}/apps/${name}.sh";
+  src = builtins.readFile "${wenzels-i3}/apps/${name}.sh";
   bash = "${pkgs.bash}/bin/bash";
   dzen-box-exe = "${dzen-box}/bin/dzen-box";
   pactl = "${pkgs.pulseaudio}/bin/pactl";
