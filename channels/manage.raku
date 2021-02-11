@@ -1,7 +1,7 @@
 #! /usr/bin/env nix-shell
 #! nix-shell --pure -i raku -E
-#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];c=\"4a75ca4a4e7d14e7b0b0230b3ea57b5bd7c16218\";h=\"1jqhmwyslwcj6l4lmdiklb1byaz0gcl4q0mym3ahzmmr6l0j4dr1\";s=fetchTarball{url=\"https://github.com/NixOS/nixpkgs/archive/${c}.tar.gz\";sha256=h;};p=import s {};in p.mkShell{buildInputs=d;}"
-#↑ The pin from above is taken from branch nixos-20.09
+#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];h=\"0dkf52xqkhl5532py412gi8xq2h5vpxyg2pi3yihwiai3xwz935z\";s=fetchTarball{url=\"https://releases.nixos.org/nixos/20.09/nixos-20.09.2718.e4adbfbab8a/nixexprs.tar.xz\";sha256=h;};p=import s {};in p.mkShell{buildInputs=d;}"
+#↑ The ‘nixpkgs’ pin from above should be synchronized with ‘channels/nixos’
 use v6.d;
 $*PROGRAM.dirname.&*chdir;
 constant \sudo = '/run/wrappers/bin/sudo'; # Make it work with “--pure”

@@ -1,2 +1,5 @@
 hardware-configuration.nix
 machine-specific.nix
+secret.nix
+*.secret.nix
+*.secret

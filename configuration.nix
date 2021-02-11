@@ -44,7 +44,13 @@ in
     ./boot.nix
     ./network.nix
     ./machine-specific.nix
-  ];
+  ] ++ (
+    let path = ./secret.nix; in
+    if builtins.pathExists path then [path] else []
+  ) ++ (
+    let path = ./machine-specific.secret.nix; in
+    if builtins.pathExists path then [path] else []
+  );
 
   system = {
     stateVersion = "20.09";
@@ -116,23 +122,6 @@ in
   # started in user sessions.
   # programs.mtr.enable = true;
   programs = {
-    gnupg.agent = {
-      enable = true;
-      enableSSHSupport = true;
-      pinentryFlavor = "gnome3";
-    };
-
-    ssh.knownHosts = {
-      "wenzel-nixos-pc.local" = {
-        publicKey =
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOmL8yMVM5zEkU3v3BEBdGRKeTUE23SLM0cQpmZ7KsWy";
-      };
-      "rw-wenzel-nixos-laptop.local" = {
-        publicKey =
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINuEudWImNcFDrEfvfUipPBBcpVHj0YsWiqh0qLURPIo";
-      };
-    };
-
     seahorse.enable = true;
     dconf.enable = true;
     gpaste.enable = true;
@@ -174,43 +163,6 @@ in
   };
 
   services = {
-    openssh = {
-      enable = true;
-      permitRootLogin = "no";
-      passwordAuthentication = false;
-      startWhenNeeded = false;
-      forwardX11 = true;
-    };
-
-    # discover local machines
-    avahi = {
-      enable = true;
-      ipv4 = true;
-      ipv6 = true;
-      nssmdns = true;
-
-      publish = {
-        enable = true;
-        userServices = true;
-        domain = true;
-      };
-    };
-
-    udev = {
-      extraRules = ''
-        # Teensy rules for the Ergodox EZ Original / Shine / Glow
-        ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789B]?", ENV{ID_MM_DEVICE_IGNORE}="1"
-        ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789A]?", ENV{MTP_NO_PROBE}="1"
-        SUBSYSTEMS=="usb", ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789ABCD]?", MODE:="0666"
-        KERNEL=="ttyACM*", ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789B]?", MODE:="0666"
-
-        # STM32 rules for the Planck EZ Standard / Glow
-        SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="df11", \
-            MODE:="0666", \
-            SYMLINK+="stm32_dfu"
-      '';
-    };
-
     printing.enable = false; # CUPS to print documents (have no printer yet)
 
     # X11
@@ -236,9 +188,7 @@ in
       libinput.enable = true; # touchpad
     };
 
-    gnome3.gnome-keyring.enable = true;
     upower.enable = true;
-    fwupd.enable = true;
 
     # see also https://nixos.wiki/wiki/JACK
     # jack = {
@@ -246,15 +196,6 @@ in
     #   # alsa.enable = true; # support ALSA-only programs via ALSA JACK PCM plugin
     #   # loopback.enable = true; # support ALSA-only programms via loopback device (e.g. Steam)
     # };
-  };
-
-  virtualisation = {
-    docker.enable = true;
-
-    virtualbox.host = {
-      enable = true;
-      headless = false;
-    };
   };
 
   fonts = {
@@ -289,7 +230,7 @@ in
   };
 
   users = {
-    users."${wenzelUserName}" = {
+    users.${wenzelUserName} = {
       uid = 1989;
       isNormalUser = true;
       group = wenzelUserName;
@@ -305,13 +246,6 @@ in
         "vboxusers"
         jackaudioGroupName
         audioGroupName
-      ];
-
-      openssh.authorizedKeys.keys = [
-        # wenzel-nixos-pc
-        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDL2A7YiBrYwyxx9HTa8YVGeS8et1ae1K7VuwYtqL+pV41GeQdpug7crGbM9U2NQ4zXBxpcV0Wu/Fxa4KcecBuw2PTv8bJO6+38U39iOWtJ6ArxC0dkAPTssVpWw1Bvc61WUvLsP8PtgauZjO18HAOJD62yPmqOgf/IIY9TCAv2QuQD+nSaPVn3TSVUDhBCFM/ZC7I/D0pdgWTkSUKEoNgXF47sVYs14BN8ey87UQd9OK02gbcGUMXaLXGQfa5BezHHiwpyVCnkujpaKkiNOvcmb5bVyhT8bnds2zmEOu6wmFEyiK0Cozb6b7vpnjtKV+U4M+IJzSkV9RjeoJaEN79e0SC1YHusKE5EZlcgvVt5+sR9G1mXlXaqL/g3rMuDy4gECDa0PGSFj6tiYqlk22Pdcx8dzK1yMzroeCD0++umChyRm6xM8sb7vRm+j3ZnRdeSq77VX66q0oJaVeCCXF4BGf+RJgf0SApKfg9Xts0EekZylYyerXw1i4R8eV9WIr4oA7vCTg/QuAa7U0lezDBNjf+cb9eZu4kgyi/Cft06T17DS3t7Nqe2cgsGqfJpnSPTTV6HduLmQAhfcDGbJ5QuzMswUbgCh4ZbMDinBPXRwoCyfQa+L21gcFYd9QkTt6KEuciAd9L8AzyzhhJCid85Ku7DNcRCz7epFwYdkKT+Iw== (none)"
-        # rw-wenzel-nixos-laptop
-        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/7GGxP+9Y0oiCPFuFWVgYfQV26K4yLbVOWXaVjhl8ydZykgGZ1BHt/IHeq7FpJimwFbCj1JiFi/iAW4oY5yQs5YKR/rJ5zlyUeOfVFZHV1mONN8hyDOyftO/KGGWWPdEB6bLlMyeP2bNjrSulvljp/zHix1be00dfoKA+D9i0haYQX4kJT1H3j9Ouf4Ea5kQmxLlksQIwEOTIsyi/UWU2U9NmBBi88oQwluIAZjOPUeijq3jnGti0yWPHnXqoD0ssfcBt+z8kdB1eYqUYxn80dDgid0Pllp6EWBBZr1mhzUkkKeVWGt0cHnItt9YxiDqHVpD0RzXbLDWTgDNwHjJX (none)"
       ];
     };
 
