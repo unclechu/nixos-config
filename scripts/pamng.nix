@@ -1,64 +1,51 @@
 let sources = import ../nix/sources.nix; in
-{ pkgs       ? import <nixpkgs> {}
-, utils      ? import sources.nix-utils { inherit pkgs; }
-, dzen-box   ? import ./dzen-box { inherit pkgs; }
-, wenzels-i3 ? sources.i3rc
+{ pkgs     ? import <nixpkgs> {}
+, utils    ? import sources.nix-utils { inherit pkgs; }
+, dzen-box ? import ./dzen-box { inherit pkgs; }
+, pamng    ? import "${sources.i3rc}/nix/apps/pamng.nix" { inherit pkgs; }
 }:
 assert pkgs.lib.isDerivation dzen-box;
-assert
-  builtins.isPath wenzels-i3 ||
-  pkgs.lib.isDerivation wenzels-i3 ||
-  builtins.isString wenzels-i3 ||
-  builtins.isString wenzels-i3.outPath;
+assert pkgs.lib.isDerivation pamng;
 let
   inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  src = builtins.readFile "${wenzels-i3}/apps/${name}.sh";
   bash = "${pkgs.bash}/bin/bash";
-  dzen-box-exe = "${dzen-box}/bin/dzen-box";
-  pactl = "${pkgs.pulseaudio}/bin/pactl";
   pacmd = "${pkgs.pulseaudio}/bin/pacmd";
-  awk = "${pkgs.gawk}/bin/awk";
-  xargs = "${pkgs.findutils}/bin/xargs";
+  dzen-box-exe = "${dzen-box}/bin/dzen-box";
+  pamng-exe = "${pamng}/bin/pamng";
+  grep = "${pkgs.gnugrep}/bin/grep";
 
   checkPhase = ''
     ${utils.shellCheckers.fileIsExecutable bash}
-    ${utils.shellCheckers.fileIsExecutable dzen-box-exe}
-    ${utils.shellCheckers.fileIsExecutable pactl}
     ${utils.shellCheckers.fileIsExecutable pacmd}
-    ${utils.shellCheckers.fileIsExecutable awk}
-    ${utils.shellCheckers.fileIsExecutable xargs}
+    ${utils.shellCheckers.fileIsExecutable dzen-box-exe}
+    ${utils.shellCheckers.fileIsExecutable pamng-exe}
+    ${utils.shellCheckers.fileIsExecutable grep}
   '';
 in
 writeCheckedExecutable name checkPhase ''
   #! ${bash}
-  set -e
+  set -eu
   exec <&-
 
-  PATH=${esc pkgs.pulseaudio}/bin:$PATH
-  PATH=${esc pkgs.gawk}/bin:$PATH
-  PATH=${esc pkgs.findutils}/bin:$PATH
+  ${builtins.readFile pamng-exe}
 
-  # guard dependencies
-  >/dev/null which pactl
-  >/dev/null which awk
-  >/dev/null which xargs
-
-  ${src}
-
-  sinks=`${esc pacmd} list-sinks`
+  sinks=$(${esc pacmd} list-sinks)
   re_in_between='([
-  ]\s{1,}[^*
-  ]+)+'
-  re="^.*\sname: <$SINK>''${re_in_between}\s{2,}volume: ([^
-  ]+)''${re_in_between}\s{2,}muted: (yes|no)
-  .*$"
+  ]	\s*[^
+  ]+)+[
+  ]	\s*'
+  re="^.*[
+  ]  \* index: [0-9]+[
+  ].*\s+name: <$SINK>''${re_in_between}volume: ([^
+  ]+)''${re_in_between}muted: (yes|no)[
+  ].*$"
   if [[ $sinks =~ $re ]]; then
     re='^.* ([0-9]+)% .* ([0-9]+)% .*$'
     if [[ ''${BASH_REMATCH[4]} == yes ]]; then
       ${esc dzen-box-exe} MUTE lightblue
     elif [[ ''${BASH_REMATCH[2]} =~ $re ]]; then
-      ${esc dzen-box-exe} $(( (''${BASH_REMATCH[1]} + ''${BASH_REMATCH[2]}) / 2 ))% lightblue
+      ${esc dzen-box-exe} $(( (BASH_REMATCH[1] + BASH_REMATCH[2]) / 2 ))% lightblue
     fi
   fi
 ''

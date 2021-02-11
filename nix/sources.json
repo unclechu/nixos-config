@@ -41,10 +41,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "i3rc",
-        "rev": "f3cb77bd2f01556160c78061c94a4099edd19b0b",
-        "sha256": "0c389xdzq574kjixflfczxmn9x62f3nipmg4p62rypjznwsrr306",
+        "rev": "882185746b3837f8f96462fd9c6223de61b268cd",
+        "sha256": "11fi4badlc9r5rdg2vi2r58kwp4zsi53zc6zblhan718y8ghs3m7",
         "type": "tarball",
-        "url": "https://github.com/unclechu/i3rc/archive/f3cb77bd2f01556160c78061c94a4099edd19b0b.tar.gz",
+        "url": "https://github.com/unclechu/i3rc/archive/882185746b3837f8f96462fd9c6223de61b268cd.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovimrc": {

@@ -58,7 +58,7 @@ let
   # *** scripts ***
 
   autolock = import scripts/autolock.nix { inherit pkgs; };
-  cursor-to-display = import scripts/cursor-to-display.nix { inherit pkgs; };
+  cursor-to-display = import "${sources.i3rc}/nix/apps/cursor-to-display.nix" { inherit pkgs; };
   dzen-box = import scripts/dzen-box { inherit pkgs; };
   hsc2hs-pipe = import scripts/hsc2hs-pipe.nix { inherit pkgs config; };
   screen-backlight = import scripts/screen-backlight.nix { inherit pkgs; };
