@@ -1,4 +1,4 @@
-args@{ config, pkgs, options, ... }:
+{ config, pkgs, options, ... }:
 let
   inherit (import ./constants.nix)
     wenzelUserName xkb keyRepeat
@@ -7,13 +7,6 @@ let
   sources = import nix/sources.nix;
   utils = import sources.nix-utils { inherit pkgs; };
   inherit (utils) esc;
-
-  moduleArgs =
-    let
-      withConfigArgs =
-        let k = "config"; in if builtins.hasAttr k args then { ${k} = args.${k}; } else {};
-    in
-      withConfigArgs // { inherit pkgs utils; };
 
   i3-config = let apps = my-packages.my-apps; in import sources.i3rc rec {
     inherit pkgs;
@@ -32,8 +25,7 @@ let
   grant-access-to-input-devices = import utils/grant-access-to-input-devices { inherit pkgs; };
   laptop-backlight              = import utils/laptop-backlight              { inherit pkgs; };
 
-  my-packages = import ./my-packages.nix moduleArgs;
-
+  my-packages = import ./my-packages.nix { inherit pkgs utils config; };
   inherit (my-packages.my-apps) wenzels-bash;
 in
 {
