@@ -1,3 +1,5 @@
+#! /usr/bin/env bash
+
 _LOGFILE=$HOME/.xlib-keys-hack-fails
 
 exec 1>>"$_LOGFILE" 2>&1
@@ -8,6 +10,7 @@ grant-access-to-input-devices
 # Feature turning on/off flags (arguments list for “xlib-keys-hack”)
 FLAGS=(
 	--disable-reset-by-window-focus-event
+	--default-keyboard-layout=3 # Finnish layout by default
 )
 
 # Turning on IPC stuff
