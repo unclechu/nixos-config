@@ -21,7 +21,7 @@
     #       /nix/store/nbmlij2phd1fk639qbv0ls6wkgpzshl9-nixos/nixos/pkgs/os-specific/linux/virtualbox/default.nix:20
     #       is marked as broken, refusing to evaluate.
     # kernelPackages = pkgs.linuxPackages_latest;
-    kernelPackages = pkgs.linuxPackages_5_8;
+    kernelPackages = pkgs.linuxPackages_5_4;
   };
 
   fileSystems = {
