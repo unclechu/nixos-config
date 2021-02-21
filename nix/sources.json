@@ -53,10 +53,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "809b63a3899dbe516cd68ebb2508abe52da91e16",
-        "sha256": "1brsrp42qcc79bsdyvgignjjrh5pxds9f3fyj2kfg9sahjc3wpp4",
+        "rev": "50daa33b689d605622245c7a72bded6c9162f118",
+        "sha256": "1x9byfghf2lc1yljlpki6sbykbwq5q52fwk3pzv9imglfcpjbif1",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/809b63a3899dbe516cd68ebb2508abe52da91e16.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/50daa33b689d605622245c7a72bded6c9162f118.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
@@ -89,10 +89,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "place-cursor-at",
-        "rev": "16bac15dcb045c3e066fe8e7a0582cf2e183e676",
-        "sha256": "03624ddp87c3yql0s615hrnlvgafygx9msx270z90ayanj5sn88g",
+        "rev": "0aa933746a6d2dcd0e91369dff3b919773a888ac",
+        "sha256": "1jqgv8zwhc24cy5f06y1l1vpnrbh9qmkpznsh3ymlwfh8dlawv40",
         "type": "tarball",
-        "url": "https://github.com/unclechu/place-cursor-at/archive/16bac15dcb045c3e066fe8e7a0582cf2e183e676.tar.gz",
+        "url": "https://github.com/unclechu/place-cursor-at/archive/0aa933746a6d2dcd0e91369dff3b919773a888ac.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "termiterc": {
@@ -113,10 +113,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "unclechu-i3-status",
-        "rev": "fe8744725175f5304f9dd70f7aeb91cda1f99a3a",
-        "sha256": "1qssfqc7sxm12j0m08nbgknxzxs3q68wdyljqjlwyb4bfhpqrcqm",
+        "rev": "61d423dfb76854bec3ff8f2057a110761f27bb75",
+        "sha256": "1sarzi0fbv20gdr9351d2kr8vl3lqw2gd5v1i3mlzagbaxf4vrc3",
         "type": "tarball",
-        "url": "https://github.com/unclechu/unclechu-i3-status/archive/fe8744725175f5304f9dd70f7aeb91cda1f99a3a.tar.gz",
+        "url": "https://github.com/unclechu/unclechu-i3-status/archive/61d423dfb76854bec3ff8f2057a110761f27bb75.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "xlib-keys-hack": {
@@ -125,10 +125,10 @@
         "homepage": "",
         "owner": "unclechu",
         "repo": "xlib-keys-hack",
-        "rev": "4e1ae5b7de3cd1282e0262bdcf89ba5f86a69a57",
-        "sha256": "1dkggq1s87ym4nf5w3k6w03ah6ny1adsa3nwk0lm6kwzxgiqil7n",
+        "rev": "7d23b611168a6d6e3f78bcd241121831262a1fe1",
+        "sha256": "0pyvy94l4w52gann5s3v8l2bgr82d7hj4lghf58ipr68z8k167xn",
         "type": "tarball",
-        "url": "https://github.com/unclechu/xlib-keys-hack/archive/4e1ae5b7de3cd1282e0262bdcf89ba5f86a69a57.tar.gz",
+        "url": "https://github.com/unclechu/xlib-keys-hack/archive/7d23b611168a6d6e3f78bcd241121831262a1fe1.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
