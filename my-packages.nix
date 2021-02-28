@@ -59,6 +59,10 @@ let
 
   autolock = import scripts/autolock.nix { inherit pkgs; };
   cursor-to-display = import "${sources.i3rc}/nix/apps/cursor-to-display.nix" { inherit pkgs; };
+
+  invert-window-colors =
+    import "${sources.i3rc}/nix/apps/invert-window-colors-nim.nix" { inherit pkgs; };
+
   dzen-box = import scripts/dzen-box { inherit pkgs; };
   hsc2hs-pipe = import scripts/hsc2hs-pipe.nix { inherit pkgs config; };
   screen-backlight = import scripts/screen-backlight.nix { inherit pkgs; };
@@ -90,7 +94,7 @@ in
   my-apps = {
     inherit
       autostart-setup input-setup
-      cursor-to-display gpaste-gui pamng screen-backlight
+      cursor-to-display invert-window-colors gpaste-gui pamng screen-backlight
       wenzels-bash;
   };
 
@@ -247,7 +251,7 @@ in
       pkgs.gnome3.adwaita-icon-theme
     ];
 
-    users.users."${wenzelUserName}".packages = [
+    users.users.${wenzelUserName}.packages = [
       wenzels-bash
       wenzels-neovim.neovim
       wenzels-neovim.neovim-qt
@@ -269,6 +273,7 @@ in
       autostart-setup
       autolock
       cursor-to-display
+      invert-window-colors
       dzen-box
       locktop
       pamng

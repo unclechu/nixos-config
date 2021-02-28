@@ -14,11 +14,12 @@ let
 
     scriptsPaths = {
       "autostart.sh"         = autostartScript;
-      "input.sh"             = let app = apps.input-setup;       in "${app}/bin/${app.name}";
-      "cursor-to-display.pl" = let app = apps.cursor-to-display; in "${app}/bin/${app.name}";
-      "gpaste-gui.pl"        = let app = apps.gpaste-gui;        in "${app}/bin/${app.name}";
-      "pamng.sh"             = let app = apps.pamng;             in "${app}/bin/${app.name}";
-      "screen-backlight.sh"  = let app = apps.screen-backlight;  in "${app}/bin/${app.name}";
+      "input.sh"             = let app = apps.input-setup;          in "${app}/bin/${app.name}";
+      "cursor-to-display.pl" = let app = apps.cursor-to-display;    in "${app}/bin/${app.name}";
+      "gpaste-gui.pl"        = let app = apps.gpaste-gui;           in "${app}/bin/${app.name}";
+      "pamng.sh"             = let app = apps.pamng;                in "${app}/bin/${app.name}";
+      "screen-backlight.sh"  = let app = apps.screen-backlight;     in "${app}/bin/${app.name}";
+      "invert-window-colors" = let app = apps.invert-window-colors; in "${app}/bin/${app.name}";
     };
   };
 
