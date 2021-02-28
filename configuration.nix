@@ -22,6 +22,8 @@ let
     };
   };
 
+  tmux-config = import "${sources.tmuxrc}/nix/config.nix" { inherit pkgs; };
+
   grant-access-to-input-devices = import utils/grant-access-to-input-devices { inherit pkgs; };
   laptop-backlight              = import utils/laptop-backlight              { inherit pkgs; };
 
@@ -33,6 +35,7 @@ in
     (import "${sources.home-manager}/nixos")
     my-packages.configuration
     i3-config
+    tmux-config.systemConfiguration
     ./boot.nix
     ./network.nix
     ./machine-specific.nix
@@ -120,7 +123,6 @@ in
     bash.enableCompletion = true;
     zsh.enable = true;
     zsh.enableCompletion = true;
-    tmux.enable = true;
 
     # TODO configure, see https://framagit.org/mpo/era-configuration-nix
     # chromium = {};

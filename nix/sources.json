@@ -53,10 +53,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "50daa33b689d605622245c7a72bded6c9162f118",
-        "sha256": "1x9byfghf2lc1yljlpki6sbykbwq5q52fwk3pzv9imglfcpjbif1",
+        "rev": "ffbf03f01704b3965b6e518b7e13e0c2b95baaaf",
+        "sha256": "1a39f2j54mbz07nq2313ddddbzkfvw41mzmybv48gvma2anrnkhd",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/50daa33b689d605622245c7a72bded6c9162f118.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/ffbf03f01704b3965b6e518b7e13e0c2b95baaaf.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
@@ -77,10 +77,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "nix-utils",
-        "rev": "9d5fabedd99843b86d2bdee40f6b0447fabb20cb",
-        "sha256": "0ry8fg94fz9gljcy0m4yi331wzy2zrh80414dfp4xhbzdiyjwa37",
+        "rev": "322716cfef329833887a40c07ec181c60708b237",
+        "sha256": "0jq07x33sanfd021b2lfmz4a77r1pfygmigljyzn8a8f0vfbz10v",
         "type": "tarball",
-        "url": "https://github.com/unclechu/nix-utils/archive/9d5fabedd99843b86d2bdee40f6b0447fabb20cb.tar.gz",
+        "url": "https://github.com/unclechu/nix-utils/archive/322716cfef329833887a40c07ec181c60708b237.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "place-cursor-at": {
@@ -105,6 +105,18 @@
         "sha256": "1l71fcjf3dqx0494a3awd63qz9dmim0dzd8f2p91xhhcv4kssm78",
         "type": "tarball",
         "url": "https://github.com/unclechu/termiterc/archive/d127c04277308468828dec17d20f195521dd33ab.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "tmuxrc": {
+        "branch": "master",
+        "description": "My Tmux configs",
+        "homepage": null,
+        "owner": "unclechu",
+        "repo": "tmuxrc",
+        "rev": "dc0d662d6194a58203d77f83b7487d4d273539df",
+        "sha256": "0k2ayr7k9hrb6am2jmcs8fjh1yw6a3hm5d8larrkhlhc3kfjfpvl",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/tmuxrc/archive/dc0d662d6194a58203d77f83b7487d4d273539df.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "unclechu-i3-status": {
