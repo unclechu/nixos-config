@@ -8,14 +8,21 @@
     initrd = {
       luks.devices = {
         boot.device  = "/dev/disk/by-uuid/1494e80a-4e1f-4b73-8dae-09197454fb22";
-        swap.device  = "/dev/disk/by-uuid/89e71b83-68c6-490e-9468-89a31bf4ea3c";
         NixOS.device = "/dev/disk/by-uuid/b5b68fd7-2128-4fb4-bd9f-e79531af7208";
+
+        # Not used in favor of ZRAM swap
+        # swap.device = "/dev/disk/by-uuid/89e71b83-68c6-490e-9468-89a31bf4ea3c";
       };
     };
 
     kernelModules = [ "kvm-intel" "fuse" ];
     kernelParams = [];
     kernelPackages = pkgs.linuxPackages_latest;
+  };
+
+  zramSwap = {
+    enable = true;
+    memoryPercent = 100 / 8;
   };
 
   fileSystems = {
@@ -38,7 +45,8 @@
   };
 
   swapDevices = [
-    { device = "/dev/mapper/swap"; }
+    # Not used in favor of ZRAM swap
+    # { device = "/dev/mapper/swap"; }
   ];
 
   networking.hostName = "rw-wenzel-nixos-laptop";
