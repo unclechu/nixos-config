@@ -40,9 +40,12 @@ let
   gnome-screenshot   = import apps/gnome-screenshot.nix   { inherit pkgs; };
   unclechu-i3-status = import apps/unclechu-i3-status.nix { inherit pkgs; };
 
-  wenzels-neovim = import apps/wenzels-neovim.nix {
-    inherit pkgs;
-    bashEnvFile = "${wenzels-bash.dir}/.bash_aliases";
+  bashAliasesFile = "${wenzels-bash.dir}/.bash_aliases";
+  wenzels-neovim  = import apps/wenzels-neovim.nix { inherit pkgs; bashEnvFile = bashAliasesFile; };
+
+  neovim-gtk = import apps/neovim-gtk.nix {
+    inherit pkgs bashAliasesFile;
+    neovim = wenzels-neovim.neovim-for-gui;
   };
 
   wenzels-xlib-keys-hack = import apps/wenzels-xlib-keys-hack { inherit pkgs; };
@@ -258,6 +261,8 @@ in
       wenzels-neovim.scripts.clean-vim
       wenzels-neovim.scripts.git-grep-nvr
       wenzels-neovim.scripts.nvimd
+      neovim-gtk
+      neovim-gtk.g
       wenzels-termite.default
       wenzels-termite.dark
       wenzels-termite.light
