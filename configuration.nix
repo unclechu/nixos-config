@@ -1,7 +1,7 @@
 { config, pkgs, options, ... }:
 let
   inherit (import ./constants.nix)
-    wenzelUserName xkb keyRepeat
+    wenzelUserName
     rawdevinputGroupName backlightcontrolGroupName jackaudioGroupName audioGroupName;
 
   sources = import nix/sources.nix;
@@ -37,6 +37,7 @@ in
     my-packages.configuration
     i3-config
     tmux-config.systemConfiguration
+    ./gui.nix
     ./fonts.nix
     ./boot.nix
     ./network.nix
@@ -61,11 +62,7 @@ in
   nixpkgs.overlays = import ./overlays;
 
   i18n.defaultLocale = "en_US.UTF-8";
-
-  console = {
-    font = "Lat2-Terminus16";
-    keyMap = "us";
-  };
+  console.keyMap = "us";
 
   time.timeZone = "Europe/Helsinki";
 
@@ -77,42 +74,11 @@ in
     variables = {
       EDITOR = "nvim";
       TERMINAL = "termite";
-
-      # XCompose and XIM setup
-      XMODIFIERS = "@im=none";
-      QT_IM_MODULE = "xim";
-      GTK_IM_MODULE = "xim";
     };
 
     sessionVariables = {
       LV2_PATH = "/run/current-system/sw/lib/lv2";
-      GTK_THEME = "Adwaita:dark";
     };
-
-    etc = {
-      "xdg/gtk-2.0/gtkrc".text = ''
-        gtk-theme-name = "Adwaita-dark"
-        gtk-icon-theme-name = "Adwaita"
-      '';
-      "xdg/gtk-3.0/settings.ini".text = ''
-        [Settings]
-        gtk-theme-name = Adwaita-dark
-        gtk-application-prefer-dark-theme = true
-        gtk-icon-theme-name = Adwaita
-      '';
-
-      # Qt4
-      "xdg/Trolltech.conf".text = ''
-        [Qt]
-        style=GTK+
-      '';
-    };
-  };
-
-  qt5 = {
-    enable = true;
-    platformTheme = "gnome";
-    style = "adwaita-dark";
   };
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -160,30 +126,6 @@ in
 
   services = {
     printing.enable = false; # CUPS to print documents (have no printer yet)
-
-    # X11
-    xserver = {
-      enable = true;
-      layout = xkb.layout;
-      xkbOptions = xkb.options;
-
-      desktopManager = {
-        # default = "none";
-        xterm.enable = false;
-      };
-
-      displayManager = {
-        defaultSession = "none+i3";
-        lightdm.enable = true;
-
-        sessionCommands = ''
-          ${esc pkgs.xorg.xset}/bin/xset r rate ${esc keyRepeat.delay} ${esc keyRepeat.interval}
-        '';
-      };
-
-      libinput.enable = true; # touchpad
-    };
-
     upower.enable = true;
 
     # see also https://nixos.wiki/wiki/JACK
