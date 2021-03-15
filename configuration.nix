@@ -37,6 +37,7 @@ in
     my-packages.configuration
     i3-config
     tmux-config.systemConfiguration
+    ./fonts.nix
     ./boot.nix
     ./network.nix
     ./machine-specific.nix
@@ -191,37 +192,6 @@ in
     #   # alsa.enable = true; # support ALSA-only programs via ALSA JACK PCM plugin
     #   # loopback.enable = true; # support ALSA-only programms via loopback device (e.g. Steam)
     # };
-  };
-
-  fonts = {
-    enableFontDir = true;
-    enableDefaultFonts = true;
-    enableGhostscriptFonts = true;
-
-    fonts = [
-      pkgs.hack-font
-      pkgs.fira-code-symbols
-      pkgs.iosevka
-      pkgs.ibm-plex
-      pkgs.nerdfonts
-      pkgs.terminus_font # for "place-cursor-at"
-    ];
-
-    fontconfig = {
-      antialias = true;
-      hinting.enable = true;
-      subpixel.rgba = "none";
-
-      defaultFonts =
-        let
-          font = ["Hack"];
-        in {
-          monospace = font;
-          sansSerif = font;
-          serif = font;
-          emoji = ["Noto Color Emoji"];
-        };
-    };
   };
 
   users = {
