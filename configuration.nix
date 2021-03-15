@@ -39,6 +39,7 @@ in
     tmux-config.systemConfiguration
     ./gui.nix
     ./fonts.nix
+    ./opengl.nix
     ./boot.nix
     ./network.nix
     ./machine-specific.nix
@@ -104,24 +105,6 @@ in
       support32Bit = true;
       package = pkgs.pulseaudio.override { jackaudioSupport = true; };
     };
-
-    opengl =
-      let
-        extras = [
-          "mesa"
-          "vaapiVdpau"
-          "vaapiIntel"
-          "libvdpau-va-gl"
-          "libva"
-        ];
-      in
-        {
-          enable = true;
-          driSupport = true;
-          driSupport32Bit = true;
-          extraPackages = builtins.map (name: pkgs.${name}) extras;
-          extraPackages32 = builtins.map (name: pkgs.pkgsi686Linux.${name}) extras;
-        };
   };
 
   services = {
