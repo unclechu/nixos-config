@@ -115,6 +115,7 @@ in
       pkgs.wget pkgs.curl pkgs.jq pkgs.ripgrep pkgs.dash pkgs.newt
       pkgs.killall pkgs.lsof pkgs.inetutils pkgs.acl
       pkgs.inotify-tools
+      pkgs.bindfs
       pkgs.skim pkgs.fzf # fuzzy search
       pkgs.bat
       pkgs.lf
