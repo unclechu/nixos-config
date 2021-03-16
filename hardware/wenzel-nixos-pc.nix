@@ -1,8 +1,6 @@
 # This file is supposed to be symlinked as "machine-specific.nix"
 # and imported in "configuration.nix".
-{ pkgs ? import <nixpkgs> {}
-, ...
-}:
+{ pkgs, ... }:
 {
   boot = {
     initrd = {

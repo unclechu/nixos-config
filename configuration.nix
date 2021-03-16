@@ -1,10 +1,10 @@
-let sources = import nix/sources.nix; in
 { config, options, pkgs, ... }:
 let
   inherit (import ./constants.nix)
     wenzelUserName
     rawdevinputGroupName backlightcontrolGroupName jackaudioGroupName audioGroupName;
 
+  sources = import nix/sources.nix;
   nix-utils = pkgs.callPackage sources.nix-utils {};
   inherit (nix-utils) esc;
 

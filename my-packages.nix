@@ -1,14 +1,7 @@
+{ pkgs, config, ... }:
 let
-  constants = import ./constants.nix;
   sources = import nix/sources.nix;
-in
-{ pkgs
-
-, wenzelUserName ? constants.wenzelUserName
-, config         # Needed by some modules (set to “null” to use in Nix REPL)
-, ...
-}:
-let
+  inherit (import ./constants.nix) wenzelUserName;
   nix-utils = pkgs.callPackage sources.nix-utils {};
   inherit (nix-utils) wrapExecutable;
 

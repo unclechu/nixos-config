@@ -1,6 +1,6 @@
-let sources = import nix/sources.nix; in
 { pkgs, ... }:
 let
+  sources = import nix/sources.nix;
   inherit (import ./constants.nix) xkb keyRepeat;
   nix-utils = pkgs.callPackage sources.nix-utils {};
   inherit (nix-utils) esc;
