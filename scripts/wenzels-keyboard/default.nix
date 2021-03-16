@@ -8,7 +8,7 @@ in
 , xbindkeys              ? import ../../apps/wenzels-xbindkeys.nix { inherit pkgs; }
 , keyRepeat              ? constants.keyRepeat
 , xkb                    ? constants.xkb
-, xlib-keys-hack-starter ? import ../../apps/wenzels-xlib-keys-hack { inherit pkgs; }
+, xlib-keys-hack-starter ? pkgs.callPackage ../../apps/wenzels-xlib-keys-hack {}
 }:
 assert pkgs.lib.isDerivation xbindkeys;
 assert pkgs.lib.isDerivation xlib-keys-hack-starter;

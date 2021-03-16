@@ -29,7 +29,7 @@ let
   wenzels-bash       = import apps/wenzels-bash.nix       { inherit pkgs config; };
   wenzels-termite    = import apps/wenzels-termite.nix    { inherit pkgs; };
   gpaste-gui         = import apps/gpaste-gui.nix         { inherit pkgs; };
-  xlib-keys-hack     = import sources.xlib-keys-hack      { inherit pkgs; };
+  xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack {};
   place-cursor-at    = import sources.place-cursor-at     { inherit pkgs; };
   gnome-screenshot   = import apps/gnome-screenshot.nix   { inherit pkgs; };
   unclechu-i3-status = import apps/unclechu-i3-status.nix { inherit pkgs; };
@@ -42,7 +42,7 @@ let
     neovim = wenzels-neovim.neovim-for-gui;
   };
 
-  wenzels-xlib-keys-hack = import apps/wenzels-xlib-keys-hack { inherit pkgs; };
+  wenzels-xlib-keys-hack = pkgs.callPackage apps/wenzels-xlib-keys-hack {};
   wenzels-keyboard-script = import scripts/wenzels-keyboard { inherit pkgs; };
   wenzels-xbindkeys = import apps/wenzels-xbindkeys.nix { inherit pkgs; };
 

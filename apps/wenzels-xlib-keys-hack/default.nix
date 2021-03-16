@@ -1,29 +1,34 @@
 let sources = import ../../nix/sources.nix; in
 { pkgs
-, nix-utils ? pkgs.callPackage sources.nix-utils {}
+, lib
+, callPackage
+, bash
 
-, xlib-keys-hack ? import sources.xlib-keys-hack { inherit pkgs; }
+# Overridable dependencies
+, __nix-utils      ? callPackage sources.nix-utils      {}
+, __xlib-keys-hack ? callPackage sources.xlib-keys-hack {}
 }:
-assert pkgs.lib.isDerivation xlib-keys-hack;
+assert lib.isDerivation __xlib-keys-hack;
 let
-  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir;
+  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir shellCheckers;
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile ./main.bash;
-  bash = "${pkgs.bash}/bin/bash";
+  bash-exe = "${bash}/bin/bash";
+  xlib-keys-hack-exe = "${__xlib-keys-hack}/bin/xlib-keys-hack";
 
   checkPhase = ''
-    ${nix-utils.shellCheckers.fileIsExecutable bash}
-    ${nix-utils.shellCheckers.fileIsExecutable "${xlib-keys-hack}/bin/xlib-keys-hack"}
+    ${shellCheckers.fileIsExecutable bash-exe}
+    ${shellCheckers.fileIsExecutable xlib-keys-hack-exe}
   '';
 in
 writeCheckedExecutable name checkPhase ''
-  #! ${bash}
+  #! ${bash-exe}
   set -Eeuo pipefail
   exec <&-
-  PATH=${esc xlib-keys-hack}/bin:$PATH
+  PATH=${esc __xlib-keys-hack}/bin:$PATH
 
   # guard dependencies
-  >/dev/null which grant-access-to-input-devices
-  >/dev/null which xlib-keys-hack
+  >/dev/null type grant-access-to-input-devices
+  >/dev/null type ${baseNameOf xlib-keys-hack-exe}
   ${src}
 ''
