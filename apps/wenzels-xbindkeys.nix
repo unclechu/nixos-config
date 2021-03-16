@@ -1,8 +1,9 @@
-{ pkgs  ? import <nixpkgs> {}
-, utils ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+let sources = import ../nix/sources.nix; in
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
 }:
 let
-  inherit (utils) nameOfModuleFile wrapExecutable esc;
+  inherit (nix-utils) nameOfModuleFile wrapExecutable esc;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
 
   # previously i was confused with some weird behavior like layouts were rotating not sequentially.
@@ -17,7 +18,7 @@ let
   #     shift + c:62
   #
   # xkb-switch = "${pkgs.xkb-switch}/bin/xkb-switch";
-  # ${utils.shellCheckers.fileIsExecutable xkb-switch}
+  # ${nix-utils.shellCheckers.fileIsExecutable xkb-switch}
 
   xbindkeysrc = pkgs.writeText "xbindkeysrc" ''
     "${xautolock} -locknow"
@@ -33,10 +34,10 @@ let
   xbindkeys_show-origin = "${pkgs.xbindkeys}/bin/xbindkeys_show";
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable xautolock}
-    ${utils.shellCheckers.fileIsExecutable xbindkeys-origin}
-    ${utils.shellCheckers.fileIsExecutable xbindkeys_show-origin}
-    ${utils.shellCheckers.fileIsReadable xbindkeysrc}
+    ${nix-utils.shellCheckers.fileIsExecutable xautolock}
+    ${nix-utils.shellCheckers.fileIsExecutable xbindkeys-origin}
+    ${nix-utils.shellCheckers.fileIsExecutable xbindkeys_show-origin}
+    ${nix-utils.shellCheckers.fileIsReadable xbindkeysrc}
   '';
 
   configArgs = [ "-f" xbindkeysrc ];

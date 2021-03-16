@@ -1,5 +1,7 @@
-{ pkgs        ? import <nixpkgs> {}
-, utils       ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+let sources = import ../nix/sources.nix; in
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
+
 , input-setup ? import ./input-setup.nix { inherit pkgs; }
 , autolock    ? import ./autolock.nix { inherit pkgs; }
 , picom       ? (import ./picom.nix { inherit pkgs; }).run-picom
@@ -12,7 +14,7 @@ assert pkgs.lib.isDerivation input-setup;
 assert pkgs.lib.isDerivation autolock;
 assert pkgs.lib.isDerivation picom;
 let
-  inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleFile;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile ./main.bash;
   bash = "${pkgs.bash}/bin/bash";
@@ -28,14 +30,14 @@ let
   rw-wenzel-nixos-laptop = import ../hardware/rw-wenzel-nixos-laptop.nix { inherit pkgs; };
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable bash}
-    ${utils.shellCheckers.fileIsExecutable pactl}
-    ${utils.shellCheckers.fileIsExecutable gpaste-client}
-    ${utils.shellCheckers.fileIsExecutable nm-applet}
-    ${utils.shellCheckers.fileIsExecutable xsetroot}
-    ${utils.shellCheckers.fileIsExecutable input-setup-exe}
-    ${utils.shellCheckers.fileIsExecutable autolock-exe}
-    ${utils.shellCheckers.fileIsExecutable picom-exe}
+    ${nix-utils.shellCheckers.fileIsExecutable bash}
+    ${nix-utils.shellCheckers.fileIsExecutable pactl}
+    ${nix-utils.shellCheckers.fileIsExecutable gpaste-client}
+    ${nix-utils.shellCheckers.fileIsExecutable nm-applet}
+    ${nix-utils.shellCheckers.fileIsExecutable xsetroot}
+    ${nix-utils.shellCheckers.fileIsExecutable input-setup-exe}
+    ${nix-utils.shellCheckers.fileIsExecutable autolock-exe}
+    ${nix-utils.shellCheckers.fileIsExecutable picom-exe}
   '';
 in
 writeCheckedExecutable name checkPhase ''

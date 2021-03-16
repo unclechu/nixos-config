@@ -1,9 +1,9 @@
 let sources = import ../nix/sources.nix; in
-{ pkgs  ? import <nixpkgs> {}
-, utils ? import sources.nix-utils { inherit pkgs; }
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
 }:
 let
-  inherit (utils) esc wrapExecutable;
+  inherit (nix-utils) esc wrapExecutable;
   inherit (sources) termiterc;
   dash = "${pkgs.dash}/bin/dash";
   termiteBin = "${pkgs.termite}/bin/termite";
@@ -11,10 +11,10 @@ let
   lightConfig = "${termiterc}/config-light";
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable dash}
-    ${utils.shellCheckers.fileIsExecutable termiteBin}
-    ${utils.shellCheckers.fileIsReadable darkConfig}
-    ${utils.shellCheckers.fileIsReadable lightConfig}
+    ${nix-utils.shellCheckers.fileIsExecutable dash}
+    ${nix-utils.shellCheckers.fileIsExecutable termiteBin}
+    ${nix-utils.shellCheckers.fileIsReadable darkConfig}
+    ${nix-utils.shellCheckers.fileIsReadable lightConfig}
   '';
 
   termite = name: config: wrapExecutable termiteBin {

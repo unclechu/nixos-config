@@ -1,8 +1,9 @@
-{ pkgs  ? import <nixpkgs> {}
-, utils ? import (import ../../nix/sources.nix).nix-utils { inherit pkgs; }
+let sources = import ../../nix/sources.nix; in
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
 }:
 let
-  inherit (utils) esc nameOfModuleWrapDir;
+  inherit (nix-utils) esc nameOfModuleWrapDir;
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile ./main.hs;
   srcFile = pkgs.writeText "${name}.hs" src;

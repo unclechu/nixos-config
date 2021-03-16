@@ -1,13 +1,14 @@
 let sources = import ../nix/sources.nix; in
-{ pkgs     ? import <nixpkgs> {}
-, utils    ? import sources.nix-utils { inherit pkgs; }
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
+
 , dzen-box ? import ./dzen-box { inherit pkgs; }
 , pamng    ? import "${sources.i3rc}/nix/apps/pamng.nix" { inherit pkgs; }
 }:
 assert pkgs.lib.isDerivation dzen-box;
 assert pkgs.lib.isDerivation pamng;
 let
-  inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleFile;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   bash = "${pkgs.bash}/bin/bash";
   pacmd = "${pkgs.pulseaudio}/bin/pacmd";
@@ -16,11 +17,11 @@ let
   grep = "${pkgs.gnugrep}/bin/grep";
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable bash}
-    ${utils.shellCheckers.fileIsExecutable pacmd}
-    ${utils.shellCheckers.fileIsExecutable dzen-box-exe}
-    ${utils.shellCheckers.fileIsExecutable pamng-exe}
-    ${utils.shellCheckers.fileIsExecutable grep}
+    ${nix-utils.shellCheckers.fileIsExecutable bash}
+    ${nix-utils.shellCheckers.fileIsExecutable pacmd}
+    ${nix-utils.shellCheckers.fileIsExecutable dzen-box-exe}
+    ${nix-utils.shellCheckers.fileIsExecutable pamng-exe}
+    ${nix-utils.shellCheckers.fileIsExecutable grep}
   '';
 in
 writeCheckedExecutable name checkPhase ''

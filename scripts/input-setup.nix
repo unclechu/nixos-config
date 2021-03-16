@@ -1,5 +1,7 @@
-{ pkgs             ? import <nixpkgs> {}
-, utils            ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+let sources = import ../nix/sources.nix; in
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
+
 , wenzels-keyboard ? import ./wenzels-keyboard { inherit pkgs; }
 
 , pointers ? [
@@ -11,7 +13,7 @@
   ]
 }:
 let
-  inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleFile;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile ./main.bash;
   bash = "${pkgs.bash}/bin/bash";
@@ -20,12 +22,12 @@ let
   wenzels-keyboard-exe = exe wenzels-keyboard;
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable bash}
-    ${utils.shellCheckers.fileIsExecutable xinput}
-    ${utils.shellCheckers.fileIsExecutable wenzels-keyboard-exe}
+    ${nix-utils.shellCheckers.fileIsExecutable bash}
+    ${nix-utils.shellCheckers.fileIsExecutable xinput}
+    ${nix-utils.shellCheckers.fileIsExecutable wenzels-keyboard-exe}
     ${
       builtins.concatStringsSep "\n"
-        (map (x: utils.shellCheckers.fileIsExecutable (exe x)) pointers)
+        (map (x: nix-utils.shellCheckers.fileIsExecutable (exe x)) pointers)
     }
   '';
 in

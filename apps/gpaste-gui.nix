@@ -1,10 +1,10 @@
 # TODO Move this Nix config to “gpaste-gui” repo
 let sources = import ../nix/sources.nix; in
-{ pkgs  ? import <nixpkgs> {}
-, utils ? import sources.nix-utils { inherit pkgs; }
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
 }:
 let
-  inherit (utils) esc writeCheckedExecutable wrapExecutable nameOfModuleFile;
+  inherit (nix-utils) esc writeCheckedExecutable wrapExecutable nameOfModuleFile;
   srcFile = builtins.readFile "${sources.gpaste-gui}/${name}.pl";
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   dash = "${pkgs.dash}/bin/dash";
@@ -23,8 +23,8 @@ let
   ];
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable perl}
-    ${utils.shellCheckers.fileIsExecutable gpaste-client}
+    ${nix-utils.shellCheckers.fileIsExecutable perl}
+    ${nix-utils.shellCheckers.fileIsExecutable gpaste-client}
   '';
 
   perlScript = writeCheckedExecutable name checkPhase ''
@@ -34,7 +34,7 @@ let
     ${srcFile}
   '';
 in
-assert utils.valueCheckers.isNonEmptyString srcFile;
+assert nix-utils.valueCheckers.isNonEmptyString srcFile;
 wrapExecutable "${perlScript}/bin/${name}" {
   env = { PERL5LIB = pkgs.perlPackages.makePerlPath perlDependencies; };
   inherit checkPhase;

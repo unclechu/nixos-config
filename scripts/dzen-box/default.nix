@@ -1,17 +1,18 @@
-{ pkgs  ? import <nixpkgs> {}
-, utils ? import (import ../../nix/sources.nix).nix-utils { inherit pkgs; }
+let sources = import ../../nix/sources.nix; in
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
 }:
 let
-  inherit (utils) esc writeCheckedExecutable nameOfModuleWrapDir;
+  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir;
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile ./main.bash;
   bash = "${pkgs.bash}/bin/bash";
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable bash}
-    ${utils.shellCheckers.fileIsExecutable "${pkgs.inotify-tools}/bin/inotifywait"}
-    ${utils.shellCheckers.fileIsExecutable "${pkgs.gnused}/bin/sed"}
-    ${utils.shellCheckers.fileIsExecutable "${pkgs.dzen2}/bin/dzen2"}
+    ${nix-utils.shellCheckers.fileIsExecutable bash}
+    ${nix-utils.shellCheckers.fileIsExecutable "${pkgs.inotify-tools}/bin/inotifywait"}
+    ${nix-utils.shellCheckers.fileIsExecutable "${pkgs.gnused}/bin/sed"}
+    ${nix-utils.shellCheckers.fileIsExecutable "${pkgs.dzen2}/bin/dzen2"}
   '';
 in
 writeCheckedExecutable name checkPhase ''

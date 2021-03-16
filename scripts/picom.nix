@@ -1,17 +1,18 @@
-{ pkgs  ? import <nixpkgs> {}
-, utils ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+let sources = import ../nix/sources.nix; in
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
 }:
 let
-  inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleFile;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   dash = "${pkgs.dash}/bin/dash";
   picom = "${pkgs.picom}/bin/picom";
   pkill = "${pkgs.procps}/bin/pkill";
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable dash}
-    ${utils.shellCheckers.fileIsExecutable picom}
-    ${utils.shellCheckers.fileIsExecutable pkill}
+    ${nix-utils.shellCheckers.fileIsExecutable dash}
+    ${nix-utils.shellCheckers.fileIsExecutable picom}
+    ${nix-utils.shellCheckers.fileIsExecutable pkill}
   '';
 
   killPicom = ''${esc pkill} -x -U "$USER" -- ${esc (baseNameOf picom)} 2>/dev/null'';

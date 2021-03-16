@@ -1,15 +1,16 @@
-{ pkgs  ? import <nixpkgs> {}
-, utils ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+let sources = import ../nix/sources.nix; in
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
 }:
 let
-  inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleFile;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   dash = "${pkgs.dash}/bin/dash";
   gnome-screenshot = "${pkgs.gnome3.gnome-screenshot}/bin/${name}";
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable dash}
-    ${utils.shellCheckers.fileIsExecutable gnome-screenshot}
+    ${nix-utils.shellCheckers.fileIsExecutable dash}
+    ${nix-utils.shellCheckers.fileIsExecutable gnome-screenshot}
   '';
 in
 writeCheckedExecutable name checkPhase ''

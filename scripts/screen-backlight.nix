@@ -1,17 +1,19 @@
-{ pkgs     ? import <nixpkgs> {}
-, utils    ? import (import ../nix/sources.nix).nix-utils { inherit pkgs; }
+let sources = import ../nix/sources.nix; in
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
+
 , dzen-box ? import ./dzen-box { inherit pkgs; }
 }:
 assert pkgs.lib.isDerivation dzen-box;
 let
-  inherit (utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleFile;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   bash = "${pkgs.bash}/bin/bash";
   dzen-box-exe = "${dzen-box}/bin/dzen-box";
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable bash}
-    ${utils.shellCheckers.fileIsExecutable dzen-box-exe}
+    ${nix-utils.shellCheckers.fileIsExecutable bash}
+    ${nix-utils.shellCheckers.fileIsExecutable dzen-box-exe}
   '';
 in
 writeCheckedExecutable name checkPhase ''

@@ -1,12 +1,12 @@
-{ config, pkgs, options, ... }:
+let sources = import nix/sources.nix; in
+{ config, options, pkgs, ... }:
 let
   inherit (import ./constants.nix)
     wenzelUserName
     rawdevinputGroupName backlightcontrolGroupName jackaudioGroupName audioGroupName;
 
-  sources = import nix/sources.nix;
-  utils = import sources.nix-utils { inherit pkgs; };
-  inherit (utils) esc;
+  nix-utils = pkgs.callPackage sources.nix-utils {};
+  inherit (nix-utils) esc;
 
   i3-config = let apps = my-packages.my-apps; in import sources.i3rc rec {
     inherit pkgs;
@@ -28,7 +28,7 @@ let
   grant-access-to-input-devices = import utils/grant-access-to-input-devices { inherit pkgs; };
   laptop-backlight              = import utils/laptop-backlight              { inherit pkgs; };
 
-  my-packages = import ./my-packages.nix { inherit pkgs utils config; };
+  my-packages = import ./my-packages.nix { inherit pkgs nix-utils config; };
   inherit (my-packages.my-apps) wenzels-bash;
 in
 {

@@ -1,18 +1,19 @@
 # TODO this is 99% identical to ../pointer-logitech-wireless-ambidextrous-small-mouse
 #      implement generic solution
-{ pkgs  ? import <nixpkgs> {}
-, utils ? import (import ../../nix/sources.nix).nix-utils { inherit pkgs; }
+let sources = import ../../nix/sources.nix; in
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
 }:
 let
-  inherit (utils) esc writeCheckedExecutable nameOfModuleWrapDir;
+  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir;
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile ./main.bash;
   bash = "${pkgs.bash}/bin/bash";
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable bash}
-    ${utils.shellCheckers.fileIsExecutable "${pkgs.gnugrep}/bin/grep"}
-    ${utils.shellCheckers.fileIsExecutable "${pkgs.xlibs.xinput}/bin/xinput"}
+    ${nix-utils.shellCheckers.fileIsExecutable bash}
+    ${nix-utils.shellCheckers.fileIsExecutable "${pkgs.gnugrep}/bin/grep"}
+    ${nix-utils.shellCheckers.fileIsExecutable "${pkgs.xlibs.xinput}/bin/xinput"}
   '';
 in
 writeCheckedExecutable name checkPhase ''

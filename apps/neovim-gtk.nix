@@ -1,12 +1,12 @@
 let sources = import ../nix/sources.nix; in
-{ pkgs  ? import <nixpkgs> {}
-, utils ? import sources.nix-utils { inherit pkgs; }
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
 
 , bashAliasesFile # set as ‘null’ to use default ‘~/.bash_aliases’
 , neovim          # set as ‘null’ to use default ‘nvim’ from ‘PATH’
 }:
 let
-  inherit (utils) esc nameOfModuleFile writeCheckedExecutable wrapExecutable;
+  inherit (nix-utils) esc nameOfModuleFile writeCheckedExecutable wrapExecutable;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
 
   neovim-gtk = pkgs.rustPlatform.buildRustPackage {
@@ -49,12 +49,12 @@ let
 
   # TODO Use ‘wrapExecutable’ instead
   g = writeCheckedExecutable "g" ''
-    ${utils.shellCheckers.fileIsExecutable bash}
-    ${utils.shellCheckers.fileIsExecutable nvim-gtk}
+    ${nix-utils.shellCheckers.fileIsExecutable bash}
+    ${nix-utils.shellCheckers.fileIsExecutable nvim-gtk}
     ${
       if isNull bashAliasesFile
       then ""
-      else utils.shellCheckers.fileIsReadable bashAliasesFile
+      else nix-utils.shellCheckers.fileIsReadable bashAliasesFile
     }
   '' ''
     #! ${bash}

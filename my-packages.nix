@@ -2,14 +2,15 @@ let
   constants = import ./constants.nix;
   sources = import nix/sources.nix;
 in
-{ pkgs           ? import <nixpkgs> {}
-, utils          ? import sources.nix-utils { inherit pkgs; }
+{ pkgs
+
 , wenzelUserName ? constants.wenzelUserName
 , config         # Needed by some modules (set to “null” to use in Nix REPL)
 , ...
 }:
 let
-  inherit (utils) wrapExecutable;
+  nix-utils = pkgs.callPackage sources.nix-utils {};
+  inherit (nix-utils) wrapExecutable;
 
   system-vim = rec {
     vim = pkgs.vim_configurable.customize {

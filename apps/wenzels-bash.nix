@@ -1,13 +1,13 @@
 let sources = import ../nix/sources.nix; in
-{ pkgs   ? import <nixpkgs> {}
-, utils  ? import sources.nix-utils { inherit pkgs; }
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
 
 , # System config (e.g. self-reference) to extract machine host name.
   # Set to “null” to use in Nix REPL.
   config
 }:
 let
-  inherit (utils) esc;
+  inherit (nix-utils) esc;
   inherit (sources) bashrc;
 
   wenzel-nixos-pc        = import ../hardware/wenzel-nixos-pc.nix        { inherit pkgs; };

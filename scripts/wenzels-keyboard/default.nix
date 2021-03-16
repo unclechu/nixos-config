@@ -1,6 +1,10 @@
-let constants = import ../../constants.nix; in
-{ pkgs                   ? import <nixpkgs> {}
-, utils                  ? import (import ../../nix/sources.nix).nix-utils { inherit pkgs; }
+let
+  constants = import ../../constants.nix;
+  sources = import ../../nix/sources.nix;
+in
+{ pkgs
+, nix-utils ? pkgs.callPackage sources.nix-utils {}
+
 , xbindkeys              ? import ../../apps/wenzels-xbindkeys.nix { inherit pkgs; }
 , keyRepeat              ? constants.keyRepeat
 , xkb                    ? constants.xkb
@@ -14,12 +18,12 @@ let
   xkbLayout         = xkb.layout;
   xkbOptions        = xkb.options; # "eurosign:e"
 in
-assert utils.valueCheckers.isPositiveNaturalNumber keyRepeatDelay;
-assert utils.valueCheckers.isPositiveNaturalNumber keyRepeatInterval;
-assert utils.valueCheckers.isNonEmptyString        xkbLayout;
-assert utils.valueCheckers.isNonEmptyString        xkbOptions;
+assert nix-utils.valueCheckers.isPositiveNaturalNumber keyRepeatDelay;
+assert nix-utils.valueCheckers.isPositiveNaturalNumber keyRepeatInterval;
+assert nix-utils.valueCheckers.isNonEmptyString        xkbLayout;
+assert nix-utils.valueCheckers.isNonEmptyString        xkbOptions;
 let
-  inherit (utils) esc writeCheckedExecutable nameOfModuleWrapDir;
+  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir;
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile ./main.raku;
   raku = "${pkgs.rakudo}/bin/raku";
@@ -31,13 +35,13 @@ let
   xlib-keys-hack-starter-exe = "${xlib-keys-hack-starter}/bin/${xlib-keys-hack-starter.name}";
 
   checkPhase = ''
-    ${utils.shellCheckers.fileIsExecutable raku}
-    ${utils.shellCheckers.fileIsExecutable xset}
-    ${utils.shellCheckers.fileIsExecutable setxkbmap}
-    ${utils.shellCheckers.fileIsExecutable numlockx}
-    ${utils.shellCheckers.fileIsExecutable pkill}
-    ${utils.shellCheckers.fileIsExecutable xbindkeys-exe}
-    ${utils.shellCheckers.fileIsExecutable xlib-keys-hack-starter-exe}
+    ${nix-utils.shellCheckers.fileIsExecutable raku}
+    ${nix-utils.shellCheckers.fileIsExecutable xset}
+    ${nix-utils.shellCheckers.fileIsExecutable setxkbmap}
+    ${nix-utils.shellCheckers.fileIsExecutable numlockx}
+    ${nix-utils.shellCheckers.fileIsExecutable pkill}
+    ${nix-utils.shellCheckers.fileIsExecutable xbindkeys-exe}
+    ${nix-utils.shellCheckers.fileIsExecutable xlib-keys-hack-starter-exe}
   '';
 in
 writeCheckedExecutable name checkPhase ''
