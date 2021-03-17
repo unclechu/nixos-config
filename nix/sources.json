@@ -137,10 +137,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "unclechu-i3-status",
-        "rev": "f234cfcd3571ca64671908c0ad241bf17fbce199",
-        "sha256": "0rzk2am6ci1m85qxg3g2cb50ifm40600hw8b0khq57b8ffpib04f",
+        "rev": "687c87c0a1170bf5114eaf8baa038e4004c6b75b",
+        "sha256": "0fwrb3fg36ir721rj7v06qz0gnynq2qndd2qq63lq6bfrp1msb92",
         "type": "tarball",
-        "url": "https://github.com/unclechu/unclechu-i3-status/archive/f234cfcd3571ca64671908c0ad241bf17fbce199.tar.gz",
+        "url": "https://github.com/unclechu/unclechu-i3-status/archive/687c87c0a1170bf5114eaf8baa038e4004c6b75b.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "xlib-keys-hack": {
