@@ -26,12 +26,12 @@ let
 
   # *** apps ***
 
-  wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix { inherit systemConfig; };
+  wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix       { inherit systemConfig; };
   wenzels-termite    = import apps/wenzels-termite.nix    { inherit pkgs; };
-  gpaste-gui         = import apps/gpaste-gui.nix         { inherit pkgs; };
-  xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack {};
+  gpaste-gui         = pkgs.callPackage sources.gpaste-gui          {};
+  xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack      {};
   place-cursor-at    = import sources.place-cursor-at     { inherit pkgs; };
-  gnome-screenshot   = pkgs.callPackage apps/gnome-screenshot.nix {};
+  gnome-screenshot   = pkgs.callPackage apps/gnome-screenshot.nix   {};
   unclechu-i3-status = import apps/unclechu-i3-status.nix { inherit pkgs; };
 
   bashAliasesFile = "${wenzels-bash.dir}/.bash_aliases";
