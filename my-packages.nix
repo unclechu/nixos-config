@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, config, systemConfig ? config, ... }:
 let
   sources = import nix/sources.nix;
   inherit (import ./constants.nix) wenzelUserName;
@@ -26,7 +26,7 @@ let
 
   # *** apps ***
 
-  wenzels-bash       = import apps/wenzels-bash.nix       { inherit pkgs config; };
+  wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix { inherit systemConfig; };
   wenzels-termite    = import apps/wenzels-termite.nix    { inherit pkgs; };
   gpaste-gui         = import apps/gpaste-gui.nix         { inherit pkgs; };
   xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack {};
@@ -61,7 +61,7 @@ let
     import "${sources.i3rc}/nix/apps/invert-window-colors-nim.nix" { inherit pkgs; };
 
   dzen-box = import scripts/dzen-box { inherit pkgs; };
-  hsc2hs-pipe = import scripts/hsc2hs-pipe.nix { inherit pkgs config; };
+  hsc2hs-pipe = pkgs.callPackage scripts/hsc2hs-pipe.nix { inherit systemConfig; };
   screen-backlight = import scripts/screen-backlight.nix { inherit pkgs; };
   locktop = import scripts/locktop.nix { inherit pkgs; };
   pamng = import scripts/pamng.nix { inherit pkgs; };
@@ -69,7 +69,7 @@ let
   autostart-setup = import scripts/autostart-setup.nix { inherit pkgs config; };
   input-setup = import scripts/input-setup.nix { inherit pkgs; };
   picom = import scripts/picom.nix { inherit pkgs; };
-  timer = import scripts/timer.nix { inherit pkgs config; };
+  timer = pkgs.callPackage scripts/timer.nix { inherit systemConfig; };
   genpass = import scripts/genpass.nix { inherit pkgs; };
 
   pointer-dell-latitude-laptop-dot =
