@@ -31,7 +31,7 @@ let
   gpaste-gui         = import apps/gpaste-gui.nix         { inherit pkgs; };
   xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack {};
   place-cursor-at    = import sources.place-cursor-at     { inherit pkgs; };
-  gnome-screenshot   = import apps/gnome-screenshot.nix   { inherit pkgs; };
+  gnome-screenshot   = pkgs.callPackage apps/gnome-screenshot.nix {};
   unclechu-i3-status = import apps/unclechu-i3-status.nix { inherit pkgs; };
 
   bashAliasesFile = "${wenzels-bash.dir}/.bash_aliases";
