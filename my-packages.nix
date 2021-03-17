@@ -37,9 +37,9 @@ let
   bashAliasesFile = "${wenzels-bash.dir}/.bash_aliases";
   wenzels-neovim  = import apps/wenzels-neovim.nix { inherit pkgs; bashEnvFile = bashAliasesFile; };
 
-  neovim-gtk = import apps/neovim-gtk.nix {
-    inherit pkgs bashAliasesFile;
+  neovim-gtk = pkgs.callPackage apps/neovim-gtk.nix {
     neovim = wenzels-neovim.neovim-for-gui;
+    inherit bashAliasesFile;
   };
 
   wenzels-xlib-keys-hack = pkgs.callPackage apps/wenzels-xlib-keys-hack {};

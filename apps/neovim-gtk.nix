@@ -1,41 +1,50 @@
 let sources = import ../nix/sources.nix; in
-{ pkgs
-, nix-utils ? pkgs.callPackage sources.nix-utils {}
+{ callPackage
+, lib
+, rustPlatform
+, gtk3-x11
+, atk
+, gdk_pixbuf
+, pango
+, cairo
+, glib
+, bash
 
-, bashAliasesFile # set as ‘null’ to use default ‘~/.bash_aliases’
-, neovim          # set as ‘null’ to use default ‘nvim’ from ‘PATH’
+, neovim # Set to ‘null’ to use default ‘nvim’ from ‘PATH’
+
+# Overridable dependencies
+, __nix-utils ? callPackage sources.nix-utils {}
+
+# Build options
+, bashAliasesFile # Set to ‘null’ to use default ‘~/.bash_aliases’
 }:
 let
-  inherit (nix-utils) esc nameOfModuleFile writeCheckedExecutable wrapExecutable;
+  inherit (__nix-utils) esc nameOfModuleFile writeCheckedExecutable wrapExecutable shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
 
-  neovim-gtk = pkgs.rustPlatform.buildRustPackage {
+  neovim-gtk = rustPlatform.buildRustPackage {
     pname   = name;
     version = "git-master-2021-01-02";
-
-    src = pkgs.fetchFromGitHub {
-      owner  = "daa84";
-      repo   = name;
-      rev    = "c03649276ee47caa9bc7beb68f6c800b8c97651a";
-      sha256 = "1v026lz8ww94yyl0vbqsnp55py2fsa09vcgiqa8nc7cp005418kn";
-    };
+    src     = sources.${name};
 
     cargoSha256 = "1839a9q3dlijkd7nfbaw04kfhbbikhkhzzbja12ny05z50n7rrnm";
 
     meta = {
-      description = "GTK UI for Neovim written in Rust using gtk-rs bindings with ligatures support";
+      description =
+        "GTK UI for Neovim with ligatures support (written in Rust using gtk-rs bindings)";
+
       homepage    = "https://github.com/daa84/neovim-gtk";
-      license     = pkgs.lib.licenses.gpl3;
+      license     = lib.licenses.gpl3;
       maintainers = [];
     };
 
     buildInputs = [
-      pkgs.gtk3-x11
-      pkgs.atk
-      pkgs.gdk_pixbuf
-      pkgs.pango
-      pkgs.cairo
-      pkgs.glib
+      gtk3-x11
+      atk
+      gdk_pixbuf
+      pango
+      cairo
+      glib
     ];
   };
 
@@ -44,20 +53,20 @@ let
     then neovim-gtk
     else wrapExecutable "${neovim-gtk}/bin/nvim-gtk" { deps = [ neovim ]; };
 
-  bash = "${pkgs.bash}/bin/bash";
+  bash-exe = "${bash}/bin/bash";
   nvim-gtk = "${wrapped-neovim-gtk}/bin/nvim-gtk";
 
   # TODO Use ‘wrapExecutable’ instead
   g = writeCheckedExecutable "g" ''
-    ${nix-utils.shellCheckers.fileIsExecutable bash}
-    ${nix-utils.shellCheckers.fileIsExecutable nvim-gtk}
+    ${shellCheckers.fileIsExecutable bash-exe}
+    ${shellCheckers.fileIsExecutable nvim-gtk}
     ${
       if isNull bashAliasesFile
       then ""
-      else nix-utils.shellCheckers.fileIsReadable bashAliasesFile
+      else shellCheckers.fileIsReadable bashAliasesFile
     }
   '' ''
-    #! ${bash}
+    #! ${bash-exe}
     . ${
       if isNull bashAliasesFile
       then "~/.bash_aliases"
