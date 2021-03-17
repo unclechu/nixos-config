@@ -77,10 +77,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "nix-utils",
-        "rev": "83388ae4f14f192b205ecf1e70315eee94c17ca6",
-        "sha256": "0b4hmkjcfdgyhqdbfk7j8f80bn733grd7g1bjxacpj0axmlh42yz",
+        "rev": "74cb8ddb748d12a4f4cf8d0d1b370b7e59b3b53d",
+        "sha256": "0mwc2rxrxf95mwmggmhv1w26gcxxsds4703l7n1w6l2b2arqxc36",
         "type": "tarball",
-        "url": "https://github.com/unclechu/nix-utils/archive/83388ae4f14f192b205ecf1e70315eee94c17ca6.tar.gz",
+        "url": "https://github.com/unclechu/nix-utils/archive/74cb8ddb748d12a4f4cf8d0d1b370b7e59b3b53d.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "place-cursor-at": {
