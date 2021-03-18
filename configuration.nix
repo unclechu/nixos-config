@@ -174,6 +174,12 @@ in
       enable = true;
       userName = "Viacheslav Lotsmanov";
       userEmail = "lotsmanov89@gmail.com";
+
+      signing = {
+        # Also known as ‘D276FF7467007335’ (expires: 2023-03-16)
+        key = "EE595E29BB5BF2B35ED23F1CD276FF7467007335";
+        signByDefault = true;
+      };
     };
 
     home.file.".bashrc".text = ''
