@@ -35,7 +35,7 @@ let
   unclechu-i3-status = pkgs.callPackage sources.unclechu-i3-status {};
 
   bashAliasesFile = "${wenzels-bash.dir}/.bash_aliases";
-  wenzels-neovim  = import apps/wenzels-neovim.nix { inherit pkgs; bashEnvFile = bashAliasesFile; };
+  wenzels-neovim  = pkgs.callPackage apps/wenzels-neovim.nix { bashEnvFile = bashAliasesFile; };
 
   neovim-gtk = pkgs.callPackage apps/neovim-gtk.nix {
     neovim = wenzels-neovim.neovim-for-gui;
