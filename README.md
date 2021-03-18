@@ -65,9 +65,10 @@ channels/manage.raku override
 
 Apart from general “nixos” and “nixos-unstable” channels some another external dependencies
 (such as [Home Manager] and my own [nix-utils]) are managed using [niv] tool.
-Those dependencies are described in [nix/sources.json](nix/sources.json).
+Those dependencies are described in [nix/sources.json].
 
-You don’t need [niv] to install the dependencies, only to update them, remove or add a new one.
+You don’t need [niv] to install the dependencies, only to update them, remove or add a new one
+(but you also can as well manually edit that [nix/sources.json] file).
 
 *N.B. “nixos” channel can’t be managed by [niv] in a NixOS configuration because it’s imported even
 before `configuration.nix` is called. `configuration.nix` is called with `pkgs` argument which is
@@ -89,3 +90,4 @@ imported already. Also all the root system dependencies are provided by that cha
 [Home Manager]: https://github.com/nix-community/home-manager
 [nix-utils]: https://github.com/unclechu/nix-utils
 [niv]: https://github.com/nmattia/niv#readme
+[nix/sources.json]: nix/sources.json
