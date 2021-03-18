@@ -30,7 +30,7 @@ let
   wenzels-termite    = import apps/wenzels-termite.nix    { inherit pkgs; };
   gpaste-gui         = pkgs.callPackage sources.gpaste-gui         {};
   xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack     {};
-  place-cursor-at    = import sources.place-cursor-at     { inherit pkgs; };
+  place-cursor-at    = pkgs.callPackage sources.place-cursor-at    {};
   gnome-screenshot   = pkgs.callPackage apps/gnome-screenshot.nix  {};
   unclechu-i3-status = pkgs.callPackage sources.unclechu-i3-status {};
 
