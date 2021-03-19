@@ -101,10 +101,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "place-cursor-at",
-        "rev": "d54ff7e67b0b6c182602280e8525ad31e2c43f9d",
-        "sha256": "107nm8mn60c32gy62m9yr25h8av711n0z5dcyxxc6l4rpbsbs1x3",
+        "rev": "491115c6be460c4f3b10c89ff337a03e16fdcc86",
+        "sha256": "04byb22bgglh9q9jpwhqlf1qy1sbh60cmvpy2qdnkxf38cpblfrw",
         "type": "tarball",
-        "url": "https://github.com/unclechu/place-cursor-at/archive/d54ff7e67b0b6c182602280e8525ad31e2c43f9d.tar.gz",
+        "url": "https://github.com/unclechu/place-cursor-at/archive/491115c6be460c4f3b10c89ff337a03e16fdcc86.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "termiterc": {
