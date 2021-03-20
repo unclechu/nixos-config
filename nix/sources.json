@@ -96,15 +96,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "place-cursor-at": {
-        "branch": "master",
+        "branch": "v1.0.0",
         "description": "Utility for X11 that helps to move cursor using only keyboard written in Haskell",
         "homepage": null,
         "owner": "unclechu",
         "repo": "place-cursor-at",
-        "rev": "491115c6be460c4f3b10c89ff337a03e16fdcc86",
-        "sha256": "04byb22bgglh9q9jpwhqlf1qy1sbh60cmvpy2qdnkxf38cpblfrw",
+        "rev": "7d9242df472bb7ee1d4a1dc414e9d325799e10a0",
+        "sha256": "1izzjd9icmj7dknywysndiv5mbvccqcafl23vq4yvas9wbz5yimx",
         "type": "tarball",
-        "url": "https://github.com/unclechu/place-cursor-at/archive/491115c6be460c4f3b10c89ff337a03e16fdcc86.tar.gz",
+        "url": "https://github.com/unclechu/place-cursor-at/archive/7d9242df472bb7ee1d4a1dc414e9d325799e10a0.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "termiterc": {
