@@ -1,33 +1,58 @@
 let sources = import ../../nix/sources.nix; in
-{ pkgs
-, nix-utils ? pkgs.callPackage sources.nix-utils {}
+{ callPackage
+, bash
+, inotify-tools
+, gnused
+, dzen2
+
+# Overridable dependencies
+, __nix-utils ? callPackage sources.nix-utils {}
 }:
 let
-  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir;
+  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir shellCheckers;
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile ./main.bash;
-  bash = "${pkgs.bash}/bin/bash";
+  bash-exe = "${bash}/bin/bash";
+
+  # Name is executable name and value is a derivation that provides that executable
+  dependencies = {
+    inotifywait = inotify-tools;
+    sed = gnused;
+    dzen2 = dzen2;
+  };
 
   checkPhase = ''
-    ${nix-utils.shellCheckers.fileIsExecutable bash}
-    ${nix-utils.shellCheckers.fileIsExecutable "${pkgs.inotify-tools}/bin/inotifywait"}
-    ${nix-utils.shellCheckers.fileIsExecutable "${pkgs.gnused}/bin/sed"}
-    ${nix-utils.shellCheckers.fileIsExecutable "${pkgs.dzen2}/bin/dzen2"}
+    ${shellCheckers.fileIsExecutable bash-exe}
+    ${
+      builtins.concatStringsSep "\n" (
+        map
+          (k: shellCheckers.fileIsExecutable "${dependencies.${k}}/bin/${k}")
+          (builtins.attrNames dependencies)
+      )
+    }
   '';
 in
 writeCheckedExecutable name checkPhase ''
-  #! ${bash}
+  #! ${bash-exe}
   set -e
   exec <&-
 
-  PATH=${esc pkgs.inotify-tools}/bin:$PATH
-  PATH=${esc pkgs.gnused}/bin:$PATH
-  PATH=${esc pkgs.dzen2}/bin:$PATH
+  ${
+    builtins.concatStringsSep "\n" (
+      map
+        (drv: "PATH=${esc drv}/bin:$PATH")
+        (builtins.attrValues dependencies)
+    )
+  }
 
-  # guard dependencies
-  >/dev/null which inotifywait
-  >/dev/null which sed
-  >/dev/null which dzen2
+  # Guard dependencies
+  ${
+    builtins.concatStringsSep "\n" (
+      map
+        (k: ">/dev/null type -P -- ${esc k}")
+        (builtins.attrNames dependencies)
+    )
+  }
 
   ${src}
 ''

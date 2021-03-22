@@ -1,4 +1,4 @@
-{ config, options, pkgs, ... }:
+args@{ config, options, pkgs, ... }:
 let
   inherit (import ./constants.nix)
     wenzelUserName
@@ -8,34 +8,18 @@ let
   nix-utils = pkgs.callPackage sources.nix-utils {};
   inherit (nix-utils) esc;
 
-  i3-config = let apps = my-packages.my-apps; in import sources.i3rc rec {
-    inherit pkgs;
-    autostartScript = let app = apps.autostart-setup; in "${app}/bin/${app.name}";
-
-    scriptsPaths = {
-      "autostart.sh"         = autostartScript;
-      "input.sh"             = let app = apps.input-setup;          in "${app}/bin/${app.name}";
-      "cursor-to-display.pl" = let app = apps.cursor-to-display;    in "${app}/bin/${app.name}";
-      "gpaste-gui.pl"        = let app = apps.gpaste-gui;           in "${app}/bin/${app.name}";
-      "pamng.sh"             = let app = apps.pamng;                in "${app}/bin/${app.name}";
-      "screen-backlight.sh"  = let app = apps.screen-backlight;     in "${app}/bin/${app.name}";
-      "invert-window-colors" = let app = apps.invert-window-colors; in "${app}/bin/${app.name}";
-    };
-  };
-
   tmux-config = import "${sources.tmuxrc}/nix/config.nix" { inherit pkgs; };
 
   grant-access-to-input-devices = import utils/grant-access-to-input-devices { inherit pkgs; };
   laptop-backlight              = import utils/laptop-backlight              { inherit pkgs; };
 
-  my-packages = import ./my-packages.nix { inherit pkgs nix-utils config; };
+  my-packages = import ./my-packages.nix args;
   inherit (my-packages.my-apps) wenzels-bash;
 in
 {
   imports = [
     (import "${sources.home-manager}/nixos")
     my-packages.configuration
-    i3-config
     tmux-config.systemConfiguration
     ./gui.nix
     ./fonts.nix

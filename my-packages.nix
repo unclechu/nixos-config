@@ -55,16 +55,16 @@ let
   # *** scripts ***
 
   autolock = import scripts/autolock.nix { inherit pkgs; };
-  cursor-to-display = import "${sources.i3rc}/nix/apps/cursor-to-display.nix" { inherit pkgs; };
+  cursor-to-display = pkgs.callPackage "${sources.i3rc}/nix/apps/cursor-to-display.nix" {};
 
   invert-window-colors =
-    import "${sources.i3rc}/nix/apps/invert-window-colors-nim.nix" { inherit pkgs; };
+    pkgs.callPackage "${sources.i3rc}/nix/apps/invert-window-colors-nim.nix" {};
 
-  dzen-box = import scripts/dzen-box { inherit pkgs; };
+  dzen-box = pkgs.callPackage scripts/dzen-box {};
   hsc2hs-pipe = pkgs.callPackage scripts/hsc2hs-pipe.nix { inherit systemConfig; };
-  screen-backlight = import scripts/screen-backlight.nix { inherit pkgs; };
-  locktop = import scripts/locktop.nix { inherit pkgs; };
-  pamng = import scripts/pamng.nix { inherit pkgs; };
+  screen-backlight = pkgs.callPackage scripts/screen-backlight.nix {};
+  locktop = pkgs.callPackage scripts/locktop.nix {};
+  pamng = pkgs.callPackage scripts/pamng.nix {};
   pa-add-mono-sink = import scripts/pa-add-mono-sink.nix { inherit pkgs; };
   autostart-setup = import scripts/autostart-setup.nix { inherit pkgs config; };
   input-setup = import scripts/input-setup.nix { inherit pkgs; };

@@ -1,23 +1,26 @@
 let sources = import ../nix/sources.nix; in
-{ pkgs
-, nix-utils ? pkgs.callPackage sources.nix-utils {}
+{ callPackage
+, lib
+, bash
 
-, dzen-box ? import ./dzen-box { inherit pkgs; }
+# Overridable dependencies
+, __nix-utils ? callPackage sources.nix-utils {}
+, __dzen-box ? callPackage ./dzen-box { inherit __nix-utils; }
 }:
-assert pkgs.lib.isDerivation dzen-box;
+assert lib.isDerivation __dzen-box;
 let
-  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  bash = "${pkgs.bash}/bin/bash";
-  dzen-box-exe = "${dzen-box}/bin/dzen-box";
+  bash-exe = "${bash}/bin/bash";
+  dzen-box = "${__dzen-box}/bin/dzen-box";
 
   checkPhase = ''
-    ${nix-utils.shellCheckers.fileIsExecutable bash}
-    ${nix-utils.shellCheckers.fileIsExecutable dzen-box-exe}
+    ${shellCheckers.fileIsExecutable bash-exe}
+    ${shellCheckers.fileIsExecutable dzen-box}
   '';
 in
 writeCheckedExecutable name checkPhase ''
-  #! ${bash}
+  #! ${bash-exe}
   set -e
   exec <&-
 
@@ -52,6 +55,6 @@ writeCheckedExecutable name checkPhase ''
   (( $val < 0    )) && val=0
   (( $val > $MAX )) && val=$MAX
 
-  ${esc dzen-box-exe} $(( $val * 100 / $MAX ))% yellow
+  ${esc dzen-box} $(( $val * 100 / $MAX ))% yellow
   laptop-backlight set "$val"
 ''
