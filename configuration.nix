@@ -8,8 +8,6 @@ let
   nix-utils = pkgs.callPackage sources.nix-utils {};
   inherit (nix-utils) esc;
 
-  tmux-config = import "${sources.tmuxrc}/nix/config.nix" { inherit pkgs; };
-
   grant-access-to-input-devices = import utils/grant-access-to-input-devices { inherit pkgs; };
   laptop-backlight              = import utils/laptop-backlight              { inherit pkgs; };
 
@@ -20,7 +18,6 @@ in
   imports = [
     (import "${sources.home-manager}/nixos")
     my-packages.configuration
-    tmux-config.systemConfiguration
     ./gui.nix
     ./fonts.nix
     ./opengl.nix

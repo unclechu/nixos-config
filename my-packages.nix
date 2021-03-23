@@ -27,6 +27,7 @@ let
   # *** apps ***
 
   wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix      { inherit systemConfig; };
+  tmux-config        = pkgs.callPackage sources.tmuxrc             {};
   wenzels-termite    = import apps/wenzels-termite.nix    { inherit pkgs; };
   gpaste-gui         = pkgs.callPackage sources.gpaste-gui         {};
   xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack     {};
@@ -116,6 +117,7 @@ in
       pkgs.zip pkgs.unzip pkgs.p7zip
       pkgs.parallel
       pkgs.file
+      tmux-config.tmuxsh
 
       # nix stuff
       pkgs.nix-index
@@ -241,6 +243,11 @@ in
       pkgs.monkeysphere
       pkgs.vagrant
     ];
+
+    programs.tmux = {
+      enable = true;
+      extraConfig = tmux-config.config;
+    };
 
     services.xserver.windowManager.i3.extraPackages = [
       pkgs.i3status
