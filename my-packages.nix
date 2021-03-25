@@ -68,25 +68,25 @@ let
   pamng = pkgs.callPackage scripts/pamng.nix {};
   pa-add-mono-sink = import scripts/pa-add-mono-sink.nix { inherit pkgs; };
   autostart-setup = import scripts/autostart-setup.nix { inherit pkgs config; };
-  input-setup = import scripts/input-setup.nix { inherit pkgs; };
+  input-setup = pkgs.callPackage scripts/input-setup.nix {};
   picom = import scripts/picom.nix { inherit pkgs; };
   timer = pkgs.callPackage scripts/timer.nix { inherit systemConfig; };
   genpass = import scripts/genpass.nix { inherit pkgs; };
 
   pointer-dell-latitude-laptop-dot =
-    import scripts/pointer-dell-latitude-laptop-dot { inherit pkgs; };
+    pkgs.callPackage scripts/pointer-dell-latitude-laptop-dot {};
 
   pointer-dell-latitude-laptop-touchpad =
-    import scripts/pointer-dell-latitude-laptop-touchpad { inherit pkgs; };
+    pkgs.callPackage scripts/pointer-dell-latitude-laptop-touchpad {};
 
   pointer-logitech-wireless-ambidextrous-small-mouse =
-    import scripts/pointer-logitech-wireless-ambidextrous-small-mouse { inherit pkgs; };
+    pkgs.callPackage scripts/pointer-logitech-wireless-ambidextrous-small-mouse {};
 
   pointer-logitech-wireless-t650-touchpad =
-    import scripts/pointer-logitech-wireless-t650-touchpad { inherit pkgs; };
+    pkgs.callPackage scripts/pointer-logitech-wireless-t650-touchpad {};
 
   pointer-razor-wired-ambidextrous-mouse =
-    import scripts/pointer-razor-wired-ambidextrous-mouse { inherit pkgs; };
+    pkgs.callPackage scripts/pointer-razor-wired-ambidextrous-mouse {};
 in
 {
   my-apps = {

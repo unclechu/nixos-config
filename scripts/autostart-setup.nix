@@ -2,7 +2,7 @@ let sources = import ../nix/sources.nix; in
 { pkgs
 , nix-utils ? pkgs.callPackage sources.nix-utils {}
 
-, input-setup ? import ./input-setup.nix { inherit pkgs; }
+, input-setup ? pkgs.callPackage ./input-setup.nix {}
 , autolock    ? import ./autolock.nix { inherit pkgs; }
 , picom       ? (import ./picom.nix { inherit pkgs; }).run-picom
 

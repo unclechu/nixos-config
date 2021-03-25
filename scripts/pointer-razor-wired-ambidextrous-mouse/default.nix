@@ -1,29 +1,38 @@
 # TODO this is 99% identical to ../pointer-logitech-wireless-ambidextrous-small-mouse
 #      implement generic solution
 let sources = import ../../nix/sources.nix; in
-{ pkgs
-, nix-utils ? pkgs.callPackage sources.nix-utils {}
+{ callPackage
+, bash
+, gnugrep
+, xlibs # Just for ‘xinput’
+
+# Overridable dependencies
+, __nix-utils ? callPackage sources.nix-utils {}
+
+# Build options
+, __srcScript ? ./main.bash
 }:
 let
-  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir;
+  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir shellCheckers;
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  src = builtins.readFile ./main.bash;
-  bash = "${pkgs.bash}/bin/bash";
+  src = builtins.readFile __srcScript;
+  bash-exe = "${bash}/bin/bash";
 
   checkPhase = ''
-    ${nix-utils.shellCheckers.fileIsExecutable bash}
-    ${nix-utils.shellCheckers.fileIsExecutable "${pkgs.gnugrep}/bin/grep"}
-    ${nix-utils.shellCheckers.fileIsExecutable "${pkgs.xlibs.xinput}/bin/xinput"}
+    ${shellCheckers.fileIsExecutable bash-exe}
+    ${shellCheckers.fileIsExecutable "${gnugrep}/bin/grep"}
+    ${shellCheckers.fileIsExecutable "${xlibs.xinput}/bin/xinput"}
   '';
 in
 writeCheckedExecutable name checkPhase ''
-  #! ${bash}
+  #! ${bash-exe}
   set -Eeuo pipefail || exit
   exec <&-
-  export PATH=${esc pkgs.gnugrep}/bin:${esc pkgs.xlibs.xinput}/bin:$PATH
+  export PATH=${esc gnugrep}/bin:${esc xlibs.xinput}/bin:$PATH
 
   # Guard dependencies
   >/dev/null type -P xinput
   >/dev/null type -P grep
+
   ${src}
 ''
