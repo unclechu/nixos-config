@@ -28,7 +28,7 @@ main = do
     ["set", parseNumber → Right n] | n ≤ max →
       writeFile (getPath Current) (show n)
 
-    args → die $ "Unexpected arguments: " ◇ show args
+    args → die $ "Unexpected arguments: " ⋄ show args
 
 data File = Maximum | Current deriving Show
 
@@ -44,11 +44,11 @@ readSomeFile file = go $ getPath file where
 
   failMsg
     = mappend
-    $ "Failed to parse " ◇ fmap toLower (show file) ◇ " brightness value: "
+    $ "Failed to parse " ⋄ fmap toLower (show file) ⋄ " brightness value: "
 
 parseNumber ∷ String → Either String Word
 parseNumber = go where
   go = P.parseOnly parser ∘ fromString
   parser = P.decimal <* (() <$ P.char '\n' <|> pure ()) <* P.endOfInput
 
-(∘) = (.); (•) = flip (.); (◇) = (<>); (≤) = (<=)
+(∘) = (.); (•) = flip (.); (⋄) = (<>); (≤) = (<=)

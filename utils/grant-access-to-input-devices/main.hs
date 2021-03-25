@@ -24,10 +24,10 @@ main = do
 
   let grantAccess f = do
         putStrLn $
-          "Granting ACL read access to '" ◇ f ◇ "' input device for '" ◇
-          show user ◇ "' user…"
+          "Granting ACL read access to '" ⋄ f ⋄ "' input device for '" ⋄
+          show user ⋄ "' user…"
 
-        runProcess_ $ proc "setfacl" ["-m", "u:" ◇ show user ◇ ":r", "--", f]
+        runProcess_ $ proc "setfacl" ["-m", "u:" ⋄ show user ⋄ ":r", "--", f]
 
   traverse (\dir → fmap (dir </>) <$> listDirectory dir) dirs
     >>= filterM fileExist ∘ join
@@ -37,7 +37,7 @@ main = do
 getUser ∷ IO User
 getUser = go where
   go = getEnv "USER" >>= \u → either (failure u) pure (Read.readEither u)
-  failure u = fail ∘ mappend ("Failed to recognize user '" ◇ u ◇ "': ")
+  failure u = fail ∘ mappend ("Failed to recognize user '" ⋄ u ⋄ "': ")
 
 data User = Wenzel deriving (Enum, Bounded)
 
@@ -50,6 +50,6 @@ instance Read User where
     $ [minBound .. maxBound] <&> \u → Read.lift $ u <$ Read.string (show u)
 
 dirs ∷ [FilePath]
-dirs = ("/dev/input/by-" ◇) <$> ["id", "path"]
+dirs = ("/dev/input/by-" ⋄) <$> ["id", "path"]
 
-(∘) = (.); (◇) = (<>)
+(∘) = (.); (⋄) = (<>)

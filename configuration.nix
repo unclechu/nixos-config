@@ -8,8 +8,8 @@ let
   nix-utils = pkgs.callPackage sources.nix-utils {};
   inherit (nix-utils) esc;
 
-  grant-access-to-input-devices = import utils/grant-access-to-input-devices { inherit pkgs; };
-  laptop-backlight              = import utils/laptop-backlight              { inherit pkgs; };
+  grant-access-to-input-devices = pkgs.callPackage utils/grant-access-to-input-devices {};
+  laptop-backlight              = pkgs.callPackage utils/laptop-backlight              {};
 
   my-packages = import ./my-packages.nix args;
   inherit (my-packages.my-apps) wenzels-bash;
