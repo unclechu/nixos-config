@@ -23,7 +23,7 @@ let
   ]);
 in
 runCommand name {} ''
-  set -Eeuo pipefail
+  set -Eeuo pipefail || exit
   ${esc ghc}/bin/ghc -Wall -O2 -o "$out" ${esc srcFile}
   ${esc coreutils}/bin/chmod +x -- "$out"
 ''

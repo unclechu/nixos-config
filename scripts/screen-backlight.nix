@@ -21,7 +21,7 @@ let
 in
 writeCheckedExecutable name checkPhase ''
   #! ${bash-exe}
-  set -e
+  set -e || exit
   exec <&-
 
   # Guard dependencies

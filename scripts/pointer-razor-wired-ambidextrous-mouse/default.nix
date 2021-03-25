@@ -18,7 +18,7 @@ let
 in
 writeCheckedExecutable name checkPhase ''
   #! ${bash}
-  set -Eeuo pipefail
+  set -Eeuo pipefail || exit
   exec <&-
   export PATH=${esc pkgs.gnugrep}/bin:${esc pkgs.xlibs.xinput}/bin:$PATH
 
