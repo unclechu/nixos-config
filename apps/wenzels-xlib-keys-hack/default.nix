@@ -30,5 +30,6 @@ writeCheckedExecutable name checkPhase ''
   # Guard dependencies
   >/dev/null type -P grant-access-to-input-devices
   >/dev/null type -P ${baseNameOf xlib-keys-hack-exe}
+
   ${src}
 ''

@@ -45,6 +45,8 @@ sub MAIN( Bool :f(:$force) = False
       },
 
       start {
+        my Str:D \xlib-keys-hack-starter-name = xlib-keys-hack-starter.IO.basename;
+
         if $no-xlib-hack {
           ("'$*PROGRAM' is stopping '"~xlib-keys-hack-starter-name~"' in own thread…").note
             if $verbose;
@@ -61,7 +63,7 @@ sub MAIN( Bool :f(:$force) = False
           ("'$*PROGRAM' is done with stopping '"~xlib-keys-hack-starter-name~"'.").note if $verbose;
         } else {
           await Promise.in: 1;
-          walking-zombie $verbose, xlib-keys-hack-starter-exe;
+          walking-zombie $verbose, xlib-keys-hack-starter;
           "'$*PROGRAM' is done with restarting '"~xlib-keys-hack-starter-name~"'.".note if $verbose;
         }
       }

@@ -1,6 +1,5 @@
 let sources = import ../nix/sources.nix; in
 { callPackage
-, pkgs # TODO remove when ‘wenzels-keyboard’ get refactored
 , lib
 , bash
 , xautolock
@@ -10,8 +9,7 @@ let sources = import ../nix/sources.nix; in
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
 , __dzen-box ? callPackage ./dzen-box { inherit __nix-utils; }
-
-, wenzels-keyboard ? import ./wenzels-keyboard { inherit pkgs; }
+, wenzels-keyboard ? callPackage ./wenzels-keyboard { inherit __nix-utils; }
 }:
 assert lib.isDerivation __dzen-box;
 assert lib.isDerivation wenzels-keyboard;

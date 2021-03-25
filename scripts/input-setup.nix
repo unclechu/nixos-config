@@ -3,11 +3,9 @@ let sources = import ../nix/sources.nix; in
 , bash
 , xlibs # Just for ‘xinput’
 
-, pkgs # TODO Remove when dependencies are refactored
-
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
-, __wenzels-keyboard ? import ./wenzels-keyboard { inherit pkgs; }
+, __wenzels-keyboard ? callPackage ./wenzels-keyboard { inherit __nix-utils; }
 
 # Build options
 , pointers ? [

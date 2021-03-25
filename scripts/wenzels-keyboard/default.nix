@@ -2,62 +2,79 @@ let
   constants = import ../../constants.nix;
   sources = import ../../nix/sources.nix;
 in
-{ pkgs
-, nix-utils ? pkgs.callPackage sources.nix-utils {}
+{ callPackage
+, lib
+, rakudo
+, xorg # ‘xset’ and ‘setxkbmap’
+, numlockx
+, procps
 
-, xbindkeys              ? pkgs.callPackage ../../apps/wenzels-xbindkeys.nix {}
-, keyRepeat              ? constants.keyRepeat
-, xkb                    ? constants.xkb
-, xlib-keys-hack-starter ? pkgs.callPackage ../../apps/wenzels-xlib-keys-hack {}
+# Overridable dependencies
+, __nix-utils ? callPackage sources.nix-utils {}
+, __xbindkeys ? callPackage ../../apps/wenzels-xbindkeys.nix { inherit __nix-utils; }
+, __xlib-keys-hack-starter ? callPackage ../../apps/wenzels-xlib-keys-hack { inherit __nix-utils; }
+
+# Build options
+, __srcScript ? ./main.raku
+, keyRepeatOptions ? constants.keyRepeat
+, xkbOptions ? constants.xkb
 }:
-assert pkgs.lib.isDerivation xbindkeys;
-assert pkgs.lib.isDerivation xlib-keys-hack-starter;
+assert lib.isDerivation __xbindkeys;
+assert lib.isDerivation __xlib-keys-hack-starter;
 let
-  keyRepeatDelay    = keyRepeat.delay;
-  keyRepeatInterval = keyRepeat.interval;
-  xkbLayout         = xkb.layout;
-  xkbOptions        = xkb.options; # "eurosign:e"
+  keyRepeatDelay    = keyRepeatOptions.delay;
+  keyRepeatInterval = keyRepeatOptions.interval;
+  xkbLayout         = xkbOptions.layout;
+  xkbOptions'       = xkbOptions.options; # "eurosign:e"
+
+  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir valueCheckers shellCheckers;
 in
-assert nix-utils.valueCheckers.isPositiveNaturalNumber keyRepeatDelay;
-assert nix-utils.valueCheckers.isPositiveNaturalNumber keyRepeatInterval;
-assert nix-utils.valueCheckers.isNonEmptyString        xkbLayout;
-assert nix-utils.valueCheckers.isNonEmptyString        xkbOptions;
+assert valueCheckers.isPositiveNaturalNumber keyRepeatDelay;
+assert valueCheckers.isPositiveNaturalNumber keyRepeatInterval;
+assert valueCheckers.isNonEmptyString        xkbLayout;
+assert valueCheckers.isNonEmptyString        xkbOptions';
 let
-  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir;
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  src = builtins.readFile ./main.raku;
-  raku = "${pkgs.rakudo}/bin/raku";
-  xset = "${pkgs.xorg.xset}/bin/xset";
-  setxkbmap = "${pkgs.xorg.setxkbmap}/bin/setxkbmap";
-  numlockx = "${pkgs.numlockx}/bin/numlockx";
-  pkill = "${pkgs.procps}/bin/pkill";
-  xbindkeys-exe = "${xbindkeys}/bin/${xbindkeys.name}";
-  xlib-keys-hack-starter-exe = "${xlib-keys-hack-starter}/bin/${xlib-keys-hack-starter.name}";
+  src = builtins.readFile __srcScript;
+
+  # Name is executable name and value is a derivation that provides that executable
+  dependencies = {
+    raku = rakudo;
+    xset = xorg.xset;
+    setxkbmap = xorg.setxkbmap;
+    numlockx = numlockx;
+    pkill = procps;
+
+    ${__xbindkeys.name} = __xbindkeys;
+    ${__xlib-keys-hack-starter.name} = __xlib-keys-hack-starter;
+  };
+
+  exe = k: "${dependencies.${k}}/bin/${k}";
 
   checkPhase = ''
-    ${nix-utils.shellCheckers.fileIsExecutable raku}
-    ${nix-utils.shellCheckers.fileIsExecutable xset}
-    ${nix-utils.shellCheckers.fileIsExecutable setxkbmap}
-    ${nix-utils.shellCheckers.fileIsExecutable numlockx}
-    ${nix-utils.shellCheckers.fileIsExecutable pkill}
-    ${nix-utils.shellCheckers.fileIsExecutable xbindkeys-exe}
-    ${nix-utils.shellCheckers.fileIsExecutable xlib-keys-hack-starter-exe}
+    ${
+      builtins.concatStringsSep "\n"
+        (map (k: shellCheckers.fileIsExecutable "${exe k}") (builtins.attrNames dependencies))
+    }
   '';
 in
 writeCheckedExecutable name checkPhase ''
-  #! ${raku}
+  #! ${exe "raku"}
   use v6.d;
   close $*IN;
-  my \xset := q<${xset}>;
-  my \keyRepeatDelay := q<${toString keyRepeatDelay}>;
-  my \keyRepeatInterval := q<${toString keyRepeatInterval}>;
-  my \setxkbmap := q<${setxkbmap}>;
-  my \xkbLayout := q<${xkbLayout}>;
-  my \xkbOptions := q<${xkbOptions}>;
-  my \numlockx := q<${numlockx}>;
-  my \pkill := q<${pkill}>;
-  my \xbindkeys := q<${xbindkeys-exe}>;
-  my \xlib-keys-hack-starter-exe := q<${xlib-keys-hack-starter-exe}>;
-  my \xlib-keys-hack-starter-name := q<${baseNameOf xlib-keys-hack-starter-exe}>;
+
+  ${
+    builtins.concatStringsSep "\n"
+      (map (k: "my Str:D \\${k} := q<${exe k}>;") (builtins.attrNames dependencies))
+  }
+
+  my Str:D \xbindkeys := ${__xbindkeys.name};
+  my Str:D \xlib-keys-hack-starter := ${__xlib-keys-hack-starter.name};
+
+  my Str:D \keyRepeatDelay := q<${toString keyRepeatDelay}>;
+  my Str:D \keyRepeatInterval := q<${toString keyRepeatInterval}>;
+  my Str:D \xkbLayout := q<${xkbLayout}>;
+  my Str:D \xkbOptions := q<${xkbOptions'}>;
+
   ${src}
 ''

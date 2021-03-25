@@ -44,7 +44,7 @@ let
   };
 
   wenzels-xlib-keys-hack = pkgs.callPackage apps/wenzels-xlib-keys-hack {};
-  wenzels-keyboard-script = import scripts/wenzels-keyboard { inherit pkgs; };
+  wenzels-keyboard-script = pkgs.callPackage scripts/wenzels-keyboard {};
   wenzels-xbindkeys = pkgs.callPackage apps/wenzels-xbindkeys.nix {};
 
   firefox = wrapExecutable "${pkgs.firefox}/bin/firefox" {
