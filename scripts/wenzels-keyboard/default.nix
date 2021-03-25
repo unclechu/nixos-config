@@ -5,7 +5,7 @@ in
 { pkgs
 , nix-utils ? pkgs.callPackage sources.nix-utils {}
 
-, xbindkeys              ? import ../../apps/wenzels-xbindkeys.nix { inherit pkgs; }
+, xbindkeys              ? pkgs.callPackage ../../apps/wenzels-xbindkeys.nix {}
 , keyRepeat              ? constants.keyRepeat
 , xkb                    ? constants.xkb
 , xlib-keys-hack-starter ? pkgs.callPackage ../../apps/wenzels-xlib-keys-hack {}
