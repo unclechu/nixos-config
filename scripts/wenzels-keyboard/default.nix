@@ -49,23 +49,23 @@ let
     ${__xlib-keys-hack-starter.name} = __xlib-keys-hack-starter;
   };
 
-  exe = k: "${dependencies.${k}}/bin/${k}";
+  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
 
   checkPhase = ''
     ${
       builtins.concatStringsSep "\n"
-        (map (k: shellCheckers.fileIsExecutable "${exe k}") (builtins.attrNames dependencies))
+        (map shellCheckers.fileIsExecutable (builtins.attrValues executables))
     }
   '';
 in
 writeCheckedExecutable name checkPhase ''
-  #! ${exe "raku"}
+  #! ${executables.raku}
   use v6.d;
   close $*IN;
 
   ${
     builtins.concatStringsSep "\n"
-      (map (k: "my Str:D \\${k} := q<${exe k}>;") (builtins.attrNames dependencies))
+      (builtins.attrValues (builtins.mapAttrs (n: v: "my Str:D \\${n} := q<${v}>;") executables))
   }
 
   my Str:D \xbindkeys := ${__xbindkeys.name};
