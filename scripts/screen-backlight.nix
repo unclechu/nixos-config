@@ -24,8 +24,8 @@ writeCheckedExecutable name checkPhase ''
   set -e
   exec <&-
 
-  # guard dependencies
-  >/dev/null which laptop-backlight
+  # Guard dependencies
+  >/dev/null type -P laptop-backlight
 
   if (( $# != 1 )) || ! [[ $1 =~ ^(-|\+)?([0-9]+)%$ ]]; then
     (

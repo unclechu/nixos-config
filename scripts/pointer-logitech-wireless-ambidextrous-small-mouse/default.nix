@@ -22,8 +22,8 @@ writeCheckedExecutable name checkPhase ''
   exec <&-
   export PATH=${esc pkgs.gnugrep}/bin:${esc pkgs.xlibs.xinput}/bin:$PATH
 
-  # guard dependencies
-  >/dev/null which xinput
-  >/dev/null which grep
+  # Guard dependencies
+  >/dev/null type -P xinput
+  >/dev/null type -P grep
   ${src}
 ''
