@@ -16,28 +16,29 @@ assert lib.isDerivation wenzels-keyboard;
 let
   inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  src = builtins.readFile ./main.bash;
-  bash-exe = "${bash}/bin/bash";
-  dzen-box = "${__dzen-box}/bin/dzen-box";
-  wenzels-keyboard-exe = "${wenzels-keyboard}/bin/${wenzels-keyboard.name}";
-  xautolock-exe = "${xautolock}/bin/xautolock";
-  i3lock-exe = "${i3lock}/bin/i3lock";
-  jack_control = "${jack2}/bin/jack_control";
 
-  checkPhase = ''
-    ${shellCheckers.fileIsExecutable bash-exe}
-    ${shellCheckers.fileIsExecutable dzen-box}
-    ${shellCheckers.fileIsExecutable wenzels-keyboard-exe}
-    ${shellCheckers.fileIsExecutable xautolock-exe}
-    ${shellCheckers.fileIsExecutable i3lock-exe}
-    ${shellCheckers.fileIsExecutable jack_control}
-  '';
+  # Name is executable name and value is a derivation that provides that executable
+  dependencies = {
+    bash = bash;
+    xautolock = xautolock;
+    i3lock = i3lock;
+    jack_control = jack2;
+
+    ${__dzen-box.name} = __dzen-box;
+    ${wenzels-keyboard.name} = wenzels-keyboard;
+  };
+
+  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
+
+  checkPhase =
+    builtins.concatStringsSep "\n"
+      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
 in
 writeCheckedExecutable name checkPhase ''
-  #! ${bash-exe}
-  ${esc dzen-box} LOCK orangered
-  ${esc wenzels-keyboard-exe} --no-xlib-hack
-  ${esc jack_control} stop
+  #! ${executables.bash}
+  ${esc executables.${__dzen-box.name}} LOCK orangered
+  ${esc executables.${wenzels-keyboard.name}} --no-xlib-hack
+  ${esc executables.jack_control} stop
   if [[ -x ~/.screenlayout/only-laptop.sh ]]; then ~/.screenlayout/only-laptop.sh; fi
-  if ! ${esc xautolock-exe} -locknow; then ${esc i3lock-exe} -c 111111; fi
+  if ! ${esc executables.xautolock} -locknow; then ${esc executables.i3lock} -c 111111; fi
 ''

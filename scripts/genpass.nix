@@ -1,14 +1,17 @@
 let sources = import ../nix/sources.nix; in
-{ pkgs
-, nix-utils ? pkgs.callPackage sources.nix-utils {}
+{ callPackage
+, rakudo
+
+# Overridable dependencies
+, __nix-utils ? callPackage sources.nix-utils {}
 }:
 let
-  inherit (nix-utils) writeCheckedExecutable nameOfModuleFile;
+  inherit (__nix-utils) writeCheckedExecutable nameOfModuleFile shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  raku = "${pkgs.rakudo}/bin/raku";
+  raku = "${rakudo}/bin/raku";
 
   checkPhase = ''
-    ${nix-utils.shellCheckers.fileIsExecutable raku}
+    ${shellCheckers.fileIsExecutable raku}
   '';
 in
 writeCheckedExecutable name checkPhase ''

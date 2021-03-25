@@ -1,28 +1,42 @@
 let sources = import ../nix/sources.nix; in
-{ pkgs
-, nix-utils ? pkgs.callPackage sources.nix-utils {}
+{ callPackage
+, dash
+, picom
+, procps
+
+# Overridable dependencies
+, __nix-utils ? callPackage sources.nix-utils {}
 }:
 let
-  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  dash = "${pkgs.dash}/bin/dash";
-  picom = "${pkgs.picom}/bin/picom";
-  pkill = "${pkgs.procps}/bin/pkill";
 
-  checkPhase = ''
-    ${nix-utils.shellCheckers.fileIsExecutable dash}
-    ${nix-utils.shellCheckers.fileIsExecutable picom}
-    ${nix-utils.shellCheckers.fileIsExecutable pkill}
+  # Name is executable name and value is a derivation that provides that executable
+  dependencies = {
+    dash = dash;
+    picom = picom;
+    pkill = procps;
+  };
+
+  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
+
+  checkPhase =
+    builtins.concatStringsSep "\n"
+      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
+
+  killPicom = ''
+    ${esc executables.pkill} -x -U "$USER" -- ${esc (baseNameOf executables.picom)} 2>/dev/null
   '';
 
-  killPicom = ''${esc pkill} -x -U "$USER" -- ${esc (baseNameOf picom)} 2>/dev/null'';
   restartFeh = "if [ -f ~/.fehbg ]; then . ~/.fehbg & fi";
 
   run-picom = writeCheckedExecutable "run-${name}" checkPhase ''
-    #! ${dash}
+    #! ${executables.dash}
     exec <&-
 
-    if [ -z "$1" ]; then ${killPicom}; fi
+    if [ -z "$1" ]; then
+      ${killPicom}
+    fi
 
     # --blur-kern 7x7box
     # --blur-kern 11x11gaussian
@@ -30,7 +44,7 @@ let
 
     # --active-opacity 0.9
 
-    ${esc picom} \
+    ${esc executables.picom} \
       --dbus \
       --backend glx \
       -c \
@@ -44,7 +58,7 @@ let
   '';
 
   no-picom = writeCheckedExecutable "no-${name}" checkPhase ''
-    #! ${dash}
+    #! ${executables.dash}
     exec <&-
 
     ${killPicom}

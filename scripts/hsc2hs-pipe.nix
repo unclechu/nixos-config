@@ -1,6 +1,7 @@
 { callPackage
 , lib
 
+# Forwarded arguments
 , systemConfig # Needed for “wenzels-bash” (set to “null” to use in Nix REPL)
 
 # Overridable dependencies

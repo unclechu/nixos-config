@@ -1,5 +1,6 @@
 let sources = import ../nix/sources.nix; in
 { callPackage
+, lib
 , bash
 , xlibs # Just for ‘xinput’
 
@@ -8,42 +9,46 @@ let sources = import ../nix/sources.nix; in
 , __wenzels-keyboard ? callPackage ./wenzels-keyboard { inherit __nix-utils; }
 
 # Build options
+, __srcScript ? ./main.bash
 , pointers ? [
-    (callPackage ./pointer-dell-latitude-laptop-dot {})
-    (callPackage ./pointer-dell-latitude-laptop-touchpad {})
-    (callPackage ./pointer-logitech-wireless-ambidextrous-small-mouse {})
-    (callPackage ./pointer-logitech-wireless-t650-touchpad {})
-    (callPackage ./pointer-razor-wired-ambidextrous-mouse {})
+    (callPackage ./pointer-dell-latitude-laptop-dot                   { inherit __nix-utils; })
+    (callPackage ./pointer-dell-latitude-laptop-touchpad              { inherit __nix-utils; })
+    (callPackage ./pointer-logitech-wireless-ambidextrous-small-mouse { inherit __nix-utils; })
+    (callPackage ./pointer-logitech-wireless-t650-touchpad            { inherit __nix-utils; })
+    (callPackage ./pointer-razor-wired-ambidextrous-mouse             { inherit __nix-utils; })
   ]
 }:
 let
   inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  src = builtins.readFile ./main.bash;
-  bash-exe = "${bash}/bin/bash";
-  xinput = "${xlibs.xinput}/bin/xinput";
-  exe = drv: "${drv}/bin/${drv.name}";
-  wenzels-keyboard = exe __wenzels-keyboard;
+  src = builtins.readFile __srcScript;
 
-  checkPhase = ''
-    ${shellCheckers.fileIsExecutable bash-exe}
-    ${shellCheckers.fileIsExecutable xinput}
-    ${shellCheckers.fileIsExecutable wenzels-keyboard}
-    ${builtins.concatStringsSep "\n" (map (x: shellCheckers.fileIsExecutable (exe x)) pointers)}
-  '';
+  dependencies = {
+    bash = bash;
+    xinput = xlibs.xinput;
+    ${__wenzels-keyboard.name} = __wenzels-keyboard;
+  } // (
+    lib.attrsets.listToAttrs (map (x: { name = x.name; value = x; }) pointers)
+  );
+
+  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
+
+  checkPhase =
+    builtins.concatStringsSep "\n"
+      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
 in
 writeCheckedExecutable name checkPhase ''
-  #! ${bash-exe}
+  #! ${executables.bash}
   exec <&- &>/dev/null
 
   # keyboard
-  ${esc wenzels-keyboard} &
+  ${esc executables.${__wenzels-keyboard.name}} &
 
   # mouse
-  ${builtins.concatStringsSep "\n" (map (x: "${esc (exe x)} &") pointers)}
+  ${builtins.concatStringsSep "\n" (map (x: "${esc (executables.${x.name})} &") pointers)}
 
   # laptop touchscreen
-  ${esc xinput} --map-to-output 'ELAN25B6:00 04F3:0732' eDP1
+  ${esc executables.xinput} --map-to-output 'ELAN25B6:00 04F3:0732' eDP1
 
   exit 0 # prevent returning exit status of the latest command
 ''

@@ -1,27 +1,42 @@
 let sources = import ../nix/sources.nix; in
-{ pkgs
-, nix-utils ? pkgs.callPackage sources.nix-utils {}
+{ callPackage
+, bash
+, xautolock
+, i3lock
+, procps
 
+# Overridable dependencies
+, __nix-utils ? callPackage sources.nix-utils {}
+
+# Build options
 , minutes ? 5
 }:
 let
-  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  bash = "${pkgs.bash}/bin/bash";
-  xautolock = "${pkgs.xautolock}/bin/xautolock";
-  i3lock = "${pkgs.i3lock}/bin/i3lock";
-  pkill = "${pkgs.procps}/bin/pkill";
 
-  checkPhase = ''
-    ${nix-utils.shellCheckers.fileIsExecutable bash}
-    ${nix-utils.shellCheckers.fileIsExecutable xautolock}
-    ${nix-utils.shellCheckers.fileIsExecutable i3lock}
-    ${nix-utils.shellCheckers.fileIsExecutable pkill}
-  '';
+  # Name is executable name and value is a derivation that provides that executable
+  dependencies = {
+    bash = bash;
+    xautolock = xautolock;
+    i3lock = i3lock;
+    pkill = procps;
+  };
+
+  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
+
+  checkPhase =
+    builtins.concatStringsSep "\n"
+      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
 in
 writeCheckedExecutable name checkPhase ''
-  #! ${bash}
+  #! ${executables.bash}
   exec <&-
-  ${esc pkill} -x -U "$USER" -- ${esc (baseNameOf xautolock)} 2>/dev/null
-  ${esc xautolock} -time ${esc minutes} -locker ${esc i3lock}' -c 111111' &>/dev/null &
+
+  ${esc executables.pkill} -x -U "$USER" -- ${esc (baseNameOf executables.xautolock)} 2>/dev/null
+
+  ${esc executables.xautolock} \
+    -time ${esc minutes} \
+    -locker ${esc "${executables.i3lock} -c 111111"} \
+    &>/dev/null &
 ''

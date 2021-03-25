@@ -26,12 +26,9 @@ let
 
   executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
 
-  checkPhase = ''
-    ${
-      builtins.concatStringsSep "\n"
-        (map shellCheckers.fileIsExecutable (builtins.attrValues executables))
-    }
-  '';
+  checkPhase =
+    builtins.concatStringsSep "\n"
+      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
 in
 writeCheckedExecutable name checkPhase ''
   #! ${executables.bash}

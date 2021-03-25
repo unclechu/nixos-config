@@ -1,51 +1,57 @@
 let sources = import ../nix/sources.nix; in
-{ pkgs
-, nix-utils ? pkgs.callPackage sources.nix-utils {}
+{ callPackage
+, lib
+, bash
+, pulseaudio
+, gnome3 # ‘gpaste’ ‘networkmanagerapplet’
+, xlibs # ‘xsetroot’
 
-, input-setup ? pkgs.callPackage ./input-setup.nix {}
-, autolock    ? import ./autolock.nix { inherit pkgs; }
-, picom       ? (import ./picom.nix { inherit pkgs; }).run-picom
+# Overridable dependencies
+, __nix-utils ? callPackage sources.nix-utils {}
+, __input-setup ? callPackage ./input-setup.nix { inherit __nix-utils; }
+, __autolock ? callPackage ./autolock.nix { inherit __nix-utils; }
+, __picom ? (callPackage ./picom.nix { inherit __nix-utils; }).run-picom
 
+# Build options
 , # System config (e.g. self-reference) to extract machine host name.
   # Set to “null” to use in Nix REPL.
-  config
+  systemConfig
 }:
-assert pkgs.lib.isDerivation input-setup;
-assert pkgs.lib.isDerivation autolock;
-assert pkgs.lib.isDerivation picom;
+assert lib.isDerivation __input-setup;
+assert lib.isDerivation __autolock;
+assert lib.isDerivation __picom;
 let
-  inherit (nix-utils) esc writeCheckedExecutable nameOfModuleFile;
+  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  src = builtins.readFile ./main.bash;
-  bash = "${pkgs.bash}/bin/bash";
-  pactl = "${pkgs.pulseaudio}/bin/pactl";
-  gpaste-client = "${pkgs.gnome3.gpaste}/bin/gpaste-client";
-  nm-applet = "${pkgs.gnome3.networkmanagerapplet}/bin/nm-applet";
-  xsetroot = "${pkgs.xlibs.xsetroot}/bin/xsetroot";
-  input-setup-exe = "${input-setup}/bin/${input-setup.name}";
-  autolock-exe = "${autolock}/bin/${autolock.name}";
-  picom-exe = "${picom}/bin/${picom.name}";
 
-  hostName = config.networking.hostName or null;
-  rw-wenzel-nixos-laptop = import ../hardware/rw-wenzel-nixos-laptop.nix { inherit pkgs; };
+  # Name is executable name and value is a derivation that provides that executable
+  dependencies = {
+    bash = bash;
+    pactl = pulseaudio;
+    gpaste-client = gnome3.gpaste;
+    nm-applet = gnome3.networkmanagerapplet;
+    xsetroot = xlibs.xsetroot;
 
-  checkPhase = ''
-    ${nix-utils.shellCheckers.fileIsExecutable bash}
-    ${nix-utils.shellCheckers.fileIsExecutable pactl}
-    ${nix-utils.shellCheckers.fileIsExecutable gpaste-client}
-    ${nix-utils.shellCheckers.fileIsExecutable nm-applet}
-    ${nix-utils.shellCheckers.fileIsExecutable xsetroot}
-    ${nix-utils.shellCheckers.fileIsExecutable input-setup-exe}
-    ${nix-utils.shellCheckers.fileIsExecutable autolock-exe}
-    ${nix-utils.shellCheckers.fileIsExecutable picom-exe}
-  '';
+    ${__input-setup.name} = __input-setup;
+    ${__autolock.name} = __autolock;
+    ${__picom.name} = __picom;
+  };
+
+  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
+
+  checkPhase =
+    builtins.concatStringsSep "\n"
+      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
+
+  hostName = systemConfig.networking.hostName or null;
+  rw-wenzel-nixos-laptop = callPackage ../hardware/rw-wenzel-nixos-laptop.nix {};
 in
 writeCheckedExecutable name checkPhase ''
-  #! ${bash}
+  #! ${executables.bash}
   exec <&- &>/dev/null
 
   # audio
-  ${esc pactl} stat # starting pulseaudio local user server
+  ${esc executables.pactl} stat # starting pulseaudio local user server
 
   # displays
   SCREENLAYOUT=~/.screenlayout/default.sh
@@ -54,17 +60,17 @@ writeCheckedExecutable name checkPhase ''
   fi
   ${
     if hostName != rw-wenzel-nixos-laptop.networking.hostName
-    then picom-exe
+    then esc executables.${__picom.name}
     else ""
   }
   if [[ -f ~/.fehbg ]]; then . ~/.fehbg & fi
 
-  ${esc input-setup-exe}
-  ${esc autolock-exe}
-  ${esc gpaste-client} & # starting local gpaste daemon
-  ${esc nm-applet} & # starting system tray network manager applet
+  ${esc executables.${__input-setup.name}}
+  ${esc executables.${__autolock.name}}
+  ${esc executables.gpaste-client} & # starting local gpaste daemon
+  ${esc executables.nm-applet} & # starting system tray network manager applet
 
-  ${esc xsetroot} -cursor_name left_ptr # default cursor on an empty workspace
+  ${esc executables.xsetroot} -cursor_name left_ptr # default cursor on an empty workspace
 
   exit 0 # prevent returning exit status of the latest command
 ''

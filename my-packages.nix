@@ -55,7 +55,7 @@ let
 
   # *** scripts ***
 
-  autolock = import scripts/autolock.nix { inherit pkgs; };
+  autolock = pkgs.callPackage scripts/autolock.nix {};
   cursor-to-display = pkgs.callPackage "${sources.i3rc}/nix/apps/cursor-to-display.nix" {};
 
   invert-window-colors =
@@ -66,12 +66,12 @@ let
   screen-backlight = pkgs.callPackage scripts/screen-backlight.nix {};
   locktop = pkgs.callPackage scripts/locktop.nix {};
   pamng = pkgs.callPackage scripts/pamng.nix {};
-  pa-add-mono-sink = import scripts/pa-add-mono-sink.nix { inherit pkgs; };
-  autostart-setup = import scripts/autostart-setup.nix { inherit pkgs config; };
+  pa-add-mono-sink = pkgs.callPackage scripts/pa-add-mono-sink.nix {};
+  autostart-setup = pkgs.callPackage scripts/autostart-setup.nix { inherit systemConfig; };
   input-setup = pkgs.callPackage scripts/input-setup.nix {};
-  picom = import scripts/picom.nix { inherit pkgs; };
+  picom = pkgs.callPackage scripts/picom.nix {};
   timer = pkgs.callPackage scripts/timer.nix { inherit systemConfig; };
-  genpass = import scripts/genpass.nix { inherit pkgs; };
+  genpass = pkgs.callPackage scripts/genpass.nix {};
 
   pointer-dell-latitude-laptop-dot =
     pkgs.callPackage scripts/pointer-dell-latitude-laptop-dot {};

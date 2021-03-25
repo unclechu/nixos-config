@@ -10,12 +10,12 @@ let sources = import ../nix/sources.nix; in
 let
   inherit (__nix-utils) esc shellCheckers;
   pacmd = "${pulseaudio}/bin/pacmd";
-  dzen-box-exe = "${__dzen-box}/bin/dzen-box";
+  dzen-box = "${__dzen-box}/bin/${__dzen-box.name}";
 
   pamng = callPackage "${sources.i3rc}/nix/apps/pamng.nix" {
     injectCheckPhase = ''
       ${shellCheckers.fileIsExecutable pacmd}
-      ${shellCheckers.fileIsExecutable dzen-box-exe}
+      ${shellCheckers.fileIsExecutable dzen-box}
     '';
     injectScriptPost = ''
       sinks=$(${esc pacmd} list-sinks)
@@ -31,9 +31,9 @@ let
       if [[ $sinks =~ $re ]]; then
         re='^.* ([0-9]+)% .* ([0-9]+)% .*$'
         if [[ ''${BASH_REMATCH[4]} == yes ]]; then
-          ${esc dzen-box-exe} MUTE lightblue
+          ${esc dzen-box} MUTE lightblue
         elif [[ ''${BASH_REMATCH[2]} =~ $re ]]; then
-          ${esc dzen-box-exe} $(( (BASH_REMATCH[1] + BASH_REMATCH[2]) / 2 ))% lightblue
+          ${esc dzen-box} $(( (BASH_REMATCH[1] + BASH_REMATCH[2]) / 2 ))% lightblue
         fi
       fi
     '';

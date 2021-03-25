@@ -11,16 +11,21 @@ assert lib.isDerivation __dzen-box;
 let
   inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  bash-exe = "${bash}/bin/bash";
-  dzen-box = "${__dzen-box}/bin/dzen-box";
 
-  checkPhase = ''
-    ${shellCheckers.fileIsExecutable bash-exe}
-    ${shellCheckers.fileIsExecutable dzen-box}
-  '';
+  # Name is executable name and value is a derivation that provides that executable
+  dependencies = {
+    bash = bash;
+    ${__dzen-box.name} = __dzen-box;
+  };
+
+  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
+
+  checkPhase =
+    builtins.concatStringsSep "\n"
+      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
 in
 writeCheckedExecutable name checkPhase ''
-  #! ${bash-exe}
+  #! ${executables.bash}
   set -e || exit
   exec <&-
 
@@ -55,6 +60,6 @@ writeCheckedExecutable name checkPhase ''
   (( $val < 0    )) && val=0
   (( $val > $MAX )) && val=$MAX
 
-  ${esc dzen-box} $(( $val * 100 / $MAX ))% yellow
+  ${esc executables.${__dzen-box.name}} $(( $val * 100 / $MAX ))% yellow
   laptop-backlight set "$val"
 ''
