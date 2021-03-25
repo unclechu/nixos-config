@@ -1,4 +1,4 @@
-{ pkgs, config, systemConfig ? config, ... }:
+{ pkgs, lib, config, systemConfig ? config, ... }:
 let
   sources = import nix/sources.nix;
   inherit (import ./constants.nix) wenzelUserName;
@@ -28,7 +28,7 @@ let
 
   wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix      { inherit systemConfig; };
   tmux-config        = pkgs.callPackage sources.tmuxrc             {};
-  wenzels-termite    = import apps/wenzels-termite.nix    { inherit pkgs; };
+  termite-config     = pkgs.callPackage sources.termiterc          {};
   gpaste-gui         = pkgs.callPackage sources.gpaste-gui         {};
   xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack     {};
   place-cursor-at    = pkgs.callPackage sources.place-cursor-at    {};
@@ -265,9 +265,6 @@ in
       wenzels-neovim.scripts.nvimd
       neovim-gtk
       neovim-gtk.g
-      wenzels-termite.default
-      wenzels-termite.dark
-      wenzels-termite.light
       wenzels-xlib-keys-hack
       wenzels-xbindkeys
       wenzels-keyboard-script
@@ -292,6 +289,13 @@ in
       pa-add-mono-sink
       picom.run-picom
       picom.no-picom
-    ];
+    ] ++ (
+      let extract = lib.attrVals ["default" "dark" "light"]; in
+      extract termite-config ++
+      extract (termite-config.customize {
+        defaultName = "termite-ibm-font";
+        font = "IBM Plex Mono";
+      })
+    );
   };
 }

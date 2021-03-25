@@ -113,10 +113,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "termiterc",
-        "rev": "d127c04277308468828dec17d20f195521dd33ab",
-        "sha256": "1l71fcjf3dqx0494a3awd63qz9dmim0dzd8f2p91xhhcv4kssm78",
+        "rev": "13e5d8c0a4586656d774f6d439b436b1ca3cc4dd",
+        "sha256": "00cxysr1k79flivchrsk2x3rkg5rnq07dxkwr73f2vh66kybx3b1",
         "type": "tarball",
-        "url": "https://github.com/unclechu/termiterc/archive/d127c04277308468828dec17d20f195521dd33ab.tar.gz",
+        "url": "https://github.com/unclechu/termiterc/archive/13e5d8c0a4586656d774f6d439b436b1ca3cc4dd.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "tmuxrc": {
