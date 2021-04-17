@@ -1,6 +1,6 @@
 #! /usr/bin/env nix-shell
 #! nix-shell --pure -i raku -E
-#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];s=fetchTarball{url=\"https://releases.nixos.org/nixos/20.09/nixos-20.09.3588.d395190b24b/nixexprs.tar.xz\";sha256=\"1d1w415irf23pcpcaf69201wh4hy7yxx8qi981pzz4dz0kyi9675\";};p=import s {};in p.mkShell{buildInputs=d;}"
+#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];s=fetchTarball{url=\"https://releases.nixos.org/nixos/20.09/nixos-20.09.3834.c7e905b6a97/nixexprs.tar.xz\";sha256=\"1jqmn14bpsqanzbhsyav8yp8rpr0mmplv7zjvf20xibcdhfdwan7\";};p=import s {};in p.mkShell{buildInputs=d;}"
 #↑ The ‘nixpkgs’ pin from above should be synchronized with ‘channels/nixos’
 use v6.d;
 $*PROGRAM.dirname.&*chdir;
