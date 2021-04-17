@@ -1,4 +1,6 @@
 #! /usr/bin/env bash
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
 _LOGFILE=$HOME/.xlib-keys-hack-fails
 

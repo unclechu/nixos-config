@@ -1,3 +1,5 @@
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let
   constants = import ../../constants.nix;
   sources = import ../../nix/sources.nix;

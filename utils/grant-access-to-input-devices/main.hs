@@ -1,3 +1,6 @@
+-- Author: Viacheslav Lotsmanov
+-- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+
 {-# LANGUAGE UnicodeSyntax, BangPatterns #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 

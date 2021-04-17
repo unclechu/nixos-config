@@ -1,3 +1,6 @@
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+
 HAND=${HAND:-left}
 XINPUT_DEVICE_PRODUCT_ID=${XINPUT_DEVICE_PRODUCT_ID:-'1133, 16469'}
 

@@ -1,3 +1,6 @@
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+
 # This file is supposed to be symlinked as "machine-specific.nix"
 # and imported in "configuration.nix".
 { pkgs, ... }:

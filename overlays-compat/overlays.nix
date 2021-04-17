@@ -1,3 +1,5 @@
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 self: super:
   let
     overlays = (import <nixpkgs/nixos> {}).config.nixpkgs.overlays ++ import ../overlays;

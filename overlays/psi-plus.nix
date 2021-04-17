@@ -1,3 +1,5 @@
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 self: super:
 {
   psi-plus = super.psi-plus.overrideAttrs (srcAttrs: srcAttrs // rec {

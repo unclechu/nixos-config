@@ -1,3 +1,6 @@
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+
 BG_COLOR=black; FG_DEFAULT_COLOR=white
 TEXT=$1; FG_COLOR=$2; [[ -z $FG_COLOR ]] && FG_COLOR=$FG_DEFAULT_COLOR
 WM_TITLE='dzen-box'

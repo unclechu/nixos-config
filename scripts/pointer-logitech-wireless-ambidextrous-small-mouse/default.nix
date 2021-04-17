@@ -1,3 +1,6 @@
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+
 # TODO this is 99% identical to ../pointer-razor-wired-ambidextrous-mouse,
 #      implement generic solution
 let sources = import ../../nix/sources.nix; in

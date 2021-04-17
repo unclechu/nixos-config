@@ -1,3 +1,6 @@
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+
 my $LOCKFILE := %*ENV{'HOME'}.IO.child: '.wenzels-keyboard.lock';
 my @pkill = (pkill, '-x', '-U', %*ENV{'USER'}, '--');
 
