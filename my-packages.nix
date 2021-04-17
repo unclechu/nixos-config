@@ -31,7 +31,6 @@ let
   termite-config     = pkgs.callPackage sources.termiterc          {};
   gpaste-gui         = pkgs.callPackage sources.gpaste-gui         {};
   xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack     {};
-  place-cursor-at    = pkgs.callPackage sources.place-cursor-at    {};
   gnome-screenshot   = pkgs.callPackage apps/gnome-screenshot.nix  {};
   unclechu-i3-status = pkgs.callPackage sources.unclechu-i3-status {};
 
@@ -210,7 +209,7 @@ in
       pkgs.xsel pkgs.xdotool pkgs.numlockx pkgs.xkb-switch
       pkgs.xbindkeys
       xlib-keys-hack
-      place-cursor-at
+      pkgs.place-cursor-at
       pkgs.xautolock
       pkgs.termite
       firefox
