@@ -207,42 +207,58 @@ in
       # desktop environment
       pkgs.tk
       pkgs.xlibs.xev
-      pkgs.gmrun pkgs.dmenu pkgs.dzen2 pkgs.clipmenu
+      pkgs.gmrun pkgs.dmenu pkgs.dzen2
       pkgs.xsel pkgs.xdotool pkgs.numlockx pkgs.xkb-switch
       pkgs.xbindkeys
       xlib-keys-hack
       pkgs.place-cursor-at
       pkgs.xautolock
       pkgs.termite
-      firefox
-      pkgs.chromium
       pkgs.gnome3.networkmanagerapplet
       pkgs.gnome3.gnome-system-monitor
       pkgs.gnome3.gnome-power-manager
       pkgs.gnome3.gnome-calendar
-      gnome-screenshot
       pkgs.gnome3.gnome-calculator
       pkgs.gnome3.eog # Image viewer
       pkgs.gnome3.evince # Document (e.g. PDF) viwer
-      pkgs.gnome3.gpaste # Clipboard history manager
-      pkgs.scrot # An alternative to "gnome-screenshot" (just in case, usually i don't use it)
-      pkgs.shutter # Advanced screenshot taking&editing tool with GUI (written in Perl)
-      pkgs.keepassx2
-      pkgs.hledger pkgs.hledger-ui pkgs.hledger-web
       pkgs.dfeet # DBus inspector GUI
       pkgs.obs-studio
       pkgs.psi-plus
+
+      # clipboard management
+      pkgs.gnome3.gpaste
+      gpaste-gui
+      pkgs.clipmenu
+
+      # screenshots
+      gnome-screenshot
+      pkgs.scrot # An alternative to "gnome-screenshot" (just in case, usually I don't use it)
+      pkgs.shutter # Advanced screenshot taking&editing tool with GUI (written in Perl)
+
+      # web browsers
+      firefox
+      pkgs.chromium
+
+      # task management
+      pkgs.hledger pkgs.hledger-ui pkgs.hledger-web
+      pkgs.taskell # Kanban board TUI written in Haskell
+
+      # version control
+      pkgs.git
+
+      # encryption
+      pkgs.gnupg
+      pkgs.pass
+      pkgs.monkeysphere
+      pkgs.keepassx2
+
+      # virtualization & containerization
+      pkgs.vagrant
 
       # antivirus
       pkgs.clamav
       pkgs.lynis
       pkgs.vulnix
-
-      # etc
-      pkgs.git
-      pkgs.gnupg
-      pkgs.monkeysphere
-      pkgs.vagrant
     ];
 
     programs.tmux = {
@@ -283,7 +299,6 @@ in
       locktop
       pamng
       screen-backlight
-      gpaste-gui
       hsc2hs-pipe
       timer
       genpass
