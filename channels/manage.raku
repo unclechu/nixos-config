@@ -8,7 +8,6 @@
 
 use v6.d;
 $*PROGRAM.dirname.&*chdir;
-constant \sudo = '/run/wrappers/bin/sudo'; # Make it work with “--pure”
 
 constant %channels =
   'nixos'          => 'nixos-20.09',
@@ -25,12 +24,27 @@ constant \git-revision-file-name      = 'git-revision';
 constant \release-link-file-name      = 'release-link';
 constant \release-date-file-name      = 'release-date';
 
+sub expand-executable(Str:D \e) of Str:D {
+  { with IO::Path.new: e, :CWD($_) { return .absolute if .e } } for $*SPEC.path;
+  die
+    "‘{e}’ executable is not found! Paths used for searching:\n" ~
+    $*SPEC.path.map({"  $_"}).join("\n")
+}
+
+# Guarding dependencies
+constant \sudo        = expand-executable '/run/wrappers/bin/sudo';
+constant \xmllint     = expand-executable 'xmllint';
+constant \sha256sum   = expand-executable 'sha256sum';
+constant \curl        = expand-executable 'curl';
+constant \nix-channel = expand-executable 'nix-channel';
+
 sub channel-file(Str:D \channel-name, *@sub-path) of Str:D {
   ($*CWD, channel-name, |@sub-path).join: '/'
 }
 
 sub extract-release-date(Str:D \html) of DateTime:D {
-  with run «xmllint --format --html --xpath '//html/body/p/child::text()' -», :in, :out {
+  with run «"{xmllint}" --format --html --xpath '//html/body/p/child::text()' -», :in, :out {
+    LEAVE { .sink }
     .in.print: html;
     .in.close;
     .out.slurp(:close).chomp ~~ /
@@ -44,8 +58,9 @@ sub extract-release-date(Str:D \html) of DateTime:D {
 
 sub extract-nixexprs-checksum(Str:D \html) of Str:D {
   my Str:D @trs = do with run «
-    xmllint --format --html --xpath //html/body/table/tbody/tr -
+    "{xmllint}" --format --html --xpath //html/body/table/tbody/tr -
   », :in, :out {
+    LEAVE { .sink }
     .in.print: html;
     .in.close;
     .out.slurp(:close).chomp.lines
@@ -54,8 +69,9 @@ sub extract-nixexprs-checksum(Str:D \html) of Str:D {
   my \found-hash = sub {
     do for @trs -> $tr {
       with run «
-        xmllint --format --html --xpath '//tr/td/*/child::node()' -
+        "{xmllint}" --format --html --xpath '//tr/td/*/child::node()' -
       », :in, :out {
+        LEAVE { .sink }
         .in.print: $tr;
         .in.close;
         my Str:D @lines = .out.slurp(:close).chomp.lines;
@@ -90,7 +106,10 @@ sub verify-nixexprs-file-matches-checksum(Str:D \channel-name) {
   "Verifying that “{nixexprs-file-path}” is matching “{checksum}” checksum…".say;
 
   my Str:D \actual-checksum =
-    run(«sha256sum -- "{nixexprs-file-path}"», :out).out.slurp(:close).chomp.split(/\s+/)[0];
+    do with run «"{sha256sum}" -- "{nixexprs-file-path}"», :out {
+      LEAVE { .sink }
+      .out.slurp(:close).chomp.split(/\s+/)[0]
+    };
 
   FileChecksumMismatch.new(
     expected-checksum           => checksum,
@@ -123,7 +142,7 @@ multi sub MAIN('fetch', Bool:D :f(:$force) = False, *@channel-names) {
       my Str:D \release-link = (channel-file channel-name, release-link-file-name).IO.slurp.chomp;
       my Str:D \url = "{release-link}/{nixexprs-file-name}";
       "Downloading “{url}” and saving to “{nixexprs-file-path}” file…".say;
-      run «curl --fail --output "{nixexprs-file-path}" -- "{url}"»;
+      run «"{curl}" --fail --output "{nixexprs-file-path}" -- "{url}"»;
       verify-nixexprs-file-matches-checksum channel-name;
     }
 
@@ -163,9 +182,14 @@ multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
     my Str:D \channel-latest-version-url = channel-url %channels{channel-name};
     "Resolving “{channel-latest-version-url}”…".say;
 
-    my Str:D \release-link = run(«
-      curl --fail -Ls -o /dev/null -w '%{url_effective}' -- "{channel-latest-version-url}"
-    », :out).out.slurp(:close);
+    my Str:D \release-link =
+      do with run «
+        "{curl}" --fail -Ls -o /dev/null -w '%{url_effective}' --
+        "{channel-latest-version-url}"
+      », :out {
+        LEAVE { .sink }
+        .out.slurp(:close)
+      };
 
     my Str:D \release-link-file-path = channel-file channel-name, release-link-file-name;
     "Resolved to “{release-link}”.".say;
@@ -188,9 +212,11 @@ multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
       "Trying to extract checksum for “{nixexprs-file-name}” file " ~
       "from HTML contents of “{release-link}” page…";
 
-    my Str:D \release-html = run(«
-      curl --fail --no-progress-meter -- "{release-link}"
-    », :out).out.slurp(:close);
+    my Str:D \release-html =
+      do with run «"{curl}" --fail --no-progress-meter -- "{release-link}"», :out {
+        LEAVE { .sink }
+        .out.slurp(:close)
+      };
 
     my Str:D \nixexprs-checksum = extract-nixexprs-checksum release-html;
     my Str:D \nixexprs-checksum-file-path = channel-file channel-name, nixexprs-checksum-file-name;
@@ -207,7 +233,7 @@ multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
       my Str:D \url = "{release-link}/{file}";
       my Str:D \file-path = channel-file channel-name, file;
       "Downloading “{url}” and saving to “{file-path}” file…".say;
-      run «curl --fail --output "{file-path}" -- "{url}"»;
+      run «"{curl}" --fail --output "{file-path}" -- "{url}"»;
     }
 
     verify-nixexprs-file-matches-checksum channel-name;
@@ -224,8 +250,10 @@ multi sub MAIN('override', *@channel-names) {
   "Requesting current system channels list (you might be asked for “sudo” password)…".say;
 
   my Str:D %current-channels =
-    run(«"{sudo}" nix-channel --list», :out)
-      .out.slurp(:close).chomp.lines.map(*.split: /\s+/).flat;
+    do with run «"{sudo}" "{nix-channel}" --list», :out {
+      LEAVE { .sink }
+      .out.slurp(:close).chomp.lines.map(*.split: /\s+/).flat
+    };
 
   for @channel-names -> \channel-name {
     "Overriding “{channel-name}” channel…".say;
@@ -242,18 +270,18 @@ multi sub MAIN('override', *@channel-names) {
         "“{channel-name}” channel already exists but it points to " ~
         "“{%current-channels{channel-name}}” whilst we need it to point to “{path}”, removing it…";
 
-      run «"{sudo}" nix-channel --remove -- "{channel-name}"»;
+      run «"{sudo}" "{nix-channel}" --remove -- "{channel-name}"»;
     } else {
       "“{channel-name}” doesn’t exists (it’s okay).".say;
     }
 
     "Adding new channel “{channel-name}” and pointing it to “{path}”…".say;
-    run «"{sudo}" nix-channel --add -- "{path}" "{channel-name}"»;
+    run «"{sudo}" "{nix-channel}" --add -- "{path}" "{channel-name}"»;
     "SUCCESS (for “{channel-name}” channel)".say
   }
 
   "Updating channels: {log-channels @channel-names}…".say;
-  run «"{sudo}" nix-channel --update --», @channel-names;
+  run «"{sudo}" "{nix-channel}" --update --», @channel-names;
   "SUCCESS".say
 }
 
