@@ -18,11 +18,14 @@ constant \channel-path-prefix = 'file:///etc/nixos/channels/';
 constant \channel-url-prefix = 'https://nixos.org/channels/';
 sub channel-url(Str:D \channel-name) of Str:D { channel-url-prefix ~ channel-name }
 
-constant \nixexprs-file-name          = 'nixexprs.tar.xz';
-constant \nixexprs-checksum-file-name = 'nixexprs-sha256-checksum';
-constant \git-revision-file-name      = 'git-revision';
-constant \release-link-file-name      = 'release-link';
-constant \release-date-file-name      = 'release-date';
+constant \nixexprs-file-name                   = 'nixexprs.tar.xz';
+constant \nixexprs-checksum-file-name          = 'nixexprs-sha256-checksum';
+constant \nixexprs-unpacked-checksum-file-name = 'nixexprs-unpacked-sha256-checksum';
+constant \git-revision-file-name               = 'git-revision';
+constant \release-link-file-name               = 'release-link';
+constant \release-date-file-name               = 'release-date';
+constant \channels-manage-script-path          = $*PROGRAM;
+constant \tell-a-secret-script-path            = 'tell-a-secret.raku'.IO;
 
 sub expand-executable(Str:D \e) of Str:D {
   { with IO::Path.new: e, :CWD($_) { return .absolute if .e } } for $*SPEC.path;
@@ -32,11 +35,12 @@ sub expand-executable(Str:D \e) of Str:D {
 }
 
 # Guarding dependencies
-constant \sudo        = expand-executable '/run/wrappers/bin/sudo';
-constant \xmllint     = expand-executable 'xmllint';
-constant \sha256sum   = expand-executable 'sha256sum';
-constant \curl        = expand-executable 'curl';
-constant \nix-channel = expand-executable 'nix-channel';
+constant \sudo             = expand-executable '/run/wrappers/bin/sudo';
+constant \xmllint          = expand-executable 'xmllint';
+constant \sha256sum        = expand-executable 'sha256sum';
+constant \curl             = expand-executable 'curl';
+constant \nix-channel      = expand-executable 'nix-channel';
+constant \nix-prefetch-url = expand-executable 'nix-prefetch-url';
 
 sub channel-file(Str:D \channel-name, *@sub-path) of Str:D {
   ($*CWD, channel-name, |@sub-path).join: '/'
@@ -117,6 +121,47 @@ sub verify-nixexprs-file-matches-checksum(Str:D \channel-name) {
     file-path                   => nixexprs-file-path,
     actual-checksum             => actual-checksum,
   ).throw if actual-checksum ne checksum
+}
+
+# Prefetches “nixexprs” file and returns SHA-256 checksum of it’s unpacked version that can be used
+# with “fetchTarball”.
+sub prefetch-nixpkgs-checksum(Str:D \channel-name) of Str:D {
+  my Str:D \nixexprs-file-path = channel-file channel-name, nixexprs-file-name;
+  my Str:D \nixexprs-file-url  = "{channel-path-prefix}{channel-name}/{nixexprs-file-name}";
+  my Str:D \checksum-file-path = channel-file channel-name, nixexprs-unpacked-checksum-file-name;
+  "Prefetching “{nixexprs-file-path}” file and getting its unpacked hash…".say;
+  die "Could not find “{nixexprs-file-path}” file to prefetch it!" unless nixexprs-file-path.IO.f;
+
+  my Str:D \checksum =
+    do with run «"{nix-prefetch-url}" --unpack -- "{nixexprs-file-url}"», :out {
+      LEAVE { .sink }
+      .out.slurp(:close).chomp
+    };
+
+  "Saving “{checksum}” hash to “{checksum-file-path}” file…".say;
+  spurt checksum-file-path, checksum;
+  checksum
+}
+
+sub patch-nix-shell-script(IO::Path:D \script-path, Str:D \url, Str:D \hash) {
+  say
+    "Patching “{script-path.absolute}” script file " ~
+    "(updating “nixpkgs” pin to “{url}” URL and “{hash}” SHA-256 hash)…";
+
+  given script-path.absolute {
+    my Seq:D \lines = .IO.slurp.lines(:chomp(False)).map({
+      if / ^\#\! \s nix\-shell .+ fetch .+ url \s* \= .+ sha256 \s* \= / {
+        my Str:D $str = $_;
+        $str ~~ s/(url    \s* \= \s* \\\") \S+? (\\\")/{$0}{url }{$1}/;
+        $str ~~ s/(sha256 \s* \= \s* \\\") \S+? (\\\")/{$0}{hash}{$1}/;
+        $str
+      } else {
+        $_
+      }
+    });
+
+    spurt $_, lines.join: ''
+  }
 }
 
 sub log-channels(*@channel-names) of Str:D { @channel-names.map('“'~*~'”').join: ', ' }
@@ -237,6 +282,13 @@ multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
     }
 
     verify-nixexprs-file-matches-checksum channel-name;
+    my Str:D \unpacked-checksum = prefetch-nixpkgs-checksum channel-name;
+
+    if channel-name eq 'nixos' {
+      patch-nix-shell-script $_, "{release-link}/{nixexprs-file-name}", unpacked-checksum
+        for (channels-manage-script-path, tell-a-secret-script-path)
+    }
+
     "SUCCESS (for “{channel-name}” channel)".say
   }
 
