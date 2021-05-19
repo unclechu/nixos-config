@@ -28,7 +28,7 @@ constant \channels-manage-script-path          = $*PROGRAM;
 constant \tell-a-secret-script-path            = 'tell-a-secret.raku'.IO;
 
 sub expand-executable(Str:D \e) of Str:D {
-  { with IO::Path.new: e, :CWD($_) { return .absolute if .e } } for $*SPEC.path;
+  { given IO::Path.new: e, :CWD($_) { return .absolute if .e } } for $*SPEC.path;
   die
     "‘{e}’ executable is not found! Paths used for searching:\n" ~
     $*SPEC.path.map({"  $_"}).join("\n")
@@ -47,7 +47,7 @@ sub channel-file(Str:D \channel-name, *@sub-path) of Str:D {
 }
 
 sub extract-release-date(Str:D \html) of DateTime:D {
-  with run «"{xmllint}" --format --html --xpath '//html/body/p/child::text()' -», :in, :out {
+  given run «"{xmllint}" --format --html --xpath '//html/body/p/child::text()' -», :in, :out {
     LEAVE { .sink }
     .in.print: html;
     .in.close;
@@ -61,7 +61,7 @@ sub extract-release-date(Str:D \html) of DateTime:D {
 }
 
 sub extract-nixexprs-checksum(Str:D \html) of Str:D {
-  my Str:D @trs = do with run «
+  my Str:D @trs = do given run «
     "{xmllint}" --format --html --xpath //html/body/table/tbody/tr -
   », :in, :out {
     LEAVE { .sink }
@@ -72,7 +72,7 @@ sub extract-nixexprs-checksum(Str:D \html) of Str:D {
 
   my \found-hash = sub {
     do for @trs -> $tr {
-      with run «
+      given run «
         "{xmllint}" --format --html --xpath '//tr/td/*/child::node()' -
       », :in, :out {
         LEAVE { .sink }
@@ -110,7 +110,7 @@ sub verify-nixexprs-file-matches-checksum(Str:D \channel-name) {
   "Verifying that “{nixexprs-file-path}” is matching “{checksum}” checksum…".say;
 
   my Str:D \actual-checksum =
-    do with run «"{sha256sum}" -- "{nixexprs-file-path}"», :out {
+    do given run «"{sha256sum}" -- "{nixexprs-file-path}"», :out {
       LEAVE { .sink }
       .out.slurp(:close).chomp.split(/\s+/)[0]
     };
@@ -133,7 +133,7 @@ sub prefetch-nixpkgs-checksum(Str:D \channel-name) of Str:D {
   die "Could not find “{nixexprs-file-path}” file to prefetch it!" unless nixexprs-file-path.IO.f;
 
   my Str:D \checksum =
-    do with run «"{nix-prefetch-url}" --unpack -- "{nixexprs-file-url}"», :out {
+    do given run «"{nix-prefetch-url}" --unpack -- "{nixexprs-file-url}"», :out {
       LEAVE { .sink }
       .out.slurp(:close).chomp
     };
@@ -228,7 +228,7 @@ multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
     "Resolving “{channel-latest-version-url}”…".say;
 
     my Str:D \release-link =
-      do with run «
+      do given run «
         "{curl}" --fail -Ls -o /dev/null -w '%{url_effective}' --
         "{channel-latest-version-url}"
       », :out {
@@ -258,7 +258,7 @@ multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
       "from HTML contents of “{release-link}” page…";
 
     my Str:D \release-html =
-      do with run «"{curl}" --fail --no-progress-meter -- "{release-link}"», :out {
+      do given run «"{curl}" --fail --no-progress-meter -- "{release-link}"», :out {
         LEAVE { .sink }
         .out.slurp(:close)
       };
@@ -302,7 +302,7 @@ multi sub MAIN('override', *@channel-names) {
   "Requesting current system channels list (you might be asked for “sudo” password)…".say;
 
   my Str:D %current-channels =
-    do with run «"{sudo}" "{nix-channel}" --list», :out {
+    do given run «"{sudo}" "{nix-channel}" --list», :out {
       LEAVE { .sink }
       .out.slurp(:close).chomp.lines.map(*.split: /\s+/).flat
     };

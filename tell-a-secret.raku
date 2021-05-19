@@ -16,7 +16,7 @@ my Str:D \encrypted-secret-postfix = "{decrypted-secret-postfix}.asc";
 my Str:D \machine-specific-secret-symlink = 'machine-specific.secret.nix';
 
 sub expand-executable(Str:D \e) of Str:D {
-  { with IO::Path.new: e, :CWD($_) { return .absolute if .e } } for $*SPEC.path;
+  { given IO::Path.new: e, :CWD($_) { return .absolute if .e } } for $*SPEC.path;
   die
     "‘{e}’ executable is not found! Paths used for searching:\n" ~
     $*SPEC.path.map({"  $_"}).join("\n")
@@ -28,7 +28,7 @@ constant \ln  = expand-executable 'ln';
 constant \gpg = expand-executable 'gpg';
 
 sub get-hardware-dir-files(--> Seq:D) {
-  with run «"{ls}" -- "{hardware-dir}/"», :out { LEAVE {.sink}; .out.slurp(:close).lines }
+  given run «"{ls}" -- "{hardware-dir}/"», :out { LEAVE {.sink}; .out.slurp(:close).lines }
 }
 
 # A list of fiels
