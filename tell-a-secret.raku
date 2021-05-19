@@ -15,8 +15,20 @@ my Str:D \decrypted-secret-postfix = '.secret.nix';
 my Str:D \encrypted-secret-postfix = "{decrypted-secret-postfix}.asc";
 my Str:D \machine-specific-secret-symlink = 'machine-specific.secret.nix';
 
+sub expand-executable(Str:D \e) of Str:D {
+  { with IO::Path.new: e, :CWD($_) { return .absolute if .e } } for $*SPEC.path;
+  die
+    "‘{e}’ executable is not found! Paths used for searching:\n" ~
+    $*SPEC.path.map({"  $_"}).join("\n")
+}
+
+# Guarding dependencies
+constant \ls  = expand-executable 'ls';
+constant \ln  = expand-executable 'ln';
+constant \gpg = expand-executable 'gpg';
+
 sub get-hardware-dir-files(--> Seq:D) {
-  run(«ls -- "{hardware-dir}/"», :out).out.slurp(:close).lines
+  with run «"{ls}" -- "{hardware-dir}/"», :out { LEAVE {.sink}; .out.slurp(:close).lines }
 }
 
 # A list of fiels
@@ -60,16 +72,16 @@ multi sub MAIN('decrypt', *@files) {
     @files-to-decrypt = @files;
   }
 
-  run @(«gpg --decrypt --output», $_, '--', "$_.asc").flat for @files-to-decrypt;
+  run «"{gpg}" --decrypt --output "$_" -- "$_.asc"» for @files-to-decrypt;
 
   unless machine-specific-secret-symlink.IO ~~ :f {
     $*ERR.say: "‘{machine-specific-secret-symlink}’ symlink does not exists, creating it…";
 
-    run @(
-      «ln -s --»,
-      "{hardware-dir}/{hostname}{decrypted-secret-postfix}",
-      machine-specific-secret-symlink
-    ).flat;
+    run «
+      "{ln}" -s --
+      "{hardware-dir}/{hostname}{decrypted-secret-postfix}"
+      "{machine-specific-secret-symlink}"
+    »;
   }
 }
 
@@ -114,10 +126,9 @@ multi sub MAIN('encrypt', *@files) {
         .reduce(sub (Array:D \acc, Str:D \x --> Array:D) { acc.append: '--recipient', x });
 
     my Str:D @args = (
-      «gpg --armor --encrypt»,
+      «"{gpg}" --armor --encrypt»,
       recipients-arguments,
-      '--output', "{$_}.asc",
-      '--', $_
+      «--output "{$_}.asc" -- "$_"»
     ).flat;
 
     @args.flat.map({ /^<[a..zA..Z0..9.\-_]>+$/ ?? $_ !! "'$_'" }).Array.prepend('+').join(' ').say;
@@ -130,5 +141,5 @@ multi sub MAIN('import') {
   die "‘{keys-file}’ does not exists. Did you run ‘decrypt’ command first?"
     unless keys-file.IO ~~ :f;
 
-  run @(«gpg --import --», keys-file).flat;
+  run «"{gpg}" --import -- "{keys-file}"»
 }
