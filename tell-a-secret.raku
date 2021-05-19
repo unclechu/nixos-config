@@ -1,7 +1,6 @@
 #! /usr/bin/env nix-shell
 #! nix-shell --pure -i raku -E
-#! nix-shell "let d=[p.rakudo p.coreutils p.gnupg];s=fetchTarball{url=\"https://releases.nixos.org/nixos/20.09/nixos-20.09.3834.c7e905b6a97/nixexprs.tar.xz\";sha256=\"1jqmn14bpsqanzbhsyav8yp8rpr0mmplv7zjvf20xibcdhfdwan7\";};p=import s {};in p.mkShell{buildInputs=d;}"
-#↑ The ‘nixpkgs’ pin from above should be synchronized with ‘channels/nixos’
+#! nix-shell "let d=[p.rakudo p.coreutils p.gnupg];s=fetchTarball{url=\"https://releases.nixos.org/nixos/20.09/nixos-20.09.4132.52090c613ad/nixexprs.tar.xz\";sha256=\"1k82rmpf39hw8cppnw980ldiscmaarkkx1mm5cfzh078b3a1wfgz\";};p=import s {};in p.mkShell{buildInputs=d;}"
 
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
