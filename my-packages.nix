@@ -223,7 +223,11 @@ in
       pkgs.gnome3.evince # Document (e.g. PDF) viwer
       pkgs.dfeet # DBus inspector GUI
       pkgs.obs-studio
+
+      # instant messaging
       pkgs.psi-plus
+      pkgs.hexchat
+      pkgs.weechat
 
       # clipboard management
       pkgs.gnome3.gpaste
