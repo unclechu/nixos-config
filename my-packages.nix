@@ -165,6 +165,8 @@ in
       pkgs.audacity
       pkgs.ardour
       pkgs.guitarix
+      pkgs.normalize
+      pkgs.jack_capture
 
       # lv2 plugins
       pkgs.calf
