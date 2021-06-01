@@ -23,8 +23,9 @@ constant \nixexprs-unpacked-checksum-file-name = 'nixexprs-unpacked-sha256-check
 constant \git-revision-file-name               = 'git-revision';
 constant \release-link-file-name               = 'release-link';
 constant \release-date-file-name               = 'release-date';
-constant \channels-manage-script-path          = $*PROGRAM;
-constant \tell-a-secret-script-path            = 'tell-a-secret.raku'.IO;
+
+my IO::Path:D \channels-manage-script-path = $*PROGRAM;
+my IO::Path:D \tell-a-secret-script-path   = $*CWD.add('..').add('tell-a-secret.raku').resolve;
 
 sub expand-executable(Str:D \e) of Str:D {
   { given IO::Path.new: e, :CWD($_) { return .absolute if .e } } for $*SPEC.path;
