@@ -5,7 +5,7 @@
   console.font = "Lat2-Terminus16";
 
   fonts = {
-    enableFontDir = true;
+    fontDir.enable = true;
     enableDefaultFonts = true;
     enableGhostscriptFonts = true;
 
