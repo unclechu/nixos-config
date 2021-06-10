@@ -29,7 +29,7 @@ let
     version = "git-master-2021-01-02";
     src     = sources.${name};
 
-    cargoSha256 = "1839a9q3dlijkd7nfbaw04kfhbbikhkhzzbja12ny05z50n7rrnm";
+    cargoSha256 = "1l6fly2s493mk997b090ms6n6874pl7al9a9fmwf6k8ixvvzg8gr";
 
     meta = {
       description =
