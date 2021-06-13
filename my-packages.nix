@@ -288,6 +288,7 @@ in
       wenzels-neovim.scripts.nvimd
       neovim-gtk
       neovim-gtk.g
+      pkgs.alacritty # TODO Make a wrapper using custom config
       wenzels-xlib-keys-hack
       wenzels-xbindkeys
       wenzels-keyboard-script
