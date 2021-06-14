@@ -2,7 +2,8 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../../nix/sources.nix; in
 { callPackage
-, writeText
+, writeTextFile
+, lib
 , dash
 , alacritty
 
@@ -10,40 +11,104 @@ let sources = import ../../nix/sources.nix; in
 , __nix-utils ? callPackage sources.nix-utils {}
 
 # Build options
-, __configFile            ? ./alacritty.yml
-, __darkColorsConfigFile  ? ./colors-dark.yml
-, __lightColorsConfigFile ? ./colors-light.yml
+, __configSrc            ? ./alacritty.yml    # A derivation or a path
+, __darkColorsConfigSrc  ? ./colors-dark.yml  # A derivation or a path
+, __lightColorsConfigSrc ? ./colors-light.yml # A derivation or a path
 }:
 let
-  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir shellCheckers;
+  inherit (__nix-utils) esc wrapExecutable nameOfModuleWrapDir shellCheckers;
   name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   dash-exe = "${dash}/bin/dash";
   alacritty-exe = "${alacritty}/bin/alacritty";
 
-  checkPhase = ''
+  basicCheckPhase = ''
     ${shellCheckers.fileIsExecutable dash-exe}
     ${shellCheckers.fileIsExecutable alacritty-exe}
-    ${shellCheckers.fileIsReadable "${__configFile}"}
-    ${shellCheckers.fileIsReadable "${__darkColorsConfigFile}"}
-    ${shellCheckers.fileIsReadable "${__lightColorsConfigFile}"}
+    ${shellCheckers.fileIsReadable "${__configSrc}"}
+    ${shellCheckers.fileIsReadable "${__darkColorsConfigSrc}"}
+    ${shellCheckers.fileIsReadable "${__lightColorsConfigSrc}"}
   '';
 
-  buildExecutable = name: colorsConfigFile:
-    let
-      builtConfigFile = writeText "${name}-config.yml" ''
-        ${builtins.readFile "${__configFile}"}
-        ${builtins.readFile "${colorsConfigFile}"}
-      '';
-    in
-    writeCheckedExecutable name checkPhase ''
-      #! ${dash-exe}
-      ${esc alacritty-exe} --config-file=${esc builtConfigFile} "$@"
-    '';
+  buildExecutable = name: config:
+    assert builtins.isString name;
+    wrapExecutable alacritty-exe {
+      inherit name;
+      args = ["--config-file=${config}"];
 
-  default = buildExecutable name __darkColorsConfigFile;
+      checkPhase = ''
+        ${basicCheckPhase}
+        ${shellCheckers.fileIsReadable config}
+      '';
+    } // { inherit config; };
+
+  buildConfig = name: colorsConfigFile: optionalFullConfig: font:
+    assert builtins.isString name;
+    assert ! isNull font -> builtins.isString font;
+    if ! isNull optionalFullConfig && ! builtins.isString optionalFullConfig
+    then
+      optionalFullConfig
+    else
+      writeTextFile {
+        name = "${name}-config.yml";
+
+        text =
+          let
+            text =
+              if ! isNull optionalFullConfig && ! builtins.isString optionalFullConfig
+              then builtins.readFile "${optionalFullConfig}"
+              else
+
+              if ! isNull optionalFullConfig && builtins.isString optionalFullConfig
+              then optionalFullConfig
+              else ''
+                ${builtins.readFile "${__configSrc}"}
+                ${builtins.readFile "${colorsConfigFile}"}
+              '';
+
+            replaceFont =
+              if isNull font
+              then lib.id
+              else builtins.replaceStrings ["Hack"] ["\"${font}\""];
+          in
+            replaceFont text;
+
+        checkPhase = ''
+          set -Eeuo pipefail || exit
+          ${shellCheckers.fileIsReadable "${__configSrc}"}
+          ${shellCheckers.fileIsReadable "${colorsConfigFile}"}
+        '';
+      };
+
+  customize =
+    { defaultName ? name
+    , darkName    ? "${defaultName}-dark"
+    , lightName   ? "${defaultName}-light"
+
+    , font ? null # “Hack” by default
+
+    , defaultConfig ? null # Optional derivation or a string
+    , darkConfig    ? null # Optional derivation or a string
+    , lightConfig   ? null # Optional derivation or a string
+    }:
+    assert builtins.isString defaultName;
+    assert builtins.isString darkName;
+    assert builtins.isString lightName;
+    assert ! isNull font -> builtins.isString font;
+    let
+      default =
+        buildExecutable name (buildConfig darkName __darkColorsConfigSrc defaultConfig font);
+    in
+    default // {
+      inherit default;
+      dark =
+        buildExecutable darkName (buildConfig darkName __darkColorsConfigSrc darkConfig font);
+      light =
+        buildExecutable lightName (buildConfig lightName __lightColorsConfigSrc lightConfig font);
+    };
 in
-default // {
-  inherit default;
-  dark  = buildExecutable "${name}-dark"  __darkColorsConfigFile;
-  light = buildExecutable "${name}-light" __lightColorsConfigFile;
+customize {} // {
+  inherit customize;
+  mainConfigSrc        = __configSrc;
+  darkColorsConfigSrc  = __darkColorsConfigSrc;
+  lightColorsConfigSrc = __lightColorsConfigSrc;
 }

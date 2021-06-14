@@ -320,7 +320,12 @@ in
         font = "IBM Plex Mono";
       })
     ) ++ (
-      lib.attrVals ["default" "dark" "light"] alacritty-config
+      let extract = lib.attrVals ["default" "dark" "light"]; in
+      extract alacritty-config ++
+      extract (alacritty-config.customize {
+        defaultName = "alacritty-ibm-font";
+        font = "IBM Plex Mono";
+      })
     );
   };
 }
