@@ -31,6 +31,7 @@ let
   wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix      { inherit systemConfig; };
   tmux-config        = pkgs.callPackage sources.tmuxrc             {};
   termite-config     = pkgs.callPackage sources.termiterc          {};
+  alacritty-config   = pkgs.callPackage apps/alacritty             {};
   gpaste-gui         = pkgs.callPackage sources.gpaste-gui         {};
   xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack     {};
   gnome-screenshot   = pkgs.callPackage apps/gnome-screenshot.nix  {};
@@ -288,7 +289,6 @@ in
       wenzels-neovim.scripts.nvimd
       neovim-gtk
       neovim-gtk.g
-      pkgs.alacritty # TODO Make a wrapper using custom config
       wenzels-xlib-keys-hack
       wenzels-xbindkeys
       wenzels-keyboard-script
@@ -319,6 +319,8 @@ in
         defaultName = "termite-ibm-font";
         font = "IBM Plex Mono";
       })
+    ) ++ (
+      lib.attrVals ["default" "dark" "light"] alacritty-config
     );
   };
 }

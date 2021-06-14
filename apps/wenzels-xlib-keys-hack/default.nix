@@ -8,7 +8,9 @@ let sources = import ../../nix/sources.nix; in
 # Overridable dependencies
 , __nix-utils      ? callPackage sources.nix-utils      {}
 , __xlib-keys-hack ? callPackage sources.xlib-keys-hack {}
-, __srcScript      ? ./main.bash
+
+# Build options
+, __srcScript ? ./main.bash
 }:
 assert lib.isDerivation __xlib-keys-hack;
 let

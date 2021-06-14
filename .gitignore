@@ -3,3 +3,5 @@ machine-specific.nix
 secret.nix
 *.secret.nix
 *.secret
+result
+result-*
