@@ -7,6 +7,8 @@ let
   nix-utils = pkgs.callPackage sources.nix-utils {};
   inherit (nix-utils) esc;
 
+  alacritty-config = pkgs.callPackage apps/alacritty {};
+
   i3-config =
     let apps = (import ./my-packages.nix args).my-apps; in
     pkgs.callPackage sources.i3rc rec {
@@ -21,6 +23,9 @@ let
         "screen-backlight.sh"  = let app = apps.screen-backlight;     in "${app}/bin/${app.name}";
         "invert-window-colors" = let app = apps.invert-window-colors; in "${app}/bin/${app.name}";
       };
+
+      terminalDark  = let app = alacritty-config.dark;  in "${app}/bin/${app.name}";
+      terminalLight = let app = alacritty-config.light; in "${app}/bin/${app.name}";
     };
 in
 {
