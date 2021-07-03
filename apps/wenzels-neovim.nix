@@ -3,23 +3,30 @@
 let sources = import ../nix/sources.nix; in
 { callPackage
 
+, neovim
+, neovim-qt
+
 # Build options
 , bashEnvFile ? null
 }:
 assert ! isNull bashEnvFile -> builtins.isString bashEnvFile;
 let
   inherit (sources) neovimrc;
-  generic = callPackage "${neovimrc}/nix/generic.nix" { inherit bashEnvFile; };
-in
-rec {
-  neovim    = callPackage "${neovimrc}/nix/apps/neovim.nix"    { inherit bashEnvFile; };
-  neovim-qt = callPackage "${neovimrc}/nix/apps/neovim-qt.nix" { inherit bashEnvFile; };
 
-  inherit (neovim-qt) neovim-for-gui;
+  wenzels-neovim =
+    callPackage "${neovimrc}/nix/apps/neovim.nix" { inherit neovim bashEnvFile; };
+  wenzels-neovim-qt =
+    callPackage "${neovimrc}/nix/apps/neovim-qt.nix" { inherit neovim neovim-qt bashEnvFile; };
+in
+{
+  neovim    = wenzels-neovim;
+  neovim-qt = wenzels-neovim-qt;
+
+  inherit (wenzels-neovim-qt) neovim-for-gui;
 
   scripts = {
     clean-vim    = callPackage "${neovimrc}/nix/scripts/clean-vim.nix"    {};
     git-grep-nvr = callPackage "${neovimrc}/nix/scripts/git-grep-nvr.nix" {};
-    nvimd        = callPackage "${neovimrc}/nix/scripts/nvimd.nix"        { __neovim = neovim; };
+    nvimd        = callPackage "${neovimrc}/nix/scripts/nvimd.nix"        { __neovim = wenzels-neovim; };
   };
 }

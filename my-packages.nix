@@ -7,6 +7,9 @@ let
   nix-utils = pkgs.callPackage sources.nix-utils {};
   inherit (nix-utils) wrapExecutable;
 
+  # TODO Remove the “nixpkgs-master” pin when 0.5.0 gets merged to either release branch or unstable
+  pkgs-master = import sources.nixpkgs-master {};
+
   system-vim = rec {
     vim = pkgs.vim_configurable.customize {
       name = "vim";
@@ -16,14 +19,14 @@ let
       };
     };
 
-    neovim = pkgs.neovim.override {
+    neovim = pkgs-master.neovim.override {
       configure.packages.myPlugins = {
         start = [pkgs.vimPlugins.vim-nix];
         opt = [];
       };
     };
 
-    neovim-qt = pkgs.neovim-qt.override { inherit neovim; };
+    neovim-qt = pkgs-master.neovim-qt.override { inherit neovim; };
   };
 
   # *** apps ***
@@ -38,7 +41,12 @@ let
   unclechu-i3-status = pkgs.callPackage sources.unclechu-i3-status {};
 
   bashAliasesFile = "${wenzels-bash.dir}/.bash_aliases";
-  wenzels-neovim  = pkgs.callPackage apps/wenzels-neovim.nix { bashEnvFile = bashAliasesFile; };
+
+  wenzels-neovim = pkgs.callPackage apps/wenzels-neovim.nix {
+    bashEnvFile = bashAliasesFile;
+    neovim      = pkgs-master.neovim;
+    neovim-qt   = pkgs-master.neovim-qt;
+  };
 
   neovim-gtk = pkgs.callPackage apps/neovim-gtk.nix {
     neovim = wenzels-neovim.neovim-for-gui;
