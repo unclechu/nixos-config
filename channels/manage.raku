@@ -381,47 +381,49 @@ sub USAGE {
   If you call “upgrade” subcommand it will
   (for all the channels if you didn’t specify particular one):
 
-  1. Resolve latest channel version link to a link of particular version/pin
-     (will follow redirects). For example this:
-     {channel-url nixos-channel}
-     Will resolve to a link that looks like this:
-     https://releases.nixos.org/nixos/20.09/nixos-20.09alpha290.3b8ddb2f1ee
+  1.  Resolve latest channel version link to a link of particular version/pin
+      (will follow redirects). For example this:
+      {channel-url nixos-channel}
+      Will resolve to a link that looks like this:
+      https://releases.nixos.org/nixos/20.09/nixos-20.09alpha290.3b8ddb2f1ee
 
-  2. Check whether an upgrade is needed by comparing link from
-     “{file release-link-file-name}” file
-     with the resolved link (if you did’t set “--force” of course)
+  2.  Check whether an upgrade is needed by comparing link from
+      “{file release-link-file-name}” file
+      with the resolved link (if you did’t set “--force” of course)
 
-  3. The resolved link will be saved to
-     “{file release-link-file-name}” file
+  3.  The resolved link will be saved to
+      “{file release-link-file-name}” file
 
-  4. From HTML document by that link SHA-256 checksum
-     for “{nixexprs-file-name}” file will be extracted and saved to
-     “{file nixexprs-checksum-file-name}” file
+  4.  From HTML document by that link SHA-256 checksum
+      for “{nixexprs-file-name}” file will be extracted and saved to
+      “{file nixexprs-checksum-file-name}” file
 
-  5. From the same HTML document release date will be extracted
-     and saved to “{file release-date-file-name}” file
+  5.  From the same HTML document release date will be extracted
+      and saved to “{file release-date-file-name}” file
 
-  6. These two files will be downloaded:
+  6.  These two files will be downloaded:
 
-     1. {git-revision-file-name}
-     2. {nixexprs-file-name}
+      1. {git-revision-file-name}
+      2. {nixexprs-file-name}
 
-     and saved to “{file ''}”
+      and saved to “{file ''}”
 
-  7. “{file nixexprs-file-name}”
-     file will be verified that it’s matching checksum from
-     “{file nixexprs-checksum-file-name}” file
+  7.  “{file nixexprs-file-name}”
+      file will be verified that it’s matching checksum from
+      “{file nixexprs-checksum-file-name}” file
 
-  8. “{nixexprs-file-name}” file will be prefetched with “--unpack” flag.
-     It will be prefecthed both for the file on your local file system
-     and by the release URL. Prefetched “unpacked” checksum will be checked
-     that it matches for both prefetches. And then it will be saved into
-     “{file nixexprs-unpacked-checksum-file-name}” file.
+  8.  “{nixexprs-file-name}” file will be prefetched with “--unpack” flag.
+      It will be prefecthed both for the file on your local file system
+      and by the release URL. Prefetched “unpacked” checksum will be checked
+      that it matches for both prefetches. And then it will be saved into
+      “{file nixexprs-unpacked-checksum-file-name}” file.
 
-  9. New release URL for “{nixexprs-file-name}” file and its prefetched
-     checksum (from “nixos” channel) will be used to update the “nixpkgs”
-     pin in this script (“{channels-manage-script-path.resolve}”)
-     and also in this one: “{tell-a-secret-script-path}”
+  9.  New release URL for “{nixexprs-file-name}” file and its prefetched
+      checksum (from “nixos” channel) will be used to update the “nixpkgs”
+      pin in this script (“{channels-manage-script-path.resolve}”)
+      and also in this one: “{tell-a-secret-script-path}”
+
+  10. …
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
