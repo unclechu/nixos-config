@@ -125,22 +125,40 @@ sub verify-nixexprs-file-matches-checksum(Str:D \channel-name) {
 
 # Prefetches “nixexprs” file and returns SHA-256 checksum of it’s unpacked version that can be used
 # with “fetchTarball”.
-sub prefetch-nixpkgs-checksum(Str:D \channel-name) of Str:D {
+sub prefetch-nixpkgs-checksum(Str:D \channel-name, Str:D \release-link) of Str:D {
   my Str:D \nixexprs-file-path = channel-file channel-name, nixexprs-file-name;
   my Str:D \nixexprs-file-url  = "{channel-path-prefix}{channel-name}/{nixexprs-file-name}";
   my Str:D \checksum-file-path = channel-file channel-name, nixexprs-unpacked-checksum-file-name;
+  my Str:D \nixexprs-release-url = "{release-link}/{nixexprs-file-name}";
+
   "Prefetching “{nixexprs-file-path}” file and getting its unpacked hash…".say;
   die "Could not find “{nixexprs-file-path}” file to prefetch it!" unless nixexprs-file-path.IO.f;
 
-  my Str:D \checksum =
-    do given run «"{nix-prefetch-url}" --unpack -- "{nixexprs-file-url}"», :out {
+  sub fetch(Str:D \url) of Str:D {
+    given run «"{nix-prefetch-url}" --unpack -- "{url}"», :out {
       LEAVE { .sink }
       .out.slurp(:close).chomp
-    };
+    }
+  }
 
-  "Saving “{checksum}” hash to “{checksum-file-path}” file…".say;
-  spurt checksum-file-path, checksum;
-  checksum
+  my Str:D \checksum-from-local-file = fetch nixexprs-file-url;
+
+  say
+    "Also prefetching this URL “{nixexprs-release-url}” " ~
+    "(it’s going to be used as a “nixpkgs” pin in scripts)…";
+
+  my Str:D \checksum-from-release-link = fetch nixexprs-release-url;
+
+  "Verifying that checksums of both prefetches are matching…".say;
+
+  fail
+    "Prefetched checksum for “{nixexprs-file-url}” (“{checksum-from-local-file}”) " ~
+    "does not match with one for “{nixexprs-release-url}” (“{checksum-from-release-link}”)!"
+    unless checksum-from-local-file eq checksum-from-release-link;
+
+  "Saving “{checksum-from-local-file}” hash to “{checksum-file-path}” file…".say;
+  spurt checksum-file-path, checksum-from-local-file;
+  checksum-from-local-file
 }
 
 sub patch-nix-shell-script(IO::Path:D \script-path, Str:D \url, Str:D \hash) {
@@ -282,7 +300,7 @@ multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
     }
 
     verify-nixexprs-file-matches-checksum channel-name;
-    my Str:D \unpacked-checksum = prefetch-nixpkgs-checksum channel-name;
+    my Str:D \unpacked-checksum = prefetch-nixpkgs-checksum channel-name, release-link;
 
     if channel-name eq 'nixos' {
       patch-nix-shell-script $_, "{release-link}/{nixexprs-file-name}", unpacked-checksum
