@@ -412,6 +412,17 @@ sub USAGE {
      file will be verified that it’s matching checksum from
      “{file nixexprs-checksum-file-name}” file
 
+  8. “{nixexprs-file-name}” file will be prefetched with “--unpack” flag.
+     It will be prefecthed both for the file on your local file system
+     and by the release URL. Prefetched “unpacked” checksum will be checked
+     that it matches for both prefetches. And then it will be saved into
+     “{file nixexprs-unpacked-checksum-file-name}” file.
+
+  9. New release URL for “{nixexprs-file-name}” file and its prefetched
+     checksum (from “nixos” channel) will be used to update the “nixpkgs”
+     pin in this script (“{channels-manage-script-path.resolve}”)
+     and also in this one: “{tell-a-secret-script-path}”
+
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   If you call “override” subcommand it will
