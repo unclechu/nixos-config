@@ -413,7 +413,10 @@ sub USAGE {
      archive matches checksum from
      “{file nixexprs-checksum-file-name}” file
 
-  3. Update the channels that were being fetched
+  3. Prefetch “{nixexprs-file-name}” both from
+     local file system and from release URL.
+
+  4. Update the channels that were being fetched
      (via “sudo”, you may be asked for password)
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -453,9 +456,9 @@ sub USAGE {
       “{file nixexprs-checksum-file-name}” file
 
   8.  “{nixexprs-file-name}” file will be prefetched with “--unpack” flag.
-      It will be prefecthed both for the file on your local file system
-      and by the release URL. Prefetched “unpacked” checksum will be checked
-      that it matches for both prefetches. And then it will be saved into
+      It will be prefecthed both from local file system and from the release URL.
+      Prefetched “unpacked” checksum will be checked that it matches for
+      both prefetches. And then it will be saved into
       “{file nixexprs-unpacked-checksum-file-name}” file.
 
   9.  New release URL for “{nixexprs-file-name}” file and its prefetched
