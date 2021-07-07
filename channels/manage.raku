@@ -125,7 +125,11 @@ sub verify-nixexprs-file-matches-checksum(Str:D \channel-name) {
 
 # Prefetches “nixexprs” file and returns SHA-256 checksum of it’s unpacked version that can be used
 # with “fetchTarball”.
-sub prefetch-nixpkgs-checksum(Str:D \channel-name, Str:D \release-link) of Str:D {
+sub prefetch-nixpkgs-checksum(
+  Str:D \channel-name,
+  Str:D \release-link,
+  Bool:D :$just-prefetch = False
+) of Str:D {
   my Str:D \nixexprs-file-path = channel-file channel-name, nixexprs-file-name;
   my Str:D \nixexprs-file-url  = "{channel-path-prefix}{channel-name}/{nixexprs-file-name}";
   my Str:D \checksum-file-path = channel-file channel-name, nixexprs-unpacked-checksum-file-name;
@@ -156,8 +160,11 @@ sub prefetch-nixpkgs-checksum(Str:D \channel-name, Str:D \release-link) of Str:D
     "does not match with one for “{nixexprs-release-url}” (“{checksum-from-release-link}”)!"
     unless checksum-from-local-file eq checksum-from-release-link;
 
-  "Saving “{checksum-from-local-file}” hash to “{checksum-file-path}” file…".say;
-  spurt checksum-file-path, checksum-from-local-file;
+  unless $just-prefetch {
+    "Saving “{checksum-from-local-file}” hash to “{checksum-file-path}” file…".say;
+    spurt checksum-file-path, checksum-from-local-file;
+  }
+
   checksum-from-local-file
 }
 
@@ -221,6 +228,7 @@ multi sub MAIN('fetch', Bool:D :f(:$force) = False, *@channel-names) {
       run «"{curl}" --fail --output "{nixexprs-file-path}" -- "{url}"»;
 
       verify-nixexprs-file-matches-checksum channel-name;
+      prefetch-nixpkgs-checksum channel-name, release-link, :just-prefetch;
 
       "Adding channel “{channel-name}” to the list of channels to update…".say;
       @channel-names-to-update.push: channel-name;
