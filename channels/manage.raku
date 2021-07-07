@@ -182,6 +182,16 @@ sub patch-nix-shell-script(IO::Path:D \script-path, Str:D \url, Str:D \hash) {
   }
 }
 
+sub update-channels(*@channel-names) {
+  return unless @channel-names.elems > 0; # nothing to do
+
+  say
+    "Updating these channels: {log-channels @channel-names} " ~
+    "(via “sudo”, you may be asked for password)…";
+
+  run «"{sudo}" "{nix-channel}" --update --», @channel-names;
+}
+
 sub log-channels(*@channel-names) of Str:D { @channel-names.map('“'~*~'”').join: ', ' }
 
 sub default-channel-names(Array:D $channel-names) of Seq:D {
@@ -197,6 +207,8 @@ multi sub MAIN('fetch', Bool:D :f(:$force) = False, *@channel-names) {
   @channel-names = default-channel-names @channel-names;
   "Fetching “{nixexprs-file-name}” file for these channels: {log-channels @channel-names}…".say;
 
+  my Str:D @channel-names-to-update = ();
+
   for @channel-names -> \channel-name {
     "Fetching “{nixexprs-file-name}” for “{channel-name}” channel…".say;
     my Str:D \nixexprs-file-path = channel-file channel-name, nixexprs-file-name;
@@ -204,9 +216,14 @@ multi sub MAIN('fetch', Bool:D :f(:$force) = False, *@channel-names) {
     sub download {
       my Str:D \release-link = (channel-file channel-name, release-link-file-name).IO.slurp.chomp;
       my Str:D \url = "{release-link}/{nixexprs-file-name}";
+
       "Downloading “{url}” and saving to “{nixexprs-file-path}” file…".say;
       run «"{curl}" --fail --output "{nixexprs-file-path}" -- "{url}"»;
+
       verify-nixexprs-file-matches-checksum channel-name;
+
+      "Adding channel “{channel-name}” to the list of channels to update…".say;
+      @channel-names-to-update.push: channel-name;
     }
 
     if nixexprs-file-path.IO.f && !$force {
@@ -232,6 +249,7 @@ multi sub MAIN('fetch', Bool:D :f(:$force) = False, *@channel-names) {
     "SUCCESS (for “{channel-name}” channel)".say
   }
 
+  update-channels @channel-names-to-update;
   "SUCCESS".say
 }
 
@@ -239,6 +257,8 @@ multi sub MAIN('fetch', Bool:D :f(:$force) = False, *@channel-names) {
 multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
   @channel-names = default-channel-names @channel-names;
   "Upgrading these channels: {log-channels @channel-names}…".say;
+
+  my Str:D @channel-names-to-update = ();
 
   for @channel-names -> \channel-name {
     "Upgrading “{channel-name}” channel…".say;
@@ -307,9 +327,13 @@ multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
         for (channels-manage-script-path, tell-a-secret-script-path)
     }
 
+    "Adding channel “{channel-name}” to the list of channels to update…".say;
+    @channel-names-to-update.push: channel-name;
+
     "SUCCESS (for “{channel-name}” channel)".say
   }
 
+  update-channels @channel-names-to-update;
   "SUCCESS".say
 }
 
@@ -318,6 +342,8 @@ multi sub MAIN('override', *@channel-names) {
   @channel-names = default-channel-names @channel-names;
   "Overriding these channels: {log-channels @channel-names}…".say;
   "Requesting current system channels list (you might be asked for “sudo” password)…".say;
+
+  my Str:D @channel-names-to-update = ();
 
   my Str:D %current-channels =
     do given run «"{sudo}" "{nix-channel}" --list», :out {
@@ -347,11 +373,14 @@ multi sub MAIN('override', *@channel-names) {
 
     "Adding new channel “{channel-name}” and pointing it to “{path}”…".say;
     run «"{sudo}" "{nix-channel}" --add -- "{path}" "{channel-name}"»;
+
+    "Adding channel “{channel-name}” to the list of channels to update…".say;
+    @channel-names-to-update.push: channel-name;
+
     "SUCCESS (for “{channel-name}” channel)".say
   }
 
-  "Updating channels: {log-channels @channel-names}…".say;
-  run «"{sudo}" "{nix-channel}" --update --», @channel-names;
+  update-channels @channel-names-to-update;
   "SUCCESS".say
 }
 
@@ -375,6 +404,9 @@ sub USAGE {
   2. Verify that “{file nixexprs-file-name}”
      archive matches checksum from
      “{file nixexprs-checksum-file-name}” file
+
+  3. Update the channels that were being fetched
+     (via “sudo”, you may be asked for password)
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -423,7 +455,8 @@ sub USAGE {
       pin in this script (“{channels-manage-script-path.resolve}”)
       and also in this one: “{tell-a-secret-script-path}”
 
-  10. …
+  10. Channels that were “upgraded” will be updated
+      (via “sudo”, you may be asked for password).
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
