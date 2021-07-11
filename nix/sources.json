@@ -17,10 +17,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "gpaste-gui",
-        "rev": "277e70f9d428fca2279521001fb586661df2ff2c",
-        "sha256": "0i2hqyj8gnzccv6aa5c0gc9zhg8z9i497ni183fqnwz4mxdgzd7c",
+        "rev": "ac31bd40b95c9384b4412b76b959e0cce36b9594",
+        "sha256": "15bnbbwkklh2sksm0qzsgj21r6dnnh6hg3wnqwazj9llkfrifyvr",
         "type": "tarball",
-        "url": "https://github.com/unclechu/gpaste-gui/archive/277e70f9d428fca2279521001fb586661df2ff2c.tar.gz",
+        "url": "https://github.com/unclechu/gpaste-gui/archive/ac31bd40b95c9384b4412b76b959e0cce36b9594.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "home-manager": {
