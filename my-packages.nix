@@ -121,6 +121,7 @@ in
       pkgs.inotify-tools
       pkgs.bindfs
       pkgs.skim pkgs.fzf # fuzzy search
+      pkgs.exa
       pkgs.bat
       pkgs.lf
       pkgs.ag
