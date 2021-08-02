@@ -240,6 +240,7 @@ in
       pkgs.psi-plus
       pkgs.hexchat
       pkgs.weechat
+      pkgs.nheko
 
       # clipboard management
       pkgs.gnome3.gpaste
