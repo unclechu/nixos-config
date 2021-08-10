@@ -242,6 +242,7 @@ in
       pkgs.hexchat
       pkgs.weechat
       pkgs.nheko
+      pkgs.dino
 
       # clipboard management
       pkgs.gnome3.gpaste
