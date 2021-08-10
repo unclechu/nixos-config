@@ -237,7 +237,7 @@ in
       pkgs.obs-studio
 
       # instant messaging
-      pkgs.psi-plus
+      ((pkgs.psi-plus).override { enablePsiMedia = true; })
       pkgs.hexchat
       pkgs.weechat
       pkgs.nheko
