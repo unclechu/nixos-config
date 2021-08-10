@@ -128,6 +128,7 @@ in
       pkgs.zip pkgs.unzip pkgs.p7zip
       pkgs.parallel
       pkgs.file
+      pkgs.pandoc
       tmux-config.tmuxsh
 
       # nix stuff
