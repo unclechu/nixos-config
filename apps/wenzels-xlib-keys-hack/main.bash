@@ -98,6 +98,21 @@ for x in "${PLANCK_EZ[@]}"; do
 	fi
 done
 
+# ZSA Moonlander Mark I keyboard
+MOONLANDER=(
+	'--disable-xinput-device-name=ZSA Moonlander Mark I'
+	'--disable-xinput-device-name=ZSA Moonlander Mark I Keyboard'
+	/dev/input/by-id/usb-ZSA_Moonlander_Mark_I-event-kbd
+)
+
+HAS_MOONLANDER=0
+for x in "${MOONLANDER[@]}"; do
+	if [[ $x =~ ^/dev/input/ && -r $x ]]; then
+		HAS_MOONLANDER=1
+		break
+	fi
+done
+
 # A list of available modes (for arguments validation)
 declare -A MODES && MODES=([gaming]=1 [no-numbers-shift]=1)
 
@@ -121,7 +136,7 @@ fi
 # instance.
 if [[ $MODE == gaming ]]; then
 	echo '[ GAMING MODE ON ]'
-	if (( HAS_ERGODOX_EZ == 0 && HAS_PLANCK_EZ == 0 )); then
+	if (( HAS_ERGODOX_EZ == 0 && HAS_MOONLANDER == 0 && HAS_PLANCK_EZ == 0 )); then
 		FLAGS+=(
 			--real-capslock
 			--no-additional-controls
@@ -129,7 +144,7 @@ if [[ $MODE == gaming ]]; then
 	fi
 
 # Ergonomic mode for regular qwerty keyboard
-elif (( HAS_ERGODOX_EZ == 0 && HAS_PLANCK_EZ == 0 )); then
+elif (( HAS_ERGODOX_EZ == 0 && HAS_MOONLANDER == 0 && HAS_PLANCK_EZ == 0 )); then
 	FLAGS+=(
 		--hold-alt-for-alternative-mode
 		--ergonomic-mode
@@ -137,7 +152,7 @@ elif (( HAS_ERGODOX_EZ == 0 && HAS_PLANCK_EZ == 0 )); then
 fi
 
 # Turn off embedded keyboard if there's external one
-if (( HAS_DUCKY == 0 && HAS_ERGODOX_EZ == 0 && HAS_PLANCK_EZ == 0 )); then
+if (( HAS_DUCKY == 0 && HAS_ERGODOX_EZ == 0 && HAS_MOONLANDER == 0 && HAS_PLANCK_EZ == 0 )); then
 	EMBEDDED+=(
 		'/dev/input/by-path/platform-i8042-serio-0-event-kbd'
 		'/dev/input/by-path/platform-i8042-serio-1-event-mouse'
@@ -150,7 +165,7 @@ fi
 # Turn on software debouncer (in order to fix issues with key bouncing on Ducky).
 # Right Control as Super to have simmetrical Supers on my laptop’s embedded keyboard
 # (control keys are provided by “additional controls” feature anyway).
-if (( HAS_ERGODOX_EZ == 0 && HAS_PLANCK_EZ == 0 )); then
+if (( HAS_ERGODOX_EZ == 0 && HAS_MOONLANDER == 0 && HAS_PLANCK_EZ == 0 )); then
 	FLAGS+=(
 		--shift-hjkl
 		'--software-debouncer=90'
@@ -161,7 +176,7 @@ if (( HAS_ERGODOX_EZ == 0 && HAS_PLANCK_EZ == 0 )); then
 		FLAGS+=( --shift-numeric-keys )
 	fi
 
-# Either ErgoDox or Planck
+# ErgoDox, Moonlander Mark I, or Planck
 else
 	FLAGS+=(
 		--real-capslock
@@ -200,6 +215,7 @@ ALL_XKH_ARGS=(
 	"${DUCKY[@]}"
 	"${CORSAIR[@]}"
 	"${ERGODOX_EZ[@]}"
+	"${MOONLANDER[@]}"
 	"${PLANCK_EZ[@]}"
 )
 
