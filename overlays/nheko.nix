@@ -12,8 +12,8 @@ self: super:
       domain = "nheko.im";
       owner = "nheko-reborn";
       repo = "coeurl";
-      rev = "e9010d1ce14e7163d1cb5407ed27b23303781796"; # 7 July 2021
-      sha256 = "1as81hmfjhnk1ghqwv815hg9wi0x177v4sghkrmczrd34sfxjhq4";
+      rev = "3901507db25cf3f9364b58cd8c7880640900c992"; # 12 August 2021
+      sha256 = "1sz7mifc6nk80xg6jp8wbkdmdv1kq0igx0v3xkn722mw50fhxqby";
     };
 
     nativeBuildInputs = [
@@ -39,22 +39,24 @@ self: super:
   };
 
   mtxclient = super.mtxclient.overrideAttrs (srcAttrs: srcAttrs // rec {
-    version = "0.5.1-git";
+    version = "git";
 
     # Took this pin from here:
     # https://github.com/Nheko-Reborn/nheko/blob/d84c1f59/io.github.NhekoReborn.Nheko.yaml#L164-L168
     src = super.fetchFromGitHub {
       owner = "Nheko-Reborn";
       repo = "mtxclient";
-      rev = "bcf363cb5e6c423f40c96123e227bc8c5f6d6f80"; # 7 August 2021
-      sha256 = "1zwlnacixnvg7mb45lmg30ql4k98rg9jd0zzmld64r9hac2qyd1m";
+      rev = "a368db306d0148d1c8c17a532ebe4ff05a2a08c8"; # 17 August 2021
+      sha256 = "1rxx4aig5fajd6paqr5nwbprwc98cidmzrsfww48w7vmff14z0w4";
     };
 
     cmakeFlags = srcAttrs.cmakeFlags ++ [
       "-DCMAKE_CXX_FLAGS=-DSPDLOG_FMT_EXTERNAL" # HACK: Overwrites all other CXX_FLAGS!
     ];
 
-    buildInputs = srcAttrs.buildInputs ++ [
+    buildInputs = builtins.filter (
+      x: let n = x.pname or ""; in n != "coeurl"
+    ) srcAttrs.buildInputs ++ [
       self.coeurl
       super.curl
       super.libevent
@@ -68,11 +70,13 @@ self: super:
     src = super.fetchFromGitHub {
       owner = "Nheko-Reborn";
       repo = "nheko";
-      rev = "d84c1f59a45582ea97f4fd8f969c5e9917b3af2c"; # 11 August 2021
-      sha256 = "0v4pkcvjf6ydskbvj1j6bnk4hphwnhr4rn0hfcb3insfg83slwg4";
+      rev = "d97e408c98b05745265202e4e7f45aed9542930c"; # 25 August 2021
+      sha256 = "0rimmdgrs64xhk4cbrps02wxydjai7w501rgkqwcr1kqcxal1cml";
     };
 
-    buildInputs = builtins.filter (x: x.pname or "" != "mtxclient") srcAttrs.buildInputs ++ [
+    buildInputs = builtins.filter (
+      x: let n = x.pname or ""; in n != "coeurl" && n != "mtxclient"
+    ) srcAttrs.buildInputs ++ [
       self.coeurl
       self.mtxclient
       super.curl
