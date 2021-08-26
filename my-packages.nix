@@ -236,6 +236,7 @@ in
       pkgs.gnome3.evince # Document (e.g. PDF) viwer
       pkgs.dfeet # DBus inspector GUI
       pkgs.obs-studio
+      pkgs.kitty # TODO: configure
 
       # instant messaging
       ((pkgs.psi-plus).override { enablePsiMedia = true; })
