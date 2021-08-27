@@ -5,6 +5,7 @@ let sources = import ../nix/sources.nix; in
 
 , neovim
 , neovim-qt
+, neovide
 
 # Build options
 , bashEnvFile ? null
@@ -17,10 +18,13 @@ let
     callPackage "${neovimrc}/nix/apps/neovim.nix" { inherit neovim bashEnvFile; };
   wenzels-neovim-qt =
     callPackage "${neovimrc}/nix/apps/neovim-qt.nix" { inherit neovim neovim-qt bashEnvFile; };
+  wenzels-neovide =
+    callPackage "${neovimrc}/nix/apps/neovide.nix" { inherit neovim neovide bashEnvFile; };
 in
 {
   neovim    = wenzels-neovim;
   neovim-qt = wenzels-neovim-qt;
+  neovide   = wenzels-neovide;
 
   inherit (wenzels-neovim-qt) neovim-for-gui;
 

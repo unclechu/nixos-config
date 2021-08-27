@@ -27,6 +27,7 @@ let
     };
 
     neovim-qt = pkgs-unstable.neovim-qt.override { inherit neovim; };
+    neovide = pkgs-unstable.neovide;
   };
 
   # *** apps ***
@@ -46,6 +47,7 @@ let
     bashEnvFile = bashAliasesFile;
     neovim      = pkgs-unstable.neovim;
     neovim-qt   = pkgs-unstable.neovim-qt;
+    neovide     = pkgs-unstable.neovide;
   };
 
   neovim-gtk = pkgs.callPackage apps/neovim-gtk.nix {
@@ -148,6 +150,7 @@ in
       system-vim.vim
       system-vim.neovim
       system-vim.neovim-qt
+      system-vim.neovide
       pkgs.neovim-remote
 
       # programming languages
@@ -297,6 +300,7 @@ in
       wenzels-bash
       wenzels-neovim.neovim
       wenzels-neovim.neovim-qt
+      wenzels-neovim.neovide
       wenzels-neovim.scripts.clean-vim
       wenzels-neovim.scripts.git-grep-nvr
       wenzels-neovim.scripts.nvimd
