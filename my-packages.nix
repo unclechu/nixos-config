@@ -144,7 +144,10 @@ in
       pkgs.parted pkgs.gparted
       pkgs.pciutils
       pkgs.wally-cli
-      pkgs.sshfs pkgs.curlftpfs
+      pkgs.sshfs
+      pkgs.curlftpfs
+      pkgs.jmtpfs
+      pkgs.glib # for “gio”
 
       # code editing
       system-vim.vim
