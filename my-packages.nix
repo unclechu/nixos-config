@@ -148,6 +148,7 @@ in
       pkgs.curlftpfs
       pkgs.jmtpfs
       pkgs.glib # for “gio”
+      pkgs.usbutils
 
       # code editing
       system-vim.vim
