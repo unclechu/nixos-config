@@ -10,8 +10,9 @@ let sources = import ../nix/sources.nix; in
   systemConfig
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
-, __bashrc    ? sources.bashrc
+, __nix-utils          ? callPackage sources.nix-utils {}
+, __bashrc             ? sources.bashrc
+, __skim-shell-scripts ? callPackage "${sources.bashrc}/nix/integrations/skim-shell-scripts.nix" {}
 }:
 let
   inherit (__nix-utils) esc;
@@ -27,6 +28,8 @@ let
       . "''$${dirEnvVarName}/misc/setups/fuzzy-finder.bash"
       . ${esc skim}/share/skim/completion.bash
       . ${esc skim}/share/skim/key-bindings.bash
+      . ${esc __skim-shell-scripts}/completion.bash
+      . ${esc __skim-shell-scripts}/key-bindings.bash
     ''
     else "";
 

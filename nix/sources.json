@@ -5,10 +5,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "bashrc",
-        "rev": "7a8c670271cfe91ec1e06642ef81fbcbe8d8bef5",
-        "sha256": "16xsfhixfks4nzzp4rl4yr26i6nxj0z40j1r3jvjqnm101fcid9m",
+        "rev": "6260ce4b6220a7d01ca23e3c5b12bdeaa6992cdb",
+        "sha256": "0k330nnrsmz26js9vfrgffpgmanww4l4xf7pdl0nygvav7idjyfl",
         "type": "tarball",
-        "url": "https://github.com/unclechu/bashrc/archive/7a8c670271cfe91ec1e06642ef81fbcbe8d8bef5.tar.gz",
+        "url": "https://github.com/unclechu/bashrc/archive/6260ce4b6220a7d01ca23e3c5b12bdeaa6992cdb.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "gpaste-gui": {
@@ -89,10 +89,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "nix-utils",
-        "rev": "74cb8ddb748d12a4f4cf8d0d1b370b7e59b3b53d",
-        "sha256": "0mwc2rxrxf95mwmggmhv1w26gcxxsds4703l7n1w6l2b2arqxc36",
+        "rev": "6fbb12ea371ee6610bf240778fca9c68a68c19d8",
+        "sha256": "11ihrs3s9ar3ww9wr9rbx8py4grkhfyvx27gabf1ifwx1ch2ng0r",
         "type": "tarball",
-        "url": "https://github.com/unclechu/nix-utils/archive/74cb8ddb748d12a4f4cf8d0d1b370b7e59b3b53d.tar.gz",
+        "url": "https://github.com/unclechu/nix-utils/archive/6fbb12ea371ee6610bf240778fca9c68a68c19d8.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "place-cursor-at": {
