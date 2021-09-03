@@ -85,8 +85,9 @@ done
 
 # ZSA Planck EZ keyboard
 PLANCK_EZ=(
-	'--disable-xinput-device-name=ZSA Planck EZ'
-	/dev/input/by-id/usb-ZSA_Planck_EZ_0-event-kbd
+	'--disable-xinput-device-name=ZSA Technology Labs Planck EZ Glow'
+	'--disable-xinput-device-name=ZSA Technology Labs Planck EZ Glow Keyboard'
+	/dev/input/by-id/usb-ZSA_Technology_Labs_Planck_EZ_Glow-event-kbd
 )
 
 # Boolean flag indicates that Planck is connected
