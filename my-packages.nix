@@ -249,7 +249,7 @@ in
       ((pkgs.psi-plus).override { enablePsiMedia = true; })
       pkgs.hexchat
       pkgs.weechat
-      pkgs.nheko
+      (import apps/nheko.nix)
       pkgs.dino
 
       # clipboard management
