@@ -223,6 +223,7 @@ in
       pkgs.mpv
       pkgs.ffmpeg-full
       pkgs.youtube-dl
+      (import <nixos-unstable> {}).python3Packages.yt-dlp
 
       # desktop environment
       pkgs.tk
