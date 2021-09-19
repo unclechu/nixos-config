@@ -43,7 +43,7 @@ let
 
   bashAliasesFile = "${wenzels-bash.dir}/.bash_aliases";
 
-  wenzels-neovim = pkgs.callPackage apps/wenzels-neovim.nix {
+  wenzels-neovim = pkgs-unstable.callPackage apps/wenzels-neovim.nix {
     bashEnvFile = bashAliasesFile;
     neovim      = pkgs-unstable.neovim;
     neovim-qt   = pkgs-unstable.neovim-qt;
