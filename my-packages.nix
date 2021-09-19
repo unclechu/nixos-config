@@ -21,7 +21,7 @@ let
 
     neovim = pkgs-unstable.neovim.override {
       configure.packages.myPlugins = {
-        start = [pkgs.vimPlugins.vim-nix];
+        start = [pkgs-unstable.vimPlugins.vim-nix];
         opt = [];
       };
     };
