@@ -72,6 +72,7 @@ in
     seahorse.enable = true;
     dconf.enable = true;
     gpaste.enable = true;
+    file-roller.enable = true;
     bash.enableCompletion = true;
     zsh.enable = true;
     zsh.enableCompletion = true;
