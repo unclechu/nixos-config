@@ -71,7 +71,37 @@ multi sub MAIN('decrypt', *@files) {
     @files-to-decrypt = @files;
   }
 
-  run «"{gpg}" --decrypt --output "$_" -- "$_.asc"» for @files-to-decrypt;
+  for @files-to-decrypt {
+    $*ERR.say: "Handling ‘$_’ file…";
+    sub decrypt(Str:D \f) of Proc:D { run «"{gpg}" --decrypt --output "{f}" -- "{f}.asc"» }
+    unless $_.IO ~~ :f { decrypt $_; next }
+
+    my Str:D \encrypted-hash = do {
+      my Proc:D \decrypt-proc = run «"{gpg}" --decrypt -- "$_.asc"», :out;
+      given run "sha256sum", :in(decrypt-proc.out), :out {
+        LEAVE { decrypt-proc.sink; .sink }
+        .out.get.split(/\s+/)[0]
+      }
+    };
+
+    my Str:D \decrypted-hash = do given run «sha256sum -- "{$_}"», :out {
+      LEAVE { .sink }
+      .out.get.split(/\s+/)[0]
+    };
+
+    if encrypted-hash eq decrypted-hash {
+      $*ERR.say:
+        "Decrypted ‘$_’ file already exists and matches the checksum of the contents of " ~
+        'encrypted file. File is skipped.';
+    } else {
+      warn
+        "Decrypted ‘$_’ file already exists and its content is different from encrypted file " ~
+        "(‘$_.asc’). GPG will ask you to confirm overwriting the file. Be cautious! " ~
+        'Maybe you made some changes in the file that you haven’t encrypted yet? ' ~
+        'You may loose that data if you give a confirmation.';
+      decrypt $_
+    }
+  }
 
   unless machine-specific-secret-symlink.IO ~~ :f {
     $*ERR.say: "‘{machine-specific-secret-symlink}’ symlink does not exists, creating it…";
@@ -85,7 +115,7 @@ multi sub MAIN('decrypt', *@files) {
 }
 
 #| Encrypt your changes in secret files thus you can commit them and push to the repo.
-multi sub MAIN('encrypt', *@files) {
+multi sub MAIN('encrypt', Bool:D :f(:$force) = False, *@files) {
   die "‘{keys-file}’ does not exists. Did you run ‘decrypt’ command first?"
     unless keys-file.IO ~~ :f;
 
@@ -118,6 +148,31 @@ multi sub MAIN('encrypt', *@files) {
     unless .IO ~~ :f for @files-to-encrypt;
 
   for @files-to-encrypt {
+    $*ERR.say: "Handling ‘$_’ file…";
+
+    unless $force {
+      my Str:D \encrypted-hash = do {
+        my Proc:D \decrypt-proc = run «"{gpg}" --decrypt -- "$_.asc"», :out;
+        given run "sha256sum", :in(decrypt-proc.out), :out {
+          LEAVE { decrypt-proc.sink; .sink }
+          .out.get.split(/\s+/)[0]
+        }
+      };
+
+      my Str:D \decrypted-hash = do given run «sha256sum -- "{$_}"», :out {
+        LEAVE { .sink }
+        .out.get.split(/\s+/)[0]
+      };
+
+      if encrypted-hash eq decrypted-hash {
+        warn
+          "The checksum of ‘$_’ file and checksum of content of encrypted ‘$_.asc’ file match. " ~
+          'There are no changes to encrypt. If you still want to re-encrypt the file then just ' ~
+          "call the command with ‘--force’ flag. ‘$_’ file is skipped.";
+        next
+      }
+    }
+
     my Array:D \recipients-arguments =
       recipients
         .Array
