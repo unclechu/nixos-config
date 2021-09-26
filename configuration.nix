@@ -1,6 +1,6 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-args@{ config, options, pkgs, ... }:
+args@{ config, options, pkgs, lib, ... }:
 let
   inherit (import ./constants.nix)
     wenzelUserName
@@ -28,10 +28,10 @@ in
     ./machine-specific.nix
   ] ++ (
     let path = ./secret.nix; in
-    if builtins.pathExists path then [path] else []
+    lib.optional (builtins.pathExists path) path
   ) ++ (
     let path = ./machine-specific.secret.nix; in
-    if builtins.pathExists path then [path] else []
+    lib.optional (builtins.pathExists path) path
   );
 
   system = {
