@@ -149,6 +149,7 @@ in
       pkgs.jmtpfs
       pkgs.glib # for “gio”
       pkgs.usbutils
+      pkgs.dnsutils
 
       # code editing
       system-vim.vim
