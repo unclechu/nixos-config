@@ -248,7 +248,7 @@ in
       pkgs.kitty # TODO: configure
 
       # instant messaging
-      ((pkgs.psi-plus).override { enablePsiMedia = true; })
+      (pkgs.callPackage apps/psi-plus.nix {})
       pkgs.hexchat
       pkgs.weechat
       (import apps/nheko.nix)
