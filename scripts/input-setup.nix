@@ -18,6 +18,7 @@ let sources = import ../nix/sources.nix; in
     (callPackage ./pointer-logitech-wireless-ambidextrous-small-mouse { inherit __nix-utils; })
     (callPackage ./pointer-logitech-wireless-t650-touchpad            { inherit __nix-utils; })
     (callPackage ./pointer-razor-wired-ambidextrous-mouse             { inherit __nix-utils; })
+    (callPackage ./pointer-logitech-g-pro.nix                         { inherit __nix-utils; })
   ]
 }:
 let
