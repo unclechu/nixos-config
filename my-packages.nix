@@ -246,6 +246,7 @@ in
       pkgs.dfeet # DBus inspector GUI
       pkgs.obs-studio
       pkgs.kitty # TODO: configure
+      pkgs.piper # GUI for “ratbagd” service
 
       # instant messaging
       (pkgs.callPackage apps/psi-plus.nix {})

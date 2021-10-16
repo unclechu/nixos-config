@@ -95,6 +95,7 @@ in
     printing.enable = false; # CUPS to print documents (have no printer yet)
     upower.enable = true;
     gvfs.enable = true;
+    ratbagd.enable = true;
 
     # see also https://nixos.wiki/wiki/JACK
     # jack = {
