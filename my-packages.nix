@@ -84,21 +84,7 @@ let
   picom = pkgs.callPackage scripts/picom.nix {};
   timer = pkgs.callPackage scripts/timer.nix { inherit systemConfig; };
   genpass = pkgs.callPackage scripts/genpass.nix {};
-
-  pointer-dell-latitude-laptop-dot =
-    pkgs.callPackage scripts/pointer-dell-latitude-laptop-dot {};
-
-  pointer-dell-latitude-laptop-touchpad =
-    pkgs.callPackage scripts/pointer-dell-latitude-laptop-touchpad {};
-
-  pointer-logitech-wireless-ambidextrous-small-mouse =
-    pkgs.callPackage scripts/pointer-logitech-wireless-ambidextrous-small-mouse {};
-
-  pointer-logitech-wireless-t650-touchpad =
-    pkgs.callPackage scripts/pointer-logitech-wireless-t650-touchpad {};
-
-  pointer-razor-wired-ambidextrous-mouse =
-    pkgs.callPackage scripts/pointer-razor-wired-ambidextrous-mouse {};
+  pointers = pkgs.callPackage scripts/pointers.nix {};
 in
 {
   my-apps = {
@@ -316,11 +302,6 @@ in
       wenzels-xlib-keys-hack
       wenzels-xbindkeys
       wenzels-keyboard-script
-      pointer-dell-latitude-laptop-dot
-      pointer-dell-latitude-laptop-touchpad
-      pointer-logitech-wireless-ambidextrous-small-mouse
-      pointer-logitech-wireless-t650-touchpad
-      pointer-razor-wired-ambidextrous-mouse
       input-setup
       autostart-setup
       autolock
@@ -350,6 +331,8 @@ in
         defaultName = "alacritty-ibm-font";
         font = "IBM Plex Mono";
       })
+    ) ++ (
+      builtins.filter lib.isDerivation (builtins.attrValues pointers)
     );
   };
 }

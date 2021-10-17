@@ -9,32 +9,25 @@ let sources = import ../nix/sources.nix; in
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
 , __wenzels-keyboard ? callPackage ./wenzels-keyboard { inherit __nix-utils; }
+, __pointers ? callPackage ./pointers.nix {}
 
 # Build options
 , __srcScript ? ./main.bash
-, pointers ? [
-    (callPackage ./pointer-dell-latitude-laptop-dot                   { inherit __nix-utils; })
-    (callPackage ./pointer-dell-latitude-laptop-touchpad              { inherit __nix-utils; })
-    (callPackage ./pointer-logitech-wireless-ambidextrous-small-mouse { inherit __nix-utils; })
-    (callPackage ./pointer-logitech-wireless-t650-touchpad            { inherit __nix-utils; })
-    (callPackage ./pointer-razor-wired-ambidextrous-mouse             { inherit __nix-utils; })
-    (callPackage ./pointer-logitech-g-pro.nix                         { inherit __nix-utils; })
-  ]
 }:
 let
   inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
   src = builtins.readFile __srcScript;
 
+  pointers = lib.filterAttrs (n: v: lib.isDerivation v) __pointers;
+
   dependencies = {
     bash = bash;
     xinput = xlibs.xinput;
-    ${__wenzels-keyboard.name} = __wenzels-keyboard;
-  } // (
-    lib.attrsets.listToAttrs (map (x: { name = x.name; value = x; }) pointers)
-  );
+    ${lib.getName __wenzels-keyboard} = __wenzels-keyboard;
+  } // pointers;
 
-  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
+  executables = builtins.mapAttrs (n: v: "${v}/bin/${n}") dependencies;
 
   checkPhase =
     builtins.concatStringsSep "\n"
@@ -45,10 +38,13 @@ writeCheckedExecutable name checkPhase ''
   exec <&- &>/dev/null
 
   # keyboard
-  ${esc executables.${__wenzels-keyboard.name}} &
+  ${esc executables.${lib.getName __wenzels-keyboard}} &
 
   # mouse
-  ${builtins.concatStringsSep "\n" (map (x: "${esc (executables.${x.name})} &") pointers)}
+  ${
+    builtins.concatStringsSep "\n"
+      (map (name: "${esc (executables.${name})} &") (builtins.attrNames pointers))
+  }
 
   # laptop touchscreen
   ${esc executables.xinput} --map-to-output 'ELAN25B6:00 04F3:0732' eDP1
