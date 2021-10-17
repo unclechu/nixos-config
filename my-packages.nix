@@ -172,6 +172,7 @@ in
       pkgs.guitarix
       pkgs.normalize
       pkgs.jack_capture
+      pkgs.sonic-visualiser
 
       # lv2 plugins
       pkgs.calf
