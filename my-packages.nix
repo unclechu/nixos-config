@@ -235,6 +235,10 @@ in
       pkgs.kitty # TODO: configure
       pkgs.piper # GUI for “ratbagd” service
 
+      # camera
+      pkgs.v4l-utils
+      pkgs.gnome3.cheese
+
       # instant messaging
       (pkgs.callPackage apps/psi-plus.nix {})
       pkgs.hexchat
