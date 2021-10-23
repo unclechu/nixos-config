@@ -136,6 +136,7 @@ in
       pkgs.glib # for “gio”
       pkgs.usbutils
       pkgs.dnsutils
+      pkgs.lm_sensors
 
       # code editing
       system-vim.vim
