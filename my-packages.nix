@@ -338,6 +338,20 @@ in
         font = "IBM Plex Mono";
       })
     ) ++ (
+      let extract = lib.attrVals ["default" "dark" "light"]; in
+      extract termite-config ++
+      extract (termite-config.customize {
+        defaultName = "termite-iosevka-font";
+        font = "Iosevka";
+      })
+    ) ++ (
+      let extract = lib.attrVals ["default" "dark" "light"]; in
+      extract alacritty-config ++
+      extract (alacritty-config.customize {
+        defaultName = "alacritty-iosevka-font";
+        font = "Iosevka";
+      })
+    ) ++ (
       builtins.filter lib.isDerivation (builtins.attrValues pointers)
     );
   };
