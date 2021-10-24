@@ -217,7 +217,7 @@ in
       # desktop environment
       pkgs.tk
       pkgs.xlibs.xev
-      pkgs.gmrun pkgs.dmenu pkgs.dzen2
+      pkgs.gmrun pkgs.dmenu pkgs.dzen2 pkgs.rofi
       pkgs.xsel pkgs.xdotool pkgs.numlockx pkgs.xkb-switch
       pkgs.xbindkeys
       xlib-keys-hack

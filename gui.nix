@@ -1,31 +1,46 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-args@{ pkgs, ... }:
+args@{ pkgs, lib, ... }:
 let
   sources = import nix/sources.nix;
   inherit (import ./constants.nix) xkb keyRepeat;
-  nix-utils = pkgs.callPackage sources.nix-utils {};
-  inherit (nix-utils) esc;
+  esc = lib.escapeShellArg;
 
   alacritty-config = pkgs.callPackage apps/alacritty {};
 
   i3-config =
-    let apps = (import ./my-packages.nix args).my-apps; in
+    let
+      apps = (import ./my-packages.nix args).my-apps;
+      exe = app: "${app}/bin/${lib.getName app}";
+
+      rofiTheme = {
+        dark  = "gruvbox-dark";
+        light = "gruvbox-light-soft";
+      };
+    in
     pkgs.callPackage sources.i3rc rec {
-      autostartScript = let app = apps.autostart-setup; in "${app}/bin/${app.name}";
+      autostartScript = exe apps.autostart-setup;
 
       scriptsPaths = {
         "autostart.sh"         = autostartScript;
-        "input.sh"             = let app = apps.input-setup;          in "${app}/bin/${app.name}";
-        "cursor-to-display.pl" = let app = apps.cursor-to-display;    in "${app}/bin/${app.name}";
-        "gpaste-gui.pl"        = let app = apps.gpaste-gui;           in "${app}/bin/${app.name}";
-        "pamng.sh"             = let app = apps.pamng;                in "${app}/bin/${app.name}";
-        "screen-backlight.sh"  = let app = apps.screen-backlight;     in "${app}/bin/${app.name}";
-        "invert-window-colors" = let app = apps.invert-window-colors; in "${app}/bin/${app.name}";
+        "input.sh"             = exe apps.input-setup;
+        "cursor-to-display.pl" = exe apps.cursor-to-display;
+        "gpaste-gui.pl"        = exe apps.gpaste-gui;
+        "pamng.sh"             = exe apps.pamng;
+        "screen-backlight.sh"  = exe apps.screen-backlight;
+        "invert-window-colors" = exe apps.invert-window-colors;
       };
 
-      terminalDark  = let app = alacritty-config.dark;  in "${app}/bin/${app.name}";
-      terminalLight = let app = alacritty-config.light; in "${app}/bin/${app.name}";
+      terminalDark  = exe alacritty-config.dark;
+      terminalLight = exe alacritty-config.light;
+
+      runDark   = "${esc (exe pkgs.rofi)} -show run  -theme ${esc rofiTheme.dark}";
+      runLight  = "${esc (exe pkgs.rofi)} -show run  -theme ${esc rofiTheme.light}";
+      drunDark  = "${esc (exe pkgs.rofi)} -show drun -theme ${esc rofiTheme.dark}";
+      drunLight = "${esc (exe pkgs.rofi)} -show drun -theme ${esc rofiTheme.light}";
+
+      selectWindowDark  = "${esc (exe pkgs.rofi)} -show window -theme ${esc rofiTheme.dark}";
+      selectWindowLight = "${esc (exe pkgs.rofi)} -show window -theme ${esc rofiTheme.light}";
     };
 in
 {
