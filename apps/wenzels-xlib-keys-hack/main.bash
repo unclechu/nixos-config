@@ -65,18 +65,13 @@ done
 
 # ZSA ErgoDox EZ keyboard
 ERGODOX_EZ=(
-	# old firmware
-	'--disable-xinput-device-name=ErgoDox EZ ErgoDox EZ'
-	/dev/input/by-id/usb-ErgoDox_EZ_ErgoDox_EZ_0-event-kbd
-
-	# new firmware
-	'--disable-xinput-device-name=ZSA Ergodox EZ'
-	/dev/input/by-id/usb-ZSA_Ergodox_EZ_0-event-kbd
-
-	# the newest firmware
 	'--disable-xinput-device-name=ZSA Technology Labs Inc ErgoDox EZ Glow'
 	'--disable-xinput-device-name=ZSA Technology Labs Inc ErgoDox EZ Glow Keyboard'
 	/dev/input/by-id/usb-ZSA_Technology_Labs_Inc_ErgoDox_EZ_Glow-event-kbd
+
+	'--disable-xinput-device-name=ZSA Technology Labs Inc ErgoDox EZ Shine'
+	'--disable-xinput-device-name=ZSA Technology Labs Inc ErgoDox EZ Shine Keyboard'
+	/dev/input/by-id/usb-ZSA_Technology_Labs_Inc_ErgoDox_EZ_Shine-event-kbd
 )
 
 # Boolean flag indicates that Ergodox is connected
