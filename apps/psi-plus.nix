@@ -3,13 +3,12 @@
 { fetchFromGitHub, psi-plus }:
 
 (psi-plus.override { enablePsiMedia = true; }).overrideAttrs (_: {
-  version = "1.5.1556";
+  version = "1.5.1557-git-master"; # The commit is later than the actual version (plugins update)
 
   src = fetchFromGitHub {
     owner = "psi-plus";
     repo = "psi-plus-snapshots";
-    # FIXME two commits, one version
-    rev = "635879010b6697f7041a7bbea1853a1f4673c7f7"; # 12 October 2021
-    sha256 = "18xvljcm0a9swkyz4diwxi4xaj0w27jnhfgpi8fv5fj11j0g1b3a";
+    rev = "1e4b513d7f8bd6de7f567137bf97bfbaa6f1b1b1"; # 30 October 2021
+    sha256 = "1m45y32sslxab6g6syb23ywsw20jf70wxfn39yga5ddnafig2fpr";
   };
 })
