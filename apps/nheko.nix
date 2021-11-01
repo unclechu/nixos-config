@@ -43,6 +43,8 @@ let
     mtxclient = super.mtxclient.overrideAttrs (srcAttrs: srcAttrs // rec {
       version = "git";
 
+      patches = []; # Remove the outdated patch that fails to be applied
+
       # Took this pin from here:
       # https://github.com/Nheko-Reborn/nheko/blob/54723b06/io.github.NhekoReborn.Nheko.yaml#L164-L168
       src = super.fetchFromGitHub {
