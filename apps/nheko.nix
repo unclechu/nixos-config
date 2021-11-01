@@ -48,8 +48,8 @@ let
       src = super.fetchFromGitHub {
         owner = "Nheko-Reborn";
         repo = "mtxclient";
-        rev = "8b56b466dbacde501ed9087d53bb4f51b297eca8"; # 9 October 2021
-        sha256 = "03ikxmd0fwnx6nrwcwdgd4jj8mlizw8w272gkgz1hk6dd1kxd9gl";
+        rev = "e5284ccc9d902117bbe782b0be76fa272b7f0a90"; # 13 October 2021
+        sha256 = "05syiyc5xkvqisia4f2kk0r7h8qgig04m4y0g027wbyx1fhd5qis";
       };
 
       cmakeFlags = srcAttrs.cmakeFlags ++ [
@@ -78,8 +78,8 @@ pkgs.nheko.overrideAttrs (srcAttrs: srcAttrs // {
   src = pkgs.fetchFromGitHub {
     owner = "Nheko-Reborn";
     repo = "nheko";
-    rev = "37f661caed46d79cae657e0604f872823a0d6689"; # 12 October 2021
-    sha256 = "0c5y803yqgrblfvwd2g6cm7zy47mx5ndkqh9crmib61q8wk99vb1";
+    rev = "417cc07172141763ac8b79143457116d9a423a0a"; # 1 November 2021
+    sha256 = "1dnhv541vqd9hag73sfx3qgr9lwnbi5bq0np67q7ddsxs1bcyc9m";
   };
 
   buildInputs = srcAttrs.buildInputs ++ [
