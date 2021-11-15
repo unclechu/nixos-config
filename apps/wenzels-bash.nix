@@ -26,10 +26,9 @@ let
     || hostName == rw-wenzel-nixos-laptop.networking.hostName
     then ''
       . "''$${dirEnvVarName}/misc/setups/fuzzy-finder.bash"
-      . ${esc skim}/share/skim/completion.bash
-      . ${esc skim}/share/skim/key-bindings.bash
       . ${esc __skim-shell-scripts}/completion.bash
       . ${esc __skim-shell-scripts}/key-bindings.bash
+      . "''$${dirEnvVarName}/misc/setups/direnv.bash"
     ''
     else "";
 
