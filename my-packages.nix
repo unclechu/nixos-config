@@ -115,6 +115,7 @@ in
       pkgs.ag
       pkgs.zip pkgs.unzip pkgs.p7zip
       pkgs.parallel
+      pkgs.entr
       pkgs.file
       pkgs.pandoc
       tmux-config.tmuxsh
