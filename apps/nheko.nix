@@ -1,19 +1,23 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+
+# See this file for pins of the dependencies for Nheko (mtxclient & coeurl):
+# https://github.com/Nheko-Reborn/nheko/blob/master/io.github.NhekoReborn.Nheko.yaml
+
 let
   coeurl-overlay = self: super: {
     # Copy-pasted with some modifications from here:
     # https://github.com/NixOS/nixpkgs/pull/129715
-    coeurl = super.stdenv.mkDerivation {
+    coeurl = super.stdenv.mkDerivation rec {
       pname = "coeurl";
-      version = "git";
+      version = "v0.1.0";
 
       src = super.fetchFromGitLab {
         domain = "nheko.im";
         owner = "nheko-reborn";
         repo = "coeurl";
-        rev = "3901507db25cf3f9364b58cd8c7880640900c992"; # 12 August 2021
-        sha256 = "1sz7mifc6nk80xg6jp8wbkdmdv1kq0igx0v3xkn722mw50fhxqby";
+        rev = version; # 14 November 2021
+        sha256 = "10a5klr44m2xy6law8s3s5rynk1q268fa4pkhilbn52yyv0fwajq";
       };
 
       nativeBuildInputs = [
@@ -41,17 +45,15 @@ let
 
   mtxclient-overlay = self: super: {
     mtxclient = super.mtxclient.overrideAttrs (srcAttrs: srcAttrs // rec {
-      version = "git";
+      version = "v0.6.0";
 
       patches = []; # Remove the outdated patch that fails to be applied
 
-      # Took this pin from here:
-      # https://github.com/Nheko-Reborn/nheko/blob/54723b06/io.github.NhekoReborn.Nheko.yaml#L164-L168
       src = super.fetchFromGitHub {
         owner = "Nheko-Reborn";
         repo = "mtxclient";
-        rev = "e5284ccc9d902117bbe782b0be76fa272b7f0a90"; # 13 October 2021
-        sha256 = "05syiyc5xkvqisia4f2kk0r7h8qgig04m4y0g027wbyx1fhd5qis";
+        rev = version; # 17 November 2021
+        sha256 = "0sxx7vj6a1n2d95c118pjq52707qwf16154fdvz5f4z1pq7c8dsi";
       };
 
       cmakeFlags = srcAttrs.cmakeFlags ++ [
@@ -74,14 +76,14 @@ let
   };
 in
 # Get a freshier version of nheko
-pkgs.nheko.overrideAttrs (srcAttrs: srcAttrs // {
-  version = "git-master";
+pkgs.nheko.overrideAttrs (srcAttrs: srcAttrs // rec {
+  version = "v0.9.0";
 
   src = pkgs.fetchFromGitHub {
     owner = "Nheko-Reborn";
     repo = "nheko";
-    rev = "417cc07172141763ac8b79143457116d9a423a0a"; # 1 November 2021
-    sha256 = "1dnhv541vqd9hag73sfx3qgr9lwnbi5bq0np67q7ddsxs1bcyc9m";
+    rev = version; # 19 November 2021
+    sha256 = "1akhnngxkxbjwjkg5ispl6j5s2ylbcj92r3zxqqry4gbfxbjpx8k";
   };
 
   buildInputs = srcAttrs.buildInputs ++ [
