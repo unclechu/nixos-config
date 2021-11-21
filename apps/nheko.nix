@@ -4,6 +4,8 @@
 # See this file for pins of the dependencies for Nheko (mtxclient & coeurl):
 # https://github.com/Nheko-Reborn/nheko/blob/master/io.github.NhekoReborn.Nheko.yaml
 
+args@{ lib, ... }:
+
 let
   coeurl-overlay = self: super: {
     # Copy-pasted with some modifications from here:
@@ -68,15 +70,32 @@ let
     });
   };
 
-  pkgs = import <nixos-unstable> {
-    overlays = [
-      coeurl-overlay
-      mtxclient-overlay
-    ];
-  };
+  pkgs = lib.pipe args.pkgs [
+    (x: x.extend coeurl-overlay)
+    (x: x.extend mtxclient-overlay)
+  ];
 in
 # Get a freshier version of nheko
-pkgs.nheko.overrideAttrs (srcAttrs: srcAttrs // rec {
+(pkgs.nheko.override {
+  # At least 0.12.0 is mandatory for nheko to work.
+  # At the moment of writing this in NixOS 21.05 it was 0.9.1, nheko fails at startup.
+  # I’ve taken this newer pin from nixos-unstable.
+  qtkeychain = pkgs.libsForQt5.qtkeychain.overrideAttrs (srcAttrs: rec {
+    name = "qtkeychain-${version}";
+    version = "0.12.0";
+
+    src = pkgs.fetchFromGitHub {
+      owner = "frankosterfeld";
+      repo = "qtkeychain";
+      rev = "v${version}";
+      sha256 = "0gi1nx4bcc1vwfw41cif3xi2i59229vy0kc2r5959d8n6yv31kfr";
+    };
+
+    # Remove patches. In nixos-unstable there is a patch for Darwin but I don’t use Darwin so I
+    # don’t care about it at the moment.
+    patches = [];
+  });
+}).overrideAttrs (srcAttrs: srcAttrs // rec {
   version = "v0.9.0";
 
   src = pkgs.fetchFromGitHub {

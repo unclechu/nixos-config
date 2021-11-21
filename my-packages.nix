@@ -1,6 +1,6 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-{ pkgs, lib, config, systemConfig ? config, ... }:
+args@{ pkgs, lib, config, systemConfig ? config, ... }:
 let
   sources = import nix/sources.nix;
   inherit (import ./constants.nix) wenzelUserName;
@@ -245,7 +245,7 @@ in
       (pkgs.callPackage apps/psi-plus.nix {})
       pkgs.hexchat
       pkgs.weechat
-      (import apps/nheko.nix)
+      (import apps/nheko.nix args)
       pkgs.dino
 
       # clipboard management
