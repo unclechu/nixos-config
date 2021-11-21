@@ -4,9 +4,14 @@
 # See this file for pins of the dependencies for Nheko (mtxclient & coeurl):
 # https://github.com/Nheko-Reborn/nheko/blob/master/io.github.NhekoReborn.Nheko.yaml
 
-args@{ lib, ... }:
+args@{ lib, config, ... }:
 
 let
+  pkgs = lib.pipe args.pkgs [
+    (x: x.extend coeurl-overlay)
+    (x: x.extend mtxclient-overlay)
+  ];
+
   coeurl-overlay = self: super: {
     # Copy-pasted with some modifications from here:
     # https://github.com/NixOS/nixpkgs/pull/129715
@@ -70,61 +75,78 @@ let
     });
   };
 
-  pkgs = lib.pipe args.pkgs [
-    (x: x.extend coeurl-overlay)
-    (x: x.extend mtxclient-overlay)
-  ];
-in
-# Get a freshier version of nheko
-(pkgs.nheko.override {
-  # At least 0.12.0 is mandatory for nheko to work.
-  # At the moment of writing this in NixOS 21.05 it was 0.9.1, nheko fails at startup.
-  # I’ve taken this newer pin from nixos-unstable.
-  qtkeychain = pkgs.libsForQt5.qtkeychain.overrideAttrs (srcAttrs: rec {
-    name = "qtkeychain-${version}";
-    version = "0.12.0";
+  # Get a freshier version of nheko
+  nheko = (pkgs.nheko.override {
+    # At least 0.12.0 is mandatory for nheko to work.
+    # At the moment of writing this in NixOS 21.05 it was 0.9.1, nheko fails at startup.
+    # I’ve taken this newer pin from nixos-unstable.
+    qtkeychain = pkgs.libsForQt5.qtkeychain.overrideAttrs (srcAttrs: rec {
+      name = "qtkeychain-${version}";
+      version = "0.12.0";
+
+      src = pkgs.fetchFromGitHub {
+        owner = "frankosterfeld";
+        repo = "qtkeychain";
+        rev = "v${version}";
+        sha256 = "0gi1nx4bcc1vwfw41cif3xi2i59229vy0kc2r5959d8n6yv31kfr";
+      };
+
+      # Remove patches. In nixos-unstable there is a patch for Darwin but I don’t use Darwin so I
+      # don’t care about it at the moment.
+      patches = [];
+    });
+  }).overrideAttrs (srcAttrs: srcAttrs // rec {
+    version = "v0.9.0";
 
     src = pkgs.fetchFromGitHub {
-      owner = "frankosterfeld";
-      repo = "qtkeychain";
-      rev = "v${version}";
-      sha256 = "0gi1nx4bcc1vwfw41cif3xi2i59229vy0kc2r5959d8n6yv31kfr";
+      owner = "Nheko-Reborn";
+      repo = "nheko";
+      rev = version; # 19 November 2021
+      sha256 = "1akhnngxkxbjwjkg5ispl6j5s2ylbcj92r3zxqqry4gbfxbjpx8k";
     };
 
-    # Remove patches. In nixos-unstable there is a patch for Darwin but I don’t use Darwin so I
-    # don’t care about it at the moment.
-    patches = [];
-  });
-}).overrideAttrs (srcAttrs: srcAttrs // rec {
-  version = "v0.9.0";
+    buildInputs = srcAttrs.buildInputs ++ [
+      pkgs.coeurl
+      pkgs.mtxclient
+      pkgs.curl
+      pkgs.elfutils
+      pkgs.libevent
+      pkgs.libunwind
+      pkgs.pcre
+      pkgs.xorg.libXdmcp
+    ];
 
-  src = pkgs.fetchFromGitHub {
-    owner = "Nheko-Reborn";
-    repo = "nheko";
-    rev = version; # 19 November 2021
-    sha256 = "1akhnngxkxbjwjkg5ispl6j5s2ylbcj92r3zxqqry4gbfxbjpx8k";
+    postPatch = ''
+      ${srcAttrs.postPatch or ""}
+      substituteInPlace CMakeLists.txt --replace \
+        "# Fixup bundled keychain include dirs" \
+        "find_package(Boost COMPONENTS iostreams system  thread REQUIRED)"
+    '';
+
+    cmakeFlags = srcAttrs.cmakeFlags ++ [
+      "-DCOMPILE_QML=ON" # see https://github.com/Nheko-Reborn/nheko/issues/389
+      "-DBUILD_SHARED_LIBS=OFF"
+    ];
+  });
+
+  # This wrapper just disables OpenGL rendering for QML.
+  # On one of my machines UI is flickering and glitching, with software rendering it’s fine.
+  # Also I didn’t notice any lags when using software rendering.
+  # The only downside is that you cannot play the videos (use external player instead).
+  # See https://doc.qt.io/QtQuick2DRenderer/
+  noGpuAccelerationWrapper = pkgs.symlinkJoin {
+    name = "nheko";
+    paths = [ nheko ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram "$out"/bin/nheko \
+        --set QMLSCENE_DEVICE softwarecontext
+    '';
   };
 
-  buildInputs = srcAttrs.buildInputs ++ [
-    pkgs.coeurl
-    pkgs.mtxclient
-    pkgs.curl
-    pkgs.elfutils
-    pkgs.libevent
-    pkgs.libunwind
-    pkgs.pcre
-    pkgs.xorg.libXdmcp
-  ];
-
-  postPatch = ''
-    ${srcAttrs.postPatch or ""}
-    substituteInPlace CMakeLists.txt --replace \
-      "# Fixup bundled keychain include dirs" \
-      "find_package(Boost COMPONENTS iostreams system  thread REQUIRED)"
-  '';
-
-  cmakeFlags = srcAttrs.cmakeFlags ++ [
-    "-DCOMPILE_QML=ON" # see https://github.com/Nheko-Reborn/nheko/issues/389
-    "-DBUILD_SHARED_LIBS=OFF"
-  ];
-})
+  wenzel-nixos-pc = pkgs.callPackage ../hardware/wenzel-nixos-pc.nix {};
+  hostName = config.networking.hostName or null;
+in
+  if hostName == wenzel-nixos-pc.networking.hostName
+  then noGpuAccelerationWrapper
+  else nheko
