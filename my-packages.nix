@@ -117,6 +117,7 @@ in
       pkgs.parallel
       pkgs.entr
       pkgs.file
+      pkgs.socat
       pkgs.pandoc
       tmux-config.tmuxsh
 
@@ -211,6 +212,7 @@ in
       pkgs.smplayer
       pkgs.mplayer
       pkgs.mpv
+      pkgs.mpvc
       pkgs.ffmpeg-full
       pkgs.youtube-dl
       (import <nixos-unstable> {}).python3Packages.yt-dlp
