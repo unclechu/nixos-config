@@ -7,8 +7,18 @@ let
   nix-utils = pkgs.callPackage sources.nix-utils {};
   inherit (nix-utils) wrapExecutable;
 
-  # For Neovim 0.5
-  pkgs-unstable = import <nixos-unstable> {};
+  unstable = let
+    pkgs-unstable = import <nixos-unstable> {};
+  in {
+    inherit (pkgs-unstable) neovim neovim-qt neovide;
+    vim-nix-plugin = pkgs-unstable.vimPlugins.vim-nix;
+
+    wenzels-neovim = pkgs-unstable.callPackage apps/wenzels-neovim.nix {
+      bashEnvFile = bashAliasesFile;
+    };
+
+    yt-dlp = pkgs-unstable.python3Packages.yt-dlp;
+  };
 
   system-vim = rec {
     vim = pkgs.vim_configurable.customize {
@@ -19,15 +29,15 @@ let
       };
     };
 
-    neovim = pkgs-unstable.neovim.override {
+    neovim = unstable.neovim.override {
       configure.packages.myPlugins = {
-        start = [pkgs-unstable.vimPlugins.vim-nix];
+        start = [unstable.vim-nix-plugin];
         opt = [];
       };
     };
 
-    neovim-qt = pkgs-unstable.neovim-qt.override { inherit neovim; };
-    neovide = pkgs-unstable.neovide;
+    neovim-qt = unstable.neovim-qt.override { inherit neovim; };
+    neovide = unstable.neovide;
   };
 
   # *** apps ***
@@ -43,12 +53,7 @@ let
 
   bashAliasesFile = "${wenzels-bash.dir}/.bash_aliases";
 
-  wenzels-neovim = pkgs-unstable.callPackage apps/wenzels-neovim.nix {
-    bashEnvFile = bashAliasesFile;
-    neovim      = pkgs-unstable.neovim;
-    neovim-qt   = pkgs-unstable.neovim-qt;
-    neovide     = pkgs-unstable.neovide;
-  };
+  wenzels-neovim = unstable.wenzels-neovim;
 
   neovim-gtk = pkgs.callPackage apps/neovim-gtk.nix {
     neovim = wenzels-neovim.neovim-for-gui;
@@ -215,7 +220,7 @@ in
       pkgs.mpvc
       pkgs.ffmpeg-full
       pkgs.youtube-dl
-      (import <nixos-unstable> {}).python3Packages.yt-dlp
+      unstable.yt-dlp
 
       # desktop environment
       pkgs.tk
