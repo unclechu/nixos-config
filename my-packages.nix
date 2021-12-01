@@ -248,12 +248,13 @@ in
       pkgs.v4l-utils
       pkgs.gnome3.cheese
 
-      # instant messaging
+      # instant messaging/communication
       (pkgs.callPackage apps/psi-plus.nix {})
       pkgs.hexchat
       pkgs.weechat
       (import apps/nheko.nix args)
       pkgs.dino
+      pkgs.thunderbird
 
       # clipboard management
       pkgs.gnome3.gpaste
