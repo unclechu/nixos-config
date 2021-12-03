@@ -10,13 +10,6 @@ let
   unstable = let
     pkgs-unstable = import <nixos-unstable> {};
   in {
-    inherit (pkgs-unstable) neovim neovim-qt neovide;
-    vim-nix-plugin = pkgs-unstable.vimPlugins.vim-nix;
-
-    wenzels-neovim = pkgs-unstable.callPackage apps/wenzels-neovim.nix {
-      bashEnvFile = bashAliasesFile;
-    };
-
     yt-dlp = pkgs-unstable.python3Packages.yt-dlp;
   };
 
@@ -29,15 +22,15 @@ let
       };
     };
 
-    neovim = unstable.neovim.override {
+    neovim = pkgs.neovim.override {
       configure.packages.myPlugins = {
-        start = [unstable.vim-nix-plugin];
+        start = [pkgs.vimPlugins.vim-nix];
         opt = [];
       };
     };
 
-    neovim-qt = unstable.neovim-qt.override { inherit neovim; };
-    neovide = unstable.neovide;
+    neovim-qt = pkgs.neovim-qt.override { inherit neovim; };
+    neovide = pkgs.neovide;
   };
 
   # *** apps ***
@@ -53,7 +46,9 @@ let
 
   bashAliasesFile = "${wenzels-bash.dir}/.bash_aliases";
 
-  wenzels-neovim = unstable.wenzels-neovim;
+  wenzels-neovim = pkgs.callPackage apps/wenzels-neovim.nix {
+    bashEnvFile = bashAliasesFile;
+  };
 
   neovim-gtk = pkgs.callPackage apps/neovim-gtk.nix {
     neovim = wenzels-neovim.neovim-for-gui;
@@ -321,7 +316,20 @@ in
       autostart-setup
       autolock
       cursor-to-display
-      invert-window-colors
+
+      # FIXME Fails to build with this error:
+      #
+      # /build/invert-window-colors-nim/app.nim:162:62 Error: type mismatch: got <string, uint32>
+      # but expected one of:
+      # func format(formatstr: string; a: varargs[string, `$`]): string
+      #   first type mismatch at position: 2
+      #   required type for a: varargs[string]
+      #   but expression 'childWnd' is of type: uint32
+      #
+      # expression: format("Parent window id for \'$1\' not found!", childWnd)
+      #
+      # invert-window-colors
+
       dzen-box
       locktop
       pamng

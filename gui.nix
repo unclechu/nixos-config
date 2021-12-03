@@ -28,7 +28,19 @@ let
         "gpaste-gui.pl"        = exe apps.gpaste-gui;
         "pamng.sh"             = exe apps.pamng;
         "screen-backlight.sh"  = exe apps.screen-backlight;
-        "invert-window-colors" = exe apps.invert-window-colors;
+
+        # FIXME Fails to build with this error:
+        #
+        # /build/invert-window-colors-nim/app.nim:162:62 Error: type mismatch: got <string, uint32>
+        # but expected one of:
+        # func format(formatstr: string; a: varargs[string, `$`]): string
+        #   first type mismatch at position: 2
+        #   required type for a: varargs[string]
+        #   but expression 'childWnd' is of type: uint32
+        #
+        # expression: format("Parent window id for \'$1\' not found!", childWnd)
+        #
+        # "invert-window-colors" = exe apps.invert-window-colors;
       };
 
       terminalDark  = exe alacritty-config.dark;
