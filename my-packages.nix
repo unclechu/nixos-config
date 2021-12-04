@@ -176,6 +176,7 @@ in
       pkgs.normalize
       pkgs.jack_capture
       pkgs.sonic-visualiser
+      pkgs.zita-njbridge # JACK in/out bridge over UDP
 
       # lv2 plugins
       pkgs.calf
