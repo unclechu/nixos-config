@@ -317,16 +317,9 @@ in
       autolock
       cursor-to-display
 
-      # FIXME Fails to build with this error:
-      #
-      # /build/invert-window-colors-nim/app.nim:162:62 Error: type mismatch: got <string, uint32>
-      # but expected one of:
-      # func format(formatstr: string; a: varargs[string, `$`]): string
-      #   first type mismatch at position: 2
-      #   required type for a: varargs[string]
-      #   but expression 'childWnd' is of type: uint32
-      #
-      # expression: format("Parent window id for \'$1\' not found!", childWnd)
+      # FIXME There is a regression introduced in Nim 1.6.0
+      # Wait before this gets fixed https://github.com/nim-lang/Nim/issues/18986
+      # and released and then use newer Nim compiler that would have a fix for this issue.
       #
       # invert-window-colors
 
