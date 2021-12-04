@@ -12,8 +12,8 @@ self: super:
           src = super.fetchFromGitHub {
             owner  = "equalsraf";
             repo   = "neovim-qt";
-            rev    = "e537847860d02871b877d78cacad5866b7c3eb2e"; # 4 October 2021
-            sha256 = "13d2g6rj0iw5rnrh69j441hhr4f89265b05fim6hxp03kwmwhlxg";
+            rev    = "e7a51dd58a4a10147d34e93d20b19eeeffc69814"; # 5 November 2021
+            sha256 = "1fhkdbqmgjrqa6a22i2ljmiv3my2wb4mijavfbmncxqckjncnipw";
           };
 
           cmakeFlags = [
