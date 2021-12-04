@@ -2,13 +2,13 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 { fetchFromGitHub, psi-plus }:
 
-(psi-plus.override { enablePsiMedia = true; }).overrideAttrs (_: {
-  version = "1.5.1582";
+(psi-plus.override { enablePsiMedia = true; }).overrideAttrs (_: rec {
+  version = "1.5.1588";
 
   src = fetchFromGitHub {
     owner = "psi-plus";
     repo = "psi-plus-snapshots";
-    rev = "92fe048134c24cc9f3dc21d83cca12587fc81dea"; # 15 November 2021
-    sha256 = "0vmccxrs8ga4s2xzj00xijk8azyihycg1fp5bfgqvf833hdp3hk4";
+    rev = version;
+    sha256 = "1qylmq4spay71c6q9xrm311vx54iji1ga4ij07k51598fg5dba8d";
   };
 })
