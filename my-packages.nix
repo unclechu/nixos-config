@@ -279,9 +279,6 @@ in
       pkgs.monkeysphere
       pkgs.keepassx2
 
-      # virtualization & containerization
-      pkgs.vagrant
-
       # antivirus
       pkgs.clamav
       pkgs.lynis
