@@ -65,11 +65,7 @@ let
     };
   };
 
-  nheko = pkgs.nheko.overrideAttrs (srcAttrs: {
-    buildInputs = srcAttrs.buildInputs ++ [
-      pkgs.libsForQt5.qtimageformats
-    ];
-  });
+  nheko = pkgs.callPackage apps/nheko.nix {};
 
   # *** scripts ***
 
