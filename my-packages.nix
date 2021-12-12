@@ -65,6 +65,12 @@ let
     };
   };
 
+  nheko = pkgs.nheko.overrideAttrs (srcAttrs: {
+    buildInputs = srcAttrs.buildInputs ++ [
+      pkgs.libsForQt5.qtimageformats
+    ];
+  });
+
   # *** scripts ***
 
   autolock = pkgs.callPackage scripts/autolock.nix {};
@@ -248,7 +254,7 @@ in
       (pkgs.callPackage apps/psi-plus.nix {})
       pkgs.hexchat
       pkgs.weechat
-      pkgs.nheko
+      nheko
       pkgs.dino
       pkgs.thunderbird
 
