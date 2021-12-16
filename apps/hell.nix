@@ -65,10 +65,13 @@ let
     import qualified Data.Text.Lazy as TL
     import qualified Data.Text.Lazy.IO as TL
     import qualified Data.Text.Lazy.Encoding as TL
+    import qualified Data.Text.Lazy.Builder as TLB
     import qualified Data.ByteString as BS
+    import qualified Data.ByteString.Builder as BSB
     import qualified Data.ByteString.Char8 as BSC
     import qualified Data.ByteString.Lazy as BSL
     import qualified Data.ByteString.Lazy.Char8 as BSLC
+    import qualified Data.ByteString.Short as BSS
 
     import qualified Data.List.NonEmpty as NE
 
@@ -80,7 +83,7 @@ let
     import System.Directory
 
     import Turtle hiding ((<&>))
-    import qualified Turtle.Bytes as TB
+    import qualified Turtle.Bytes as Bytes
 
     :{
     ø ∷ Monoid m ⇒ m
@@ -128,22 +131,22 @@ let
     ßprocStrictWithErr cmd input = ßprocGeneric cmd procStrictWithErr ($ input)
 
     µßproc ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell BS.ByteString → m ExitCode
-    µßproc cmd input = ßprocGeneric cmd TB.proc ($ input)
+    µßproc cmd input = ßprocGeneric cmd Bytes.proc ($ input)
 
     µßprocs ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell BS.ByteString → m ()
-    µßprocs cmd input = ßprocGeneric cmd TB.procs ($ input)
+    µßprocs cmd input = ßprocGeneric cmd Bytes.procs ($ input)
 
     µßinproc ∷ Text → Shell BS.ByteString → Shell BS.ByteString
-    µßinproc cmd input = ßprocGeneric cmd TB.inproc ($ input)
+    µßinproc cmd input = ßprocGeneric cmd Bytes.inproc ($ input)
 
     µßinprocWithErr ∷ Text → Shell BS.ByteString → Shell (Either BS.ByteString BS.ByteString)
-    µßinprocWithErr cmd input = ßprocGeneric cmd TB.inprocWithErr ($ input)
+    µßinprocWithErr cmd input = ßprocGeneric cmd Bytes.inprocWithErr ($ input)
 
     µßprocStrict ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell BS.ByteString → m (ExitCode, BS.ByteString)
-    µßprocStrict cmd input = ßprocGeneric cmd TB.procStrict ($ input)
+    µßprocStrict cmd input = ßprocGeneric cmd Bytes.procStrict ($ input)
 
     µßprocStrictWithErr ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell BS.ByteString → m (ExitCode, BS.ByteString, BS.ByteString)
-    µßprocStrictWithErr cmd input = ßprocGeneric cmd TB.procStrictWithErr ($ input)
+    µßprocStrictWithErr cmd input = ßprocGeneric cmd Bytes.procStrictWithErr ($ input)
 
     shellList :: MonadIO m ⇒ Shell a → m [a]
     shellList = reduce (Fold (flip (:)) [] id)
