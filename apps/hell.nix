@@ -52,7 +52,9 @@ let
 
     import Data.Function hiding (id, (.))
     import Data.Functor
+
     import Numeric.Natural
+    import Data.Ratio
 
     import Data.Proxy
     import GHC.TypeLits
@@ -72,6 +74,7 @@ let
     import qualified Data.ByteString.Lazy as BSL
     import qualified Data.ByteString.Lazy.Char8 as BSLC
     import qualified Data.ByteString.Short as BSS
+    import qualified Text.Printf as Printf
 
     import qualified Data.List.NonEmpty as NE
 
