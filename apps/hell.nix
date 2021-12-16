@@ -34,7 +34,7 @@ let
     p.aeson-pretty
   ]);
 
-  ghciScript = writeText "hell-ghci-script" ''
+  ghciScript = ''
     :set -XNoMonomorphismRestriction
     :set -XOverloadedStrings
     :set -XLambdaCase
@@ -85,6 +85,9 @@ let
     :{
     ø ∷ Monoid m ⇒ m
     ø = mempty
+
+    (‰) ∷ Semigroup a ⇒ a → a → a
+    (‰) = (<>)
 
     (·) ∷ Functor f ⇒ (a → b) → f a → f b
     (·) = (<$>)
@@ -148,12 +151,17 @@ let
 
     -- Aliases
     :{
-    vi = procs "nvim" `flip` ø
-    v = vi []
+    l args = procs "ls" (["--color=auto", "-lah"] ‰ args) ø
+    l' = l ø
+    ll args = procs "ls" (["--color=auto", "-lAh"] ‰ args) ø
+    ll' = ll ø
+
+    v = procs "nvim" `flip` ø
+    v' = v ø
     :}
   '';
 
-  coloredPrompt = color:
+  colorizedGhciScript = color:
     assert builtins.elem color ["red" "green"];
     let
       colorize = c: s:
@@ -161,7 +169,8 @@ let
         assert builtins.isString s;
         ''\ESC[${toString c}m\STX${s}\ESC[m\STX'';
     in
-    writeText "colored-hell-ghci-script-prompt-${color}" ''
+    writeText "colorized-hell-ghci-script-${color}" ''
+      ${ghciScript}
       :set prompt "${colorize (if color == "red" then 31 else 32) "λ"} "
     '';
 
@@ -170,19 +179,16 @@ let
     runtimeInputs = [ ghc ];
 
     text = ''
+      if (( UID == 0 ))
+      then file=${esc (colorizedGhciScript "red")}
+      else file=${esc (colorizedGhciScript "green")}
+      fi
+
       ${lib.escapeShellArgs [
         "ghci"
         "-ignore-dot-ghci"
         "-ghci-script"
-      ]} <(${
-        builtins.concatStringsSep " ; " [
-          (lib.escapeShellArgs [ "cat" "--" "${ghciScript}" ])
-          "if (( UID == 0 ))"
-          "then cat -- ${esc (coloredPrompt "red")}"
-          "else cat -- ${esc (coloredPrompt "green")}"
-          "fi"
-        ]
-      })
+      ]} "$file"
     '';
   };
 in
