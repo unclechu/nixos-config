@@ -67,6 +67,8 @@ let
 
   nheko = pkgs.callPackage apps/nheko.nix {};
 
+  hell = pkgs.callPackage apps/hell.nix {};
+
   # *** scripts ***
 
   autolock = pkgs.callPackage scripts/autolock.nix {};
@@ -155,6 +157,7 @@ in
       pkgs.haskellPackages.ghc
       pkgs.hlint
       (pkgs.haskell.lib.justStaticExecutables pkgs.haskellPackages.hoogle)
+      hell
       ## perls
       pkgs.perl pkgs.rakudo
       ## c
