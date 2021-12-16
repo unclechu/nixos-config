@@ -112,6 +112,7 @@ in
       pkgs.bindfs
       pkgs.skim pkgs.fzf # fuzzy search
       pkgs.exa
+      pkgs.tree
       pkgs.bat
       pkgs.lf
       pkgs.ag
