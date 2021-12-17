@@ -9,8 +9,8 @@ self: super:
     src = super.fetchFromGitHub {
       owner = "dino";
       repo = "dino";
-      rev = "905f93bcccd26a035cc9d37378b45ff87298adb5"; # 28 November 2021
-      sha256 = "0np3yr05j4w4sn6r2l1xkimk1p1sm06d2i9i9xicgzhlcxb449p2";
+      rev = "be0233000cd69fffd1257017d7792a0cf404434f"; # 14 December 2021
+      sha256 = "08pr4hsgak5p15k3cz3alngd5ja3319d43z3ifgliq1i9hkjqmdm";
     };
 
     buildInputs = srcAttrs.buildInputs ++ [
