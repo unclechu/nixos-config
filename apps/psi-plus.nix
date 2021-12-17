@@ -3,13 +3,13 @@
 { fetchFromGitHub, psi-plus, libsForQt5 }:
 
 (psi-plus.override { enablePsiMedia = true; }).overrideAttrs (srcAttrs: rec {
-  version = "1.5.1588";
+  version = "1.5.1595";
 
   src = fetchFromGitHub {
     owner = "psi-plus";
     repo = "psi-plus-snapshots";
     rev = version;
-    sha256 = "1qylmq4spay71c6q9xrm311vx54iji1ga4ij07k51598fg5dba8d";
+    sha256 = "00f7bl15cqq290p7n006wl0xpjrl78xdsm2anh18h6q0z62rf1h2";
   };
 
   buildInputs = srcAttrs.buildInputs ++ [
