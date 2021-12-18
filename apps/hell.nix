@@ -87,6 +87,7 @@ let
     import Turtle hiding ((<&>), (%))
     import qualified Turtle.Bytes as Bytes
 
+    -- These unicode symbols can be typed using Finnish keyboard layout.
     :{
     ø ∷ Monoid m ⇒ m
     ø = mempty
@@ -114,62 +115,50 @@ let
       & NE.nonEmpty
       & maybe (fail "Empty command") (unconsNE >>> uncurry f >>> applyF)
 
-    ßproc ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell Line → m ExitCode
     ßproc cmd input = ßprocGeneric cmd proc ($ input)
     øßproc = flip ßproc ø
     øproc cmd args = proc cmd args ø
 
-    ßprocs ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell Line → m ()
     ßprocs cmd input = ßprocGeneric cmd procs ($ input)
     øßprocs = flip ßprocs ø
     øprocs cmd args = procs cmd args ø
 
-    ßinproc ∷ Text → Shell Line → Shell Line
     ßinproc cmd input = ßprocGeneric cmd inproc ($ input)
     øßinproc = flip ßinproc ø
     øinproc cmd args = inproc cmd args ø
 
-    ßinprocWithErr ∷ Text → Shell Line → Shell (Either Line Line)
     ßinprocWithErr cmd input = ßprocGeneric cmd inprocWithErr ($ input)
     øßinprocWithErr = flip ßinprocWithErr ø
     øinprocWithErr cmd args = inprocWithErr cmd args ø
 
-    ßprocStrict ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell Line → m (ExitCode, Text)
     ßprocStrict cmd input = ßprocGeneric cmd procStrict ($ input)
     øßprocStrict = flip ßprocStrict ø
     øprocStrict cmd args = procStrict cmd args ø
 
-    ßprocStrictWithErr ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell Line → m (ExitCode, Text, Text)
     ßprocStrictWithErr cmd input = ßprocGeneric cmd procStrictWithErr ($ input)
     øßprocStrictWithErr = flip ßprocStrictWithErr ø
     øprocStrictWithErr cmd args = procStrictWithErr cmd args ø
 
-    µßproc ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell BS.ByteString → m ExitCode
     µßproc cmd input = ßprocGeneric cmd Bytes.proc ($ input)
     øµßproc = flip µßproc ø
     øµproc cmd args = Bytes.proc cmd args ø
 
-    µßprocs ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell BS.ByteString → m ()
     µßprocs cmd input = ßprocGeneric cmd Bytes.procs ($ input)
     øµßprocs = flip µßprocs ø
     øµprocs cmd args = Bytes.procs cmd args ø
 
-    µßinproc ∷ Text → Shell BS.ByteString → Shell BS.ByteString
     µßinproc cmd input = ßprocGeneric cmd Bytes.inproc ($ input)
     øµßinproc = flip µßinproc ø
     øµinproc cmd args = Bytes.inproc cmd args ø
 
-    µßinprocWithErr ∷ Text → Shell BS.ByteString → Shell (Either BS.ByteString BS.ByteString)
     µßinprocWithErr cmd input = ßprocGeneric cmd Bytes.inprocWithErr ($ input)
     øµßinprocWithErr = flip µßinprocWithErr ø
     øµinprocWithErr cmd args = Bytes.inprocWithErr cmd args ø
 
-    µßprocStrict ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell BS.ByteString → m (ExitCode, BS.ByteString)
     µßprocStrict cmd input = ßprocGeneric cmd Bytes.procStrict ($ input)
     øµßprocStrict = flip µßprocStrict ø
     øµprocStrict cmd args = Bytes.procStrict cmd args ø
 
-    µßprocStrictWithErr ∷ (MonadIO m, MonadFail m) ⇒ Text → Shell BS.ByteString → m (ExitCode, BS.ByteString, BS.ByteString)
     µßprocStrictWithErr cmd input = ßprocGeneric cmd Bytes.procStrictWithErr ($ input)
     øµßprocStrictWithErr = flip µßprocStrictWithErr ø
     øµprocStrictWithErr cmd args = Bytes.procStrictWithErr cmd args ø
