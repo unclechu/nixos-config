@@ -39,12 +39,54 @@ let
     :set -XOverloadedStrings
     :set -XLambdaCase
     :set -XUnicodeSyntax
+    :set -XTupleSections
+    :set -XBangPatterns
+    :set -XViewPatterns
+    :set -XPackageImports
+    :set -XImportQualifiedPost
+    :set -XExplicitNamespaces
+    -- :set -XFieldSelectors
+    :set -XNumericUnderscores
+    :set -XNamedWildCards
+    :set -XNamedFieldPuns
+    :set -XRecordWildCards
+
+    :set -XQuasiQuotes
+    :set -XTemplateHaskell
+
+    :set -XGADTs
+    :set -XDerivingVia
+    :set -XDerivingStrategies
+    :set -XStandaloneDeriving
+    :set -XGeneralizedNewtypeDeriving
+    :set -XDeriveGeneric
+    :set -XDeriveAnyClass
+    :set -XDeriveFunctor
+    :set -XEmptyDataDeriving
+
+    :set -XEmptyCase
+    :set -XEmptyDataDecls
+    :set -XMultiParamTypeClasses
+    :set -XFunctionalDependencies
+    :set -XExistentialQuantification
+    :set -XInstanceSigs
+    :set -XStandaloneKindSignatures
+
+    :set -XDuplicateRecordFields
 
     :set -XDataKinds
     :set -XTypeFamilies
     :set -XTypeOperators
     :set -XTypeApplications
     :set -XScopedTypeVariables
+    :set -XRankNTypes
+    :set -XPolyKinds
+    :set -XTypeInType
+    :set -XNoStarIsType
+    :set -XFlexibleContexts
+    :set -XFlexibleInstances
+    :set -XUndecidableInstances
+    :set -XTypeSynonymInstances
 
     :set prompt "λ "
 
@@ -57,6 +99,7 @@ let
     import Data.Ratio
 
     import Data.Proxy
+    import Data.Kind
     import GHC.TypeLits
 
     import Data.Char
@@ -83,6 +126,7 @@ let
 
     import qualified Data.Time as Time
 
+    import Control.Arrow
     import Control.Category
     import Control.Monad
 
@@ -170,6 +214,11 @@ let
 
     shellList :: MonadIO m ⇒ Shell a → m [a]
     shellList = reduce (Fold (flip (:)) [] id)
+    :}
+
+    :{
+    -- “lsif” but only for current level
+    lsif1 mp = (ls >=> \x -> (x,) · mp x) × mfilter snd × fmap fst
     :}
 
     -- Aliases
