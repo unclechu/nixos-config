@@ -159,58 +159,83 @@ let
     unconsNE ∷ NE.NonEmpty a → (a, [a])
     unconsNE (x NE.:| xs) = (x, xs)
 
-    ßprocGeneric cmd f applyF
-      = T.words cmd
-      & NE.nonEmpty
-      & maybe (fail "Empty command") (unconsNE >>> uncurry f >>> applyF)
+    æprocGeneric (cmd ∷ [Text]) f applyF
+      = NE.nonEmpty cmd
+      & maybe (fail "Empty command") (unconsNE × uncurry f × applyF)
+
+    ßprocGeneric (cmd ∷ Text) f applyF = æprocGeneric (T.words cmd) f applyF
 
     ßproc cmd input = ßprocGeneric cmd proc ($ input)
     øßproc = flip ßproc ø
     øproc cmd args = proc cmd args ø
+    æproc cmd input = æprocGeneric cmd proc ($ input)
+    øæproc cmd = æproc cmd ø
 
     ßprocs cmd input = ßprocGeneric cmd procs ($ input)
     øßprocs = flip ßprocs ø
     øprocs cmd args = procs cmd args ø
+    æprocs cmd input = æprocGeneric cmd procs ($ input)
+    øæprocs cmd = æprocs cmd ø
 
     ßinproc cmd input = ßprocGeneric cmd inproc ($ input)
     øßinproc = flip ßinproc ø
     øinproc cmd args = inproc cmd args ø
+    æinproc cmd input = æprocGeneric cmd inproc ($ input)
+    øæinproc cmd = æinproc cmd ø
 
     ßinprocWithErr cmd input = ßprocGeneric cmd inprocWithErr ($ input)
     øßinprocWithErr = flip ßinprocWithErr ø
     øinprocWithErr cmd args = inprocWithErr cmd args ø
+    æinprocWithErr cmd input = æprocGeneric cmd inprocWithErr ($ input)
+    øæinprocWithErr cmd = æinprocWithErr cmd ø
 
     ßprocStrict cmd input = ßprocGeneric cmd procStrict ($ input)
     øßprocStrict = flip ßprocStrict ø
     øprocStrict cmd args = procStrict cmd args ø
+    æprocStrict cmd input = æprocGeneric cmd procStrict ($ input)
+    øæprocStrict cmd = æprocStrict cmd ø
 
     ßprocStrictWithErr cmd input = ßprocGeneric cmd procStrictWithErr ($ input)
     øßprocStrictWithErr = flip ßprocStrictWithErr ø
     øprocStrictWithErr cmd args = procStrictWithErr cmd args ø
+    æprocStrictWithErr cmd input = æprocGeneric cmd procStrictWithErr ($ input)
+    øæprocStrictWithErr cmd = æprocStrictWithErr cmd ø
 
     µßproc cmd input = ßprocGeneric cmd Bytes.proc ($ input)
     øµßproc = flip µßproc ø
     øµproc cmd args = Bytes.proc cmd args ø
+    æµproc cmd input = æprocGeneric cmd Bytes.proc ($ input)
+    øæµproc cmd = æµproc cmd ø
 
     µßprocs cmd input = ßprocGeneric cmd Bytes.procs ($ input)
     øµßprocs = flip µßprocs ø
     øµprocs cmd args = Bytes.procs cmd args ø
+    æµprocs cmd input = æprocGeneric cmd Bytes.procs ($ input)
+    øæµprocs cmd = æµprocs cmd ø
 
     µßinproc cmd input = ßprocGeneric cmd Bytes.inproc ($ input)
     øµßinproc = flip µßinproc ø
     øµinproc cmd args = Bytes.inproc cmd args ø
+    æµinproc cmd input = æprocGeneric cmd Bytes.inproc ($ input)
+    øæµinproc cmd = æµinproc cmd ø
 
     µßinprocWithErr cmd input = ßprocGeneric cmd Bytes.inprocWithErr ($ input)
     øµßinprocWithErr = flip µßinprocWithErr ø
     øµinprocWithErr cmd args = Bytes.inprocWithErr cmd args ø
+    æµinprocWithErr cmd input = æprocGeneric cmd Bytes.inprocWithErr ($ input)
+    øæµinprocWithErr cmd = æµinprocWithErr cmd ø
 
     µßprocStrict cmd input = ßprocGeneric cmd Bytes.procStrict ($ input)
     øµßprocStrict = flip µßprocStrict ø
     øµprocStrict cmd args = Bytes.procStrict cmd args ø
+    æµprocStrict cmd input = æprocGeneric cmd Bytes.procStrict ($ input)
+    øæµprocStrict cmd = æµprocStrict cmd ø
 
     µßprocStrictWithErr cmd input = ßprocGeneric cmd Bytes.procStrictWithErr ($ input)
     øµßprocStrictWithErr = flip µßprocStrictWithErr ø
     øµprocStrictWithErr cmd args = Bytes.procStrictWithErr cmd args ø
+    æµprocStrictWithErr cmd input = æprocGeneric cmd Bytes.procStrictWithErr ($ input)
+    øæµprocStrictWithErr cmd = æµprocStrictWithErr cmd ø
 
     shellList :: MonadIO m ⇒ Shell a → m [a]
     shellList = reduce (Fold (flip (:)) [] id)
