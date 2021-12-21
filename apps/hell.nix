@@ -255,6 +255,9 @@ let
 
     v = procs "nvim" `flip` ø
     v' = v ø
+
+    gitb = øßinproc "git branch" & grep (begins "* ") & sedEntire ("* " *> chars) & single
+    ßgitb = gitb × lineToText
     :}
   '';
 
