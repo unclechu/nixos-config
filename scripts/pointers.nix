@@ -128,7 +128,9 @@ let
             >&2 printf '"%s" must be a readable executable file but it is not!\n' ${esc raku-exe}
             false
           fi
-          wrapProgram "$out"/bin/${esc name} \
+          SCRIPT_BIN_PATH="$out"/bin/${esc name}
+          ${esc raku-exe} -c -- "$SCRIPT_BIN_PATH" # Syntax check
+          wrapProgram "$SCRIPT_BIN_PATH" \
             --prefix PATH : ${esc (lib.makeBinPath [ xlibs.xinput ])}
         '';
       };
