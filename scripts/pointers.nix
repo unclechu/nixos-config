@@ -22,64 +22,114 @@ let
     #     ''
     }: let
       name = "pointer-${pointerName}";
-      idVar = "$xinput-id";
+      productIdPropName = "Device Product ID";
+      raku-exe = "${rakudo}/bin/raku";
+      esc = lib.escapeShellArg;
 
       script = writeScriptBin name ''
-        #! ${rakudo}/bin/raku
+        #! ${raku-exe}
         use v6.d;
         close $*IN;
 
-        sub fail(Str:D \msg) { $*ERR.say: msg; exit 1; }
-
-        my @devices = run('xinput', 'list', '--short', :out).out.slurp(:close).chomp.lines;
-        @devices .= grep: / '↳ ' ${escRaku deviceName} \s+ 'id='\d+ \s+ /;
-
-        fail "Pointer “{${escRaku pointerName}}” is not found by “{${escRaku deviceName}}” device name!"
-          unless @devices.elems > 0;
-
-        # Just first device match is taken (pointers go first, before keyboards)
-        my $found-device-line = @devices[0] ~~ / 'id=' $<found-id> = (\d+) /;
-        my Num:D ${idVar} = $<found-id>.Num;
-
-        ${if isNull deviceProductId then "" else verfiyProductId idVar}
-
-        ${rakuCommands idVar}
-      '';
-
-      verfiyProductId = id: ''
-        my regex PropRegEx {
-          'Device Product ID' \s+ '(' $<prop-id>=\d+ '):' \s+ $<prop-val>=.+ \s* $
+        my regex PropValueRegEx {
+          ^\s* $<name>=<-[:]>+ \s+ '(' $<prop-id>=\d+ '):' \s* $<value>=<-[:]>+ \s*$
         };
 
-        my @props = run('xinput', 'list-props', ${id}, :out).out.slurp(:close).chomp.lines;
-        @props .= grep: /<PropRegEx>/;
+        my Str:D @devices = run('xinput', 'list', '--short', :out).out.slurp(:close).chomp.lines;
+        @devices .= grep: / '↳ ' ${escRaku deviceName} \s+ 'id='\d+ \s+ /;
+        my Bool:D $is-found = False;
 
-        fail
-          "“Device Product ID” property is not found for “{${escRaku pointerName}}” pointer " ~
-          "(ID #{${id}})"
-            unless @props.elems > 0;
+        for @devices -> $device {
+          my $found-device-line = $device ~~ / 'id=' $<found-id> = (\d+) /;
+          my Num:D \xinput-id = $<found-id>.Num;
 
-        @props[0] ~~ /<PropRegEx>/;
+          my Str %props;
+          my Bool:D $props-are-read = False;
 
-        fail
-          "Found pointer “{${escRaku pointerName}}” mismatches Device Product ID " ~
-          "(got “{$<PropRegEx><prop-val>}” while should be “{${escRaku deviceProductId}}”)"
-            unless $<PropRegEx><prop-val> eq ${escRaku deviceProductId};
+          sub read-props {
+            return if $props-are-read;
+            my @props = run('xinput', 'list-props', xinput-id, :out).out.slurp(:close).chomp.lines;
+            %props = @props.map({ ($<name>.Str, $<value>.Str) if $_ ~~ &PropValueRegEx }).flat.Map;
+            $props-are-read = True;
+          }
+
+          ${if isNull deviceProductId then "" else "{${verfiyProductId}}"}
+
+          sub with-prop (Str:D \prop-name, Block:D $fn) {
+            read-props;
+
+            unless %props{prop-name}:exists {
+              $*ERR.say: join q< >, [
+                "WARNING!",
+                "“{prop-name}” property is not found for xinput device ID #{xinput-id}!",
+              ];
+              next
+            }
+
+            $fn(%(name => prop-name, value => %props{prop-name}))
+          }
+
+          sub set-prop (Str:D \prop-name, |args) {
+            run 'xinput', 'set-prop', xinput-id, prop-name, |args
+          }
+
+          {${rakuCommands}}
+          $is-found = True;
+        }
+
+        unless $is-found {
+          $*ERR.say: join q< >, [
+            "Pointer “{${escRaku pointerName}}” is not found",
+            "by “{${escRaku deviceName}}” device name"
+              ${if isNull deviceProductId then "" else ''
+                , "and by “{${escRaku deviceProductId}}” value"
+                , "for “{${escRaku productIdPropName}}” property"
+              ''} ~ "!",
+          ];
+          exit 1
+        }
+      '';
+
+      verfiyProductId = ''
+        read-props;
+        my Str:D \prop-name = ${escRaku productIdPropName};
+
+        unless %props{prop-name}:exists {
+          $*ERR.say: join q< >, [
+            "WARNING!",
+            "“{prop-name}” property is not found for xinput device ID #{xinput-id}!",
+          ];
+          next
+        }
+
+        my Str:D \prop-value = %props{prop-name};
+
+        unless prop-value eq ${escRaku deviceProductId} {
+          $*ERR.say: join q< >, [
+            "WARNING!",
+            "“{prop-name}” property for found device ID #{xinput-id} mismatches expected value",
+            "(got “{prop-value}” while it should be “{${escRaku deviceProductId}}”)",
+          ];
+          next
+        }
       '';
     in
     assert builtins.isString pointerName;
     assert builtins.isString deviceName;
     assert (deviceProductId != null) -> builtins.isString deviceProductId;
-    assert builtins.isFunction rakuCommands;
-    assert builtins.isString (rakuCommands "$x");
+    assert builtins.isString rakuCommands;
     {
       ${name} = symlinkJoin {
         inherit name;
         paths = [ script ];
         nativeBuildInputs = [ makeWrapper ];
         postBuild = ''
-          wrapProgram "$out"/bin/${lib.escapeShellArg name} \
-            --prefix PATH : ${lib.escapeShellArg (lib.makeBinPath [ xlibs.xinput ])}
+          if ! ( [[ -f ${esc raku-exe} && -r ${esc raku-exe} && -x ${esc raku-exe} ]] ); then
+            >&2 printf '"%s" must be a readable executable file but it is not!\n' ${esc raku-exe}
+            false
+          fi
+          wrapProgram "$out"/bin/${esc name} \
+            --prefix PATH : ${esc (lib.makeBinPath [ xlibs.xinput ])}
         '';
       };
     };
@@ -88,54 +138,61 @@ makePointer {
   pointerName = "razor-wired-ambidextrous-mouse";
   deviceName = "Razer Razer Abyssus 2000";
   deviceProductId = "5426, 94";
-  rakuCommands = id: ''
-    run('xinput', 'set-prop', ${id}, 'libinput Left Handed Enabled', '1');
-    run('xinput', 'set-prop', ${id}, 'libinput Accel Speed', '-0.7');
+  rakuCommands = ''
+    with-prop 'libinput Left Handed Enabled', { set-prop $_<name>, '1' }
+    with-prop 'libinput Accel Speed', { set-prop $_<name>, '-0.7' }
   '';
 }
 //
-makePointer {
-  pointerName = "logitech-g-pro-ambidextrous-mouse";
-  deviceName = "Logitech G Pro";
-  deviceProductId = "1133, 16505";
-  rakuCommands = id: ''
-    run('xinput', 'set-prop', ${id}, 'libinput Left Handed Enabled', '1');
-  '';
-}
+(
+  let
+    f = productId: cmdSuffix: deviceName: makePointer {
+      pointerName = "logitech-g-pro-ambidextrous-mouse-${cmdSuffix}";
+      inherit deviceName;
+      deviceProductId = productId;
+      rakuCommands = ''
+        with-prop 'libinput Left Handed Enabled', { set-prop $_<name>, '1' }
+      '';
+    };
+  in
+    f "1133, 16505" "wireless" "Logitech G Pro"
+    //
+    f "1133, 49288" "wire" "Logitech G Pro Wireless Gaming Mouse"
+)
 //
 makePointer {
   pointerName = "logitech-wireless-ambidextrous-small-mouse";
   deviceName = "Logitech Wireless Mouse";
   deviceProductId = "1133, 16469";
-  rakuCommands = id: ''
-    run('xinput', 'set-prop', ${id}, 'libinput Left Handed Enabled', '1');
+  rakuCommands = ''
+    with-prop 'libinput Left Handed Enabled', { set-prop $_<name>, '1' }
   '';
 }
 //
 makePointer {
   pointerName = "logitech-wireless-t650-touchpad";
   deviceName = "Logitech Rechargeable Touchpad T650";
-  rakuCommands = id: ''
-    run('xinput', 'set-prop', ${id}, 'libinput Natural Scrolling Enabled', '1');
+  rakuCommands = ''
+    with-prop 'libinput Natural Scrolling Enabled', { set-prop $_<name>, '1' }
   '';
 }
 //
 makePointer {
   pointerName = "dell-latitude-laptop-touchpad";
   deviceName = "DELL081C:00 044E:121F Touchpad";
-  rakuCommands = id: ''
-    run('xinput', 'set-prop', ${id}, 'libinput Natural Scrolling Enabled', '1');
-    run('xinput', 'set-prop', ${id}, 'libinput Left Handed Enabled', '1');
-    run('xinput', 'set-prop', ${id}, 'libinput Tapping Enabled', '0');
+  rakuCommands = ''
+    with-prop 'libinput Natural Scrolling Enabled', { set-prop $_<name>, '1' }
+    with-prop 'libinput Left Handed Enabled', { set-prop $_<name>, '1' }
+    with-prop 'libinput Tapping Enabled', { set-prop $_<name>, '0' }
   '';
 }
 //
 makePointer {
   pointerName = "dell-latitude-laptop-dot";
   deviceName = "DELL081C:00 044E:121F Mouse";
-  rakuCommands = id: ''
-    run('xinput', 'set-prop', ${id}, 'libinput Natural Scrolling Enabled', '0');
-    run('xinput', 'set-prop', ${id}, 'libinput Left Handed Enabled', '1');
-    run('xinput', 'set-prop', ${id}, 'libinput Scroll Method Enabled', qw<{0 0 1}>);
+  rakuCommands = ''
+    with-prop 'libinput Natural Scrolling Enabled', { set-prop $_<name>, '0' }
+    with-prop 'libinput Left Handed Enabled', { set-prop $_<name>, '1' }
+    with-prop 'libinput Scroll Method Enabled', { set-prop $_<name>, qw<{0 0 1}> }
   '';
 }
