@@ -1,12 +1,16 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 { lib
-, writeScriptBin
-, makeWrapper
-, symlinkJoin
+, writeText
+, writeShellApplication
+
+# Dependencies for check phase of “writeShellApplication”
+, stdenv
+, shellcheck
 
 , rakudo
 , xlibs # Just for ‘xinput’
+, which
 }:
 let
   escRaku = x: "'${lib.escape ["'"] x}'";
@@ -15,27 +19,36 @@ let
     { pointerName # This will be a suffix for resulting derivation
     , deviceName # xinput device name
     , deviceProductId ? null # Additional validation by Device Product ID
-
-    , rakuCommands
-    # ↑ A function that takes Raku variable name with device xinput ID and returns Raku code that
-    #   applies settings for that device. For instance (interpolated argument must not be escaped):
-    #     ''
+    , rakuCommands # Raku code to evaluate for a found device match
     }: let
       name = "pointer-${pointerName}";
       productIdPropName = "Device Product ID";
       raku-exe = "${rakudo}/bin/raku";
       esc = lib.escapeShellArg;
+      releaseModeVarName = "IS_RELEASE_MODE";
 
-      script = writeScriptBin name ''
-        #! ${raku-exe}
+      pointerScript = writeText "${name}.raku" ''
         use v6.d;
         close $*IN;
+
+        sub slurp-run (|args) {
+          given run |args, :out { LEAVE { .sink }; .out.slurp(:close).chomp }
+        }
+
+        my Bool:D \is-release = (%*ENV{${escRaku releaseModeVarName}} // 0) == 1;
+
+        sub checked-exe (Str:D \exe) of IO::Path:D {
+          IO::Path.new: is-release ?? exe !! slurp-run(«which --», exe)
+        }
+
+        # Guard dependencies
+        my IO::Path:D \xinput = CHECK { checked-exe 'xinput' };
 
         my regex PropValueRegEx {
           ^\s* $<name>=<-[:]>+ \s+ '(' $<prop-id>=\d+ '):' \s* $<value>=<-[:]>+ \s*$
         };
 
-        my Str:D @devices = run('xinput', 'list', '--short', :out).out.slurp(:close).chomp.lines;
+        my Str:D @devices = slurp-run(xinput, 'list', '--short').lines;
         @devices .= grep: / '↳ ' ${escRaku deviceName} \s+ 'id='\d+ \s+ /;
         my Bool:D $is-found = False;
 
@@ -48,7 +61,7 @@ let
 
           sub read-props {
             return if $props-are-read;
-            my @props = run('xinput', 'list-props', xinput-id, :out).out.slurp(:close).chomp.lines;
+            my @props = slurp-run(xinput, 'list-props', xinput-id).lines;
             %props = @props.map({ ($<name>.Str, $<value>.Str) if $_ ~~ &PropValueRegEx }).flat.Map;
             $props-are-read = True;
           }
@@ -70,9 +83,10 @@ let
           }
 
           sub set-prop (Str:D \prop-name, |args) {
-            run 'xinput', 'set-prop', xinput-id, prop-name, |args
+            run xinput, 'set-prop', xinput-id, prop-name, |args
           }
 
+          $*ERR.say: "Handling matching xinput device ID #{xinput-id}…";
           {${rakuCommands}}
           $is-found = True;
         }
@@ -119,19 +133,25 @@ let
     assert (deviceProductId != null) -> builtins.isString deviceProductId;
     assert builtins.isString rakuCommands;
     {
-      ${name} = symlinkJoin {
+      ${name} = writeShellApplication {
         inherit name;
-        paths = [ script ];
-        nativeBuildInputs = [ makeWrapper ];
-        postBuild = ''
-          if ! ( [[ -f ${esc raku-exe} && -r ${esc raku-exe} && -x ${esc raku-exe} ]] ); then
-            >&2 printf '"%s" must be a readable executable file but it is not!\n' ${esc raku-exe}
-            false
-          fi
-          SCRIPT_BIN_PATH="$out"/bin/${esc name}
-          ${esc raku-exe} -c -- "$SCRIPT_BIN_PATH" # Syntax check
-          wrapProgram "$SCRIPT_BIN_PATH" \
-            --prefix PATH : ${esc (lib.makeBinPath [ xlibs.xinput ])}
+        runtimeInputs = [ xlibs.xinput ];
+        text = ''
+          raku_args=()
+          VAR_NAME=${esc releaseModeVarName}
+          if [[ ''${!VAR_NAME:-1} != 1 ]]; then raku_args+=(-c); fi
+          ${esc raku-exe} "''${raku_args[@]}" -- ${esc pointerScript} "$@"
+        '';
+        checkPhase = ''
+          runHook preCheck
+          PROGRAM=$out/bin/${esc name}
+          ${esc stdenv.shell} -n -- "$PROGRAM"
+          ${esc shellcheck}/bin/shellcheck -- "$PROGRAM"
+          env \
+            PATH=${esc (lib.makeBinPath [ which ])}:"$PATH" \
+            ${esc releaseModeVarName}=0 \
+            ${esc stdenv.shell} -- "$PROGRAM"
+          runHook postCheck
         '';
       };
     };
