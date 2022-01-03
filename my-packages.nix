@@ -11,6 +11,7 @@ let
     pkgs-unstable = import <nixos-unstable> {};
   in {
     yt-dlp = pkgs-unstable.python3Packages.yt-dlp;
+    neovim = pkgs-unstable.neovim; # 0.6.* instead of 0.5.* from stable
   };
 
   system-vim = rec {
@@ -22,7 +23,7 @@ let
       };
     };
 
-    neovim = pkgs.neovim.override {
+    neovim = unstable.neovim.override {
       configure.packages.myPlugins = {
         start = [pkgs.vimPlugins.vim-nix];
         opt = [];
@@ -48,6 +49,7 @@ let
 
   wenzels-neovim = pkgs.callPackage apps/wenzels-neovim.nix {
     bashEnvFile = bashAliasesFile;
+    inherit (unstable) neovim;
   };
 
   neovim-gtk = pkgs.callPackage apps/neovim-gtk.nix {
