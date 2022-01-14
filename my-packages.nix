@@ -21,6 +21,11 @@ let
         start = [pkgs.vimPlugins.vim-nix];
         opt = [];
       };
+      vimrcConfig.customRC = ''
+        set nocompatible
+        set hidden
+        syntax on
+      '';
     };
 
     neovim = unstable.neovim.override {
