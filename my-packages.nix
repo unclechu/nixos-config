@@ -66,11 +66,7 @@ let
   wenzels-keyboard-script = pkgs.callPackage scripts/wenzels-keyboard {};
   wenzels-xbindkeys = pkgs.callPackage apps/wenzels-xbindkeys.nix {};
 
-  firefox = wrapExecutable "${pkgs.firefox}/bin/firefox" {
-    env = {
-      MOZ_USE_XINPUT2 = 1; # support touchscreen scrolling
-    };
-  };
+  firefox = pkgs.callPackage apps/firefox.nix {};
 
   nheko = pkgs.callPackage apps/nheko.nix {};
 
