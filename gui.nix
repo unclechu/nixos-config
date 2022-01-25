@@ -116,4 +116,9 @@ in
 
     libinput.enable = true; # touchpad
   };
+
+  services.unclutter = {
+    enable = true;
+    timeout = 1;
+  };
 }
