@@ -6,10 +6,6 @@ let
     wenzelUserName
     rawdevinputGroupName backlightcontrolGroupName jackaudioGroupName audioGroupName;
 
-  sources = import nix/sources.nix;
-  nix-utils = pkgs.callPackage sources.nix-utils {};
-  inherit (nix-utils) esc;
-
   grant-access-to-input-devices = pkgs.callPackage utils/grant-access-to-input-devices {};
   laptop-backlight              = pkgs.callPackage utils/laptop-backlight              {};
 
@@ -18,13 +14,13 @@ let
 in
 {
   imports = [
-    (import "${sources.home-manager}/nixos")
     my-packages.configuration
     ./gui.nix
     ./fonts.nix
     ./opengl.nix
     ./boot.nix
     ./network.nix
+    ./user-specific.nix
     ./machine-specific.nix
   ] ++ (
     let path = ./secret.nix; in
@@ -105,33 +101,6 @@ in
     # };
   };
 
-  users = {
-    users.${wenzelUserName} = {
-      uid = 1989;
-      isNormalUser = true;
-      group = wenzelUserName;
-      shell = wenzels-bash;
-
-      extraGroups = [
-        "users"
-        "wheel"
-        "networkmanager"
-        rawdevinputGroupName
-        backlightcontrolGroupName
-        "docker"
-        "vboxusers"
-        jackaudioGroupName
-        audioGroupName
-      ];
-    };
-
-    groups = {
-      ${wenzelUserName}.gid = 1989;
-      ${rawdevinputGroupName}.gid = 500;
-      ${backlightcontrolGroupName}.gid = 501;
-    };
-  };
-
   security = {
     wrappers =
       let
@@ -153,22 +122,5 @@ in
       { domain = "@${audioGroupName}"; item = "nofile";  type = "soft"; value = "99999";     }
       { domain = "@${audioGroupName}"; item = "nofile";  type = "hard"; value = "99999";     }
     ];
-  };
-
-  home-manager.users.${wenzelUserName} = {
-    programs.git = {
-      enable = true;
-      userName = "Viacheslav Lotsmanov";
-      userEmail = "lotsmanov89@gmail.com";
-
-      signing = {
-        signByDefault = true;
-        key = null;
-      };
-    };
-
-    home.file.".bashrc".text = ''
-      . ${esc wenzels-bash.history-settings-file-path}
-    '';
   };
 }
