@@ -248,6 +248,7 @@ in
       pkgs.obs-studio
       pkgs.kitty # TODO: configure
       pkgs.piper # GUI for “ratbagd” service
+      pkgs.libnotify
 
       # camera
       pkgs.v4l-utils

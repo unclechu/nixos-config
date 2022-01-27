@@ -13,6 +13,7 @@ in
 {
   imports = [
     (import "${sources.home-manager}/nixos")
+    user-specific/dunst.nix
   ];
 
   users = {
