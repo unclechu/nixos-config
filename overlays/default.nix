@@ -3,4 +3,5 @@
 [
   (import ./neovim-qt.nix)
   (import ./dino.nix)
+  (import ./imagemagick-fix.nix)
 ]
