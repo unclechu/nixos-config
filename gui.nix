@@ -118,7 +118,7 @@ in
   };
 
   services.unclutter = {
-    enable = true;
+    enable = false;
     timeout = 1;
   };
 }
