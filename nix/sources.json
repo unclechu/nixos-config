@@ -47,18 +47,6 @@
         "url": "https://github.com/unclechu/i3rc/archive/43ac7849481f7c6279a6e3bcce0d0c45a1c540c7.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "neovim-gtk": {
-        "branch": "master",
-        "description": "gtk ui for neovim",
-        "homepage": null,
-        "owner": "daa84",
-        "repo": "neovim-gtk",
-        "rev": "c03649276ee47caa9bc7beb68f6c800b8c97651a",
-        "sha256": "1v026lz8ww94yyl0vbqsnp55py2fsa09vcgiqa8nc7cp005418kn",
-        "type": "tarball",
-        "url": "https://github.com/daa84/neovim-gtk/archive/c03649276ee47caa9bc7beb68f6c800b8c97651a.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "neovimrc": {
         "branch": "master",
         "description": "My NeoVim configs",

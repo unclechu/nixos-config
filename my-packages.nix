@@ -57,11 +57,6 @@ let
     inherit (unstable) neovim;
   };
 
-  neovim-gtk = pkgs.callPackage apps/neovim-gtk.nix {
-    neovim = wenzels-neovim.neovim-for-gui;
-    inherit bashAliasesFile;
-  };
-
   wenzels-xlib-keys-hack = pkgs.callPackage apps/wenzels-xlib-keys-hack {};
   wenzels-keyboard-script = pkgs.callPackage scripts/wenzels-keyboard {};
   wenzels-xbindkeys = pkgs.callPackage apps/wenzels-xbindkeys.nix {};
@@ -315,8 +310,6 @@ in
       wenzels-neovim.scripts.clean-vim
       wenzels-neovim.scripts.git-grep-nvr
       wenzels-neovim.scripts.nvimd
-      neovim-gtk
-      neovim-gtk.g
       wenzels-xlib-keys-hack
       wenzels-xbindkeys
       wenzels-keyboard-script
