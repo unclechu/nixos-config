@@ -17,6 +17,7 @@ in
   ];
 
   users = {
+    # See also “users.users.${wenzelUserName}.packages” in “my-packages.nix”
     users.${wenzelUserName} = {
       uid = 1989;
       isNormalUser = true;
