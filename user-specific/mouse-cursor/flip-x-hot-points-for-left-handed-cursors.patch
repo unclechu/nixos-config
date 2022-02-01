@@ -1,0 +1,88 @@
+diff --git a/builder/src/constants.py b/builder/src/constants.py
+index b8bd14b7..45f8cd01 100644
+--- a/builder/src/constants.py
++++ b/builder/src/constants.py
+@@ -1,7 +1,7 @@
+ #!/usr/bin/env python
+ # -*- coding: utf-8 -*-
+ 
+-from typing import Dict
++from typing import Dict, List
+ 
+ # Info
+ AUTHOR = "Kaiz Khatri"
+@@ -80,6 +80,74 @@ X_CURSORS_CFG: Dict[str, Dict[str, int]] = {
+     "wait": {"xhot": 100, "yhot": 100},
+ }
+ 
++horizontally_flipped: List[str] = [
++    ##########
++    # Static #
++    ##########
++    # "bottom_left_corner.png", # must stay as-is
++    # "bottom_right_corner.png", # must stay as-is
++    # "bottom_side.png", # must stay as-is
++    # "bottom_tee.png", # must stay as-is
++    "center_ptr.png",
++    "circle.png",
++    "context-menu.png",
++    "copy.png",
++    "cross.png",
++    "crossed_circle.png",
++    "crosshair.png",
++    "dnd_no_drop.png",
++    "dnd-ask.png",
++    "dnd-copy.png",
++    "dnd-link.png",
++    "dnd-move.png",
++    "dotbox.png",
++    # "fd_double_arrow.png", # must stay as-is
++    "grabbing.png",
++    "hand1.png",
++    "hand2.png",
++    "left_ptr.png",
++    # "left_side.png", # must stay as-is
++    # "left_tee.png", # must stay as-is
++    "link.png",
++    # "ll_angle.png", # must stay as-is
++    # "lr_angle.png", # must stay as-is
++    "move.png",
++    "pencil.png",
++    "plus.png",
++    "pointer-move.png",
++    # "question_arrow.png", # must stay as-is
++    "right_ptr.png",
++    # "right_side.png", # must stay as-is
++    # "right_tee.png", # must stay as-is
++    # "sb_down_arrow.png", # must stay as-is
++    # "sb_h_double_arrow.png", # must stay as-is
++    # "sb_left_arrow.png", # must stay as-is
++    # "sb_right_arrow.png", # must stay as-is
++    # "sb_up_arrow.png", # must stay as-is
++    # "sb_v_double_arrow.png", # must stay as-is
++    "tcross.png",
++    # "top_left_corner.png", # must stay as-is
++    # "top_right_corner.png", # must stay as-is
++    # "top_side.png", # must stay as-is
++    # "top_tee.png", # must stay as-is
++    # "ul_angle.png", # must stay as-is
++    # "ur_angle.png", # must stay as-is
++    "vertical-text.png",
++    # "wayland-cursor.png", # must stay as-is
++    "X_cursor.png",
++    "xterm.png",
++    "zoom-in.png",
++    "zoom-out.png",
++    ############
++    # Animated #
++    ############
++    "left_ptr_watch",
++    "wait", # makes it be counter-clockwise, the same as "left_ptr_watch"
++]
++
++for key in horizontally_flipped:
++    X_CURSORS_CFG[key]["xhot"] = 200 - X_CURSORS_CFG[key]["xhot"]
++
+ WIN_CURSORS_CFG: Dict[str, Dict[str, str]] = {
+     ##########
+     # Static #
