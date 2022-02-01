@@ -1,9 +1,9 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-args@{ pkgs, lib, ... }:
+args@{ pkgs, lib, config, ... }:
 let
   sources = import nix/sources.nix;
-  inherit (import ./constants.nix) xkb keyRepeat;
+  inherit (import ./constants.nix) xkb keyRepeat wenzelUserName;
   esc = lib.escapeShellArg;
 
   alacritty-config = pkgs.callPackage apps/alacritty {};
@@ -102,7 +102,16 @@ in
 
     displayManager = {
       defaultSession = "none+i3";
-      lightdm.enable = true;
+
+      lightdm = {
+        enable = true;
+
+        greeters.gtk = {
+          cursorTheme =
+            let x = config.home-manager.users.${wenzelUserName}.xsession.pointerCursor;
+            in { inherit (x) name package size; };
+        };
+      };
 
       sessionCommands = ''
         ${esc pkgs.xorg.xset}/bin/xset r rate ${esc keyRepeat.delay} ${esc keyRepeat.interval}
