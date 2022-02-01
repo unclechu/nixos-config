@@ -14,7 +14,7 @@ in
   imports = [
     (import "${sources.home-manager}/nixos")
     user-specific/dunst.nix
-    user-specific/mouse-cursor.nix
+    user-specific/mouse-cursor
   ];
 
   users = {
