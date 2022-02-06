@@ -41,6 +41,7 @@ let
       . "''$${dirEnvVarName}/misc/aliases/nvr.bash"
       . "''$${dirEnvVarName}/misc/aliases/tmux.bash"
       . "''$${dirEnvVarName}/misc/aliases/gpg.bash"
+      . "''$${dirEnvVarName}/misc/aliases/gpaste.bash"
     ''
     else "";
 in
