@@ -10,8 +10,11 @@ let
   unstable = let
     pkgs-unstable = import <nixos-unstable> {};
   in {
-    yt-dlp = pkgs-unstable.python3Packages.yt-dlp;
-    neovim = pkgs-unstable.neovim; # 0.6.* instead of 0.5.* from stable
+    inherit (pkgs-unstable.python3Packages) yt-dlp;
+    inherit (pkgs-unstable)
+      neovim # 0.6.* instead of 0.5.* from stable
+      nim # 1.6.2 with a fix for regression introduced in 1.6.0
+      ;
   };
 
   system-vim = rec {
@@ -72,8 +75,9 @@ let
   autolock = pkgs.callPackage scripts/autolock.nix {};
   cursor-to-display = pkgs.callPackage "${sources.i3rc}/nix/apps/cursor-to-display.nix" {};
 
-  invert-window-colors =
-    pkgs.callPackage "${sources.i3rc}/nix/apps/invert-window-colors-nim.nix" {};
+  invert-window-colors = pkgs.callPackage "${sources.i3rc}/nix/apps/invert-window-colors-nim.nix" {
+    inherit (unstable) nim;
+  };
 
   dzen-box = pkgs.callPackage scripts/dzen-box {};
   hsc2hs-pipe = pkgs.callPackage scripts/hsc2hs-pipe.nix { inherit systemConfig; };
@@ -318,14 +322,7 @@ in
       autostart-setup
       autolock
       cursor-to-display
-
-      # FIXME There is a regression introduced in Nim 1.6.0
-      # Wait before this gets fixed https://github.com/nim-lang/Nim/issues/18986
-      # (also see https://github.com/nim-lang/Nim/issues/19213 )
-      # and released and then use newer Nim compiler that would have a fix for this issue.
-      #
-      # invert-window-colors
-
+      invert-window-colors
       dzen-box
       locktop
       pamng

@@ -28,13 +28,7 @@ let
         "gpaste-gui.pl"        = exe apps.gpaste-gui;
         "pamng.sh"             = exe apps.pamng;
         "screen-backlight.sh"  = exe apps.screen-backlight;
-
-        # FIXME There is a regression introduced in Nim 1.6.0
-        # Wait before this gets fixed https://github.com/nim-lang/Nim/issues/18986
-        # (also see https://github.com/nim-lang/Nim/issues/19213 )
-        # and released and then use newer Nim compiler that would have a fix for this issue.
-        #
-        # "invert-window-colors" = exe apps.invert-window-colors;
+        "invert-window-colors" = exe apps.invert-window-colors;
       };
 
       terminalDark  = exe alacritty-config.dark;
