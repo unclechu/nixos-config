@@ -15,6 +15,7 @@
       pkgs.iosevka
       pkgs.ibm-plex
       pkgs.nerdfonts
+      pkgs.jetbrains-mono
     ];
 
     fontconfig = {

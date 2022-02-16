@@ -42,6 +42,17 @@ let
     neovide = pkgs.neovide;
   };
 
+  mkCustomFontTerminal = terminalConfig: defaultName: font:
+    let extract = lib.attrVals ["default" "dark" "light"]; in
+    extract terminalConfig ++
+    extract (terminalConfig.customize {
+      inherit defaultName font;
+    });
+
+  mkCustomFontTerminals = commandNameInfix: font:
+    mkCustomFontTerminal termite-config "termite-${commandNameInfix}-font" font
+    ++ mkCustomFontTerminal alacritty-config "alacritty-${commandNameInfix}-font" font;
+
   # *** apps ***
 
   wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix      { inherit systemConfig; };
@@ -333,36 +344,9 @@ in
       pa-add-mono-sink
       picom.run-picom
       picom.no-picom
-    ] ++ (
-      let extract = lib.attrVals ["default" "dark" "light"]; in
-      extract termite-config ++
-      extract (termite-config.customize {
-        defaultName = "termite-ibm-font";
-        font = "IBM Plex Mono";
-      })
-    ) ++ (
-      let extract = lib.attrVals ["default" "dark" "light"]; in
-      extract alacritty-config ++
-      extract (alacritty-config.customize {
-        defaultName = "alacritty-ibm-font";
-        font = "IBM Plex Mono";
-      })
-    ) ++ (
-      let extract = lib.attrVals ["default" "dark" "light"]; in
-      extract termite-config ++
-      extract (termite-config.customize {
-        defaultName = "termite-iosevka-font";
-        font = "Iosevka";
-      })
-    ) ++ (
-      let extract = lib.attrVals ["default" "dark" "light"]; in
-      extract alacritty-config ++
-      extract (alacritty-config.customize {
-        defaultName = "alacritty-iosevka-font";
-        font = "Iosevka";
-      })
-    ) ++ (
-      builtins.filter lib.isDerivation (builtins.attrValues pointers)
-    );
+    ] ++ mkCustomFontTerminals "ibm" "IBM Plex Mono"
+      ++ mkCustomFontTerminals "iosevka" "IBM Plex Mono"
+      ++ mkCustomFontTerminals "jetbrains" "JetBrains Mono"
+      ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
   };
 }
