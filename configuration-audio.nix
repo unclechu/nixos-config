@@ -28,20 +28,6 @@ in
     kernelParams = lib.mkForce (boot.kernelParams ++ [ "threadirq" ]);
     kernelPackages = lib.mkForce pkgs.linuxPackages_rt_5_10;
 
-    # This fails:
-    # kernelPackages = lib.mkForce (pkgs.linuxPackagesFor (pkgs.linux.override {
-    #   extraConfig = ''
-    #     PREEMPT_RT_FULL? y
-    #     PREEMPT y
-    #     IOSCHED_DEADLINE y
-    #     DEFAULT_DEADLINE y
-    #     DEFAULT_IOSCHED "deadline"
-    #     HPET_TIMER y
-    #     CPU_FREQ n
-    #     TREE_RCU_TRACE n
-    #   '';
-    # }));
-
     postBootCommands = ''
       echo 2048 > /sys/class/rtc/rtc0/max_user_freq
       echo 2048 > /proc/sys/dev/hpet/max-user-freq
