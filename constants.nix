@@ -16,4 +16,9 @@
     layout  = "us,ru,fi";
     options = "eurosign:e,grp:shifts_toggle";
   };
+
+  systemProfile = builtins.foldl' (acc: name: acc // { ${name} = name; }) {} [
+    "default"
+    "audio"
+  ];
 }

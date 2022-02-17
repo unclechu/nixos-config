@@ -47,6 +47,18 @@
         "url": "https://github.com/unclechu/i3rc/archive/43ac7849481f7c6279a6e3bcce0d0c45a1c540c7.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "musnix": {
+        "branch": "master",
+        "description": "Real-time audio in NixOS",
+        "homepage": "",
+        "owner": "musnix",
+        "repo": "musnix",
+        "rev": "7fb04384544fa2e68bf5e71869760674656b62e8",
+        "sha256": "0r7ss0ivd2lzdcifk52z9n29p96w55q9rz5ybl0xzg0zdcbw7dfc",
+        "type": "tarball",
+        "url": "https://github.com/musnix/musnix/archive/7fb04384544fa2e68bf5e71869760674656b62e8.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "neovimrc": {
         "branch": "master",
         "description": "My NeoVim configs",

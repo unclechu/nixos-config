@@ -3,7 +3,7 @@
 args@{ config, options, pkgs, lib, ... }:
 let
   inherit (import ./constants.nix)
-    wenzelUserName
+    wenzelUserName systemProfile
     rawdevinputGroupName backlightcontrolGroupName jackaudioGroupName audioGroupName;
 
   grant-access-to-input-devices = pkgs.callPackage utils/grant-access-to-input-devices {};
@@ -39,7 +39,10 @@ in
     options.nix.nixPath.default ++
     [ "nixpkgs-overlays=/etc/nixos/overlays-compat/" ];
 
-  nixpkgs.overlays = import ./overlays;
+  nixpkgs.overlays = (import ./overlays) ++ [
+    # A hack to make system profile name available in all of the modules
+    (self: super: { systemProfile = systemProfile.default; })
+  ];
 
   i18n.defaultLocale = "en_US.UTF-8";
   console.keyMap = "us";
