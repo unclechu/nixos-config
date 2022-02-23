@@ -4,13 +4,13 @@ self: super:
 {
   # It releases rarely and some features are provided in “master” branch only
   dino = super.dino.overrideAttrs (srcAttrs: srcAttrs // rec {
-    version = "git-master-after-v0.2.2";
+    version = "0.3.0";
 
     src = super.fetchFromGitHub {
       owner = "dino";
       repo = "dino";
-      rev = "1e63cb3bd935ad42af7b203efc5f4f83ae131e58"; # 29 January 2022
-      sha256 = "0gjkpd7qyq93hv60js8y0dj1kdngz7dsa49kx256v20wycms3dca";
+      rev = "v${version}";
+      sha256 = "1m6v3880azv9g5klbzbikpj89wvfvfk4sipqbzw5makxa51bk5ig";
     };
 
     buildInputs = srcAttrs.buildInputs ++ [
