@@ -36,23 +36,9 @@ let
       };
     }
   ) {};
-
-  # A fix for Nheko crashing when connecting to matrix.org
-  # matrix.org rolled out new Synapse with new version string format.
-  # TODO: Remove when the update is in nixpkgs
-  new-mtxclient = mtxclient.overrideAttrs (_: rec {
-    version = "0.6.2";
-
-    src = fetchFromGitHub {
-      owner = "Nheko-Reborn";
-      repo = "mtxclient";
-      rev = "v${version}";
-      sha256 = "118i9g7vz4xsgsm30r6wb473qigr3n0skz1qsdmrjh5hax4sihaf";
-    };
-  });
 in
 
-(nheko.override { mtxclient = new-mtxclient; }).overrideAttrs (srcAttrs: {
+nheko.overrideAttrs (srcAttrs: {
   buildInputs = srcAttrs.buildInputs ++ [
     libsForQt5.qtimageformats
     qt-jdenticon
