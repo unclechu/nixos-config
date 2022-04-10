@@ -1,17 +1,13 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+
+let sources = import ../nix/sources.nix; in
+
 self: super:
 {
-  # It releases rarely and some features are provided in “master” branch only
   dino = super.dino.overrideAttrs (srcAttrs: srcAttrs // rec {
-    version = "0.3.0";
-
-    src = super.fetchFromGitHub {
-      owner = "dino";
-      repo = "dino";
-      rev = "v${version}";
-      sha256 = "1m6v3880azv9g5klbzbikpj89wvfvfk4sipqbzw5makxa51bk5ig";
-    };
+    version = sources.dino.branch;
+    src = sources.dino;
 
     buildInputs = srcAttrs.buildInputs ++ [
       super.utillinux

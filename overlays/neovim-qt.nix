@@ -1,5 +1,8 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+
+let sources = import ../nix/sources.nix; in
+
 self: super:
 {
   # Just a fresher version from the “master” branch
@@ -7,14 +10,8 @@ self: super:
     let
       unwrapped =
         super.neovim-qt.unwrapped.overrideAttrs (srcAttrs: srcAttrs // rec {
-          version = "git-master";
-
-          src = super.fetchFromGitHub {
-            owner  = "equalsraf";
-            repo   = "neovim-qt";
-            rev    = "e7a51dd58a4a10147d34e93d20b19eeeffc69814"; # 5 November 2021
-            sha256 = "1fhkdbqmgjrqa6a22i2ljmiv3my2wb4mijavfbmncxqckjncnipw";
-          };
+          version = "git-${sources.neovim-qt.branch}";
+          src = sources.neovim-qt;
 
           cmakeFlags = [
             "-DUSE_SYSTEM_MSGPACK=1"

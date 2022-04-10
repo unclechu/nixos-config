@@ -1,20 +1,17 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-{ fetchFromGitHub, nheko, libsForQt5, mtxclient }:
+
+let sources = import ../nix/sources.nix; in
+
+{ nheko, libsForQt5, mtxclient }:
 
 let
   qt-jdenticon = libsForQt5.callPackage (
-    { lib, fetchFromGitHub, mkDerivation, qmake, qtbase }:
+    { lib, mkDerivation, qmake, qtbase }:
     mkDerivation rec {
-      pname = "qt-jdenticon";
-      version = "0.2.1";
-
-      src = fetchFromGitHub {
-        owner = "Nheko-Reborn";
-        repo = "qt-jdenticon";
-        rev = "v${version}";
-        sha256 = "1dk2cmz34pdn79k6lq6jlbvy0gfp0w2vv1w4f8c9xmgmf6brcxq1";
-      };
+      pname = sources.qt-jdenticon.repo;
+      version = sources.qt-jdenticon.branch;
+      src = sources.qt-jdenticon;
 
       nativeBuildInputs = [ qmake ];
       buildInputs = [ qtbase ];

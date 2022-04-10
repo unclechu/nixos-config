@@ -11,6 +11,18 @@
         "url": "https://github.com/unclechu/bashrc/archive/47be72fcddb760f83ba096bcd2268f4897b02f69.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "dino": {
+        "branch": "v0.3.0",
+        "description": "Modern XMPP (\"Jabber\") Chat Client using GTK+/Vala",
+        "homepage": "https://dino.im/",
+        "owner": "dino",
+        "repo": "dino",
+        "rev": "9838d5679470d1add098accaeae8eaf0ee3c58ee",
+        "sha256": "1m6v3880azv9g5klbzbikpj89wvfvfk4sipqbzw5makxa51bk5ig",
+        "type": "tarball",
+        "url": "https://github.com/dino/dino/archive/9838d5679470d1add098accaeae8eaf0ee3c58ee.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "gpaste-gui": {
         "branch": "master",
         "description": "Simple and handy GUI for managing clipboard history of GPaste daemon",
@@ -59,6 +71,18 @@
         "url": "https://github.com/musnix/musnix/archive/7fb04384544fa2e68bf5e71869760674656b62e8.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "neovim-qt": {
+        "branch": "master",
+        "description": "Neovim client library and GUI, in Qt5.",
+        "homepage": "https://github.com/equalsraf/neovim-qt/wiki",
+        "owner": "equalsraf",
+        "repo": "neovim-qt",
+        "rev": "6be829790bf5d6f9d7d2a73f1e4a3bdefe4b751f",
+        "sha256": "0yr4d2mcd944xvjlsrbvrfy44ks9jk0ppp7r2yqxb4dcjp0dvwnb",
+        "type": "tarball",
+        "url": "https://github.com/equalsraf/neovim-qt/archive/6be829790bf5d6f9d7d2a73f1e4a3bdefe4b751f.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "neovimrc": {
         "branch": "master",
         "description": "My NeoVim configs",
@@ -93,6 +117,30 @@
         "sha256": "1kryqcjnj33v6dva8nfb46qjw7ar9x7lhrns1ncns53xy2mdl9f0",
         "type": "tarball",
         "url": "https://github.com/unclechu/place-cursor-at/archive/500718f8aac606cbccdb3fd944b62a92337e0bfc.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "psi-plus": {
+        "branch": "1.5.1619",
+        "description": "Codebase snapshots for Psi+ project",
+        "homepage": "https://psi-plus.com/",
+        "owner": "psi-plus",
+        "repo": "psi-plus-snapshots",
+        "rev": "04d1034b6ab16cb08aaff6ad8c7e3ca377b884c2",
+        "sha256": "1cwr2l3f66qrw56584js0j136wvh9dcyxds34m8i4xk3vnm2qzwd",
+        "type": "tarball",
+        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/04d1034b6ab16cb08aaff6ad8c7e3ca377b884c2.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "qt-jdenticon": {
+        "branch": "v0.3.0",
+        "description": "Qt5 / C++14 Port of Jdenticon (https://github.com/dmester/jdenticon)",
+        "homepage": null,
+        "owner": "Nheko-Reborn",
+        "repo": "qt-jdenticon",
+        "rev": "0346c228f1d544581dfd72a4dceb84f8714570dd",
+        "sha256": "1frki008mjhcyq94w3hbdx12zdvx1yv19p4swc9g5yqqg7wkp4s3",
+        "type": "tarball",
+        "url": "https://github.com/Nheko-Reborn/qt-jdenticon/archive/0346c228f1d544581dfd72a4dceb84f8714570dd.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "termiterc": {
