@@ -29,10 +29,10 @@
         "homepage": "https://nix-community.github.io/home-manager/",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "a8d00f5c038cf7ec54e7dac9c57b171c1217f008",
-        "sha256": "1ix6cknhlrwpawlakrsd3616rgy1calnds2h6wfqrv6cfdwsyzzc",
+        "rev": "0bdbdea2e26c984b096f4f7d10e3c88536a980b0",
+        "sha256": "0kvn3fdpcy23z8rh7vi3fq31fbj9y695p5vys703zq1s1kh2744b",
         "type": "tarball",
-        "url": "https://github.com/nix-community/home-manager/archive/a8d00f5c038cf7ec54e7dac9c57b171c1217f008.tar.gz",
+        "url": "https://github.com/nix-community/home-manager/archive/0bdbdea2e26c984b096f4f7d10e3c88536a980b0.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "i3rc": {
@@ -65,10 +65,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "f1ddc782b5c11d62c00ecbed7518da46cc6f9661",
-        "sha256": "0h0rwm5nd68dlabx2l5cfpwvn669b4finidrz51ryn3zq9gwqkxp",
+        "rev": "360a0ee6df2547c2b2425c9b4b576616aa6cb967",
+        "sha256": "0dv9lwhv7gy7zib6liajbxln2vi2plva0hfm2p0vlq44b323pl4x",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/f1ddc782b5c11d62c00ecbed7518da46cc6f9661.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/360a0ee6df2547c2b2425c9b4b576616aa6cb967.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-utils": {
