@@ -11,10 +11,26 @@ let
   inherit (machine-specific) boot;
   sources = import nix/sources.nix;
   rtirq = pkgs.callPackage "${sources.musnix}/pkgs/os-specific/linux/rtirq/default.nix" {};
+
+  # Disable some known services that can be running in background
+  turnOffs = {
+    virtualisation.libvirtd.enable = lib.mkForce false;
+    virtualisation.docker.enable = lib.mkForce false;
+    virtualisation.virtualbox.host.enable = lib.mkForce false;
+
+    services.gvfs.enable = lib.mkForce false;
+    services.avahi.enable = lib.mkForce false;
+    services.tor.enable = lib.mkForce false;
+    services.tor.client.enable = lib.mkForce false;
+
+    # hardware.bluetooth.enable = lib.mkForce false;
+    # services.blueman.enable = lib.mkForce false;
+  };
 in
 {
   imports = [
     ./configuration.nix
+    turnOffs
   ];
 
   nixpkgs.overlays = import ./overlays ++ [
