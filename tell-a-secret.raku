@@ -1,6 +1,6 @@
 #! /usr/bin/env nix-shell
 #! nix-shell --pure -i raku -E
-#! nix-shell "let d=[p.rakudo p.coreutils p.gnupg];s=fetchTarball{url=\"https://releases.nixos.org/nixos/21.11/nixos-21.11.336867.c86185d20d7/nixexprs.tar.xz\";sha256=\"1qg66p5d16sziq3p5xigkh7dgy8bkgxk0qv5rpf8sy9830cgsbik\";};p=import s {};in p.mkShell{buildInputs=d;}"
+#! nix-shell "let d=[p.rakudo p.coreutils p.gnupg];s=fetchTarball{url=\"https://releases.nixos.org/nixos/21.11/nixos-21.11.337311.fd3e33d696b/nixexprs.tar.xz\";sha256=\"026b4f56gb82b5zpc3yjw7k1hlckqmvr0nnqcd2vrw4f47qfzvnq\";};p=import s {};in p.mkShell{buildInputs=d;}"
 
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
