@@ -31,34 +31,51 @@ channels/manage.raku override
 
 1. Clone this repo into `/mnt/etc/nixos` and `cd` to that dir:
 
-   ```sh
+   ``` sh
    sudo mkdir /mnt/etc
-   sudo nix-shell -p git --run 'git clone https://github.com/unclechu/nixos-config.git /mnt/etc/nixos'
+   sudo git clone https://github.com/unclechu/nixos-config.git /mnt/etc/nixos
    cd /mnt/etc/nixos
+   ```
+
+1. Fetch and override channels (for your booted NixOS Live CD):
+
+   ``` sh
+   channels/manage.raku fetch
+   channels/manage.raku override
    ```
 
 1. Link related hardware config as `machine-specific.nix`:
 
-   ```sh
+   ``` sh
    sudo ln -s hardware/wenzel-nixos-pc.nix machine-specific.nix
    ```
 
+   Or create a new one if it’s a new machine (you can use `nixos-generate-config` to create one
+   automatically, see https://nixos.org/manual/nixos/stable/index.html#sec-installation-installing
+   for details).
+
 1. Install:
 
-   ```sh
-   sudo nix-shell -p git --run 'nixos-install --no-root-passwd --root /mnt'
+   ``` sh
+   sudo nixos-install --no-root-passwd --root /mnt
    ```
 
 1. Change the password in order to be able to login:
 
-   ```sh
+   ``` sh
    sudo nixos-enter --root /mnt -c 'passwd wenzel'
    ```
 
 1. Reboot into the built system:
 
-   ```sh
+   ``` sh
    reboot
+   ```
+
+1. After booting to the installed NixOS override channels for it:
+
+   ``` sh
+   /etc/nixos/channels/manage.raku override
    ```
 
 ## Building “audio” system profile
@@ -94,15 +111,6 @@ You don’t need [niv] to install the dependencies, only to update them, remove 
 *N.B. “nixos” channel can’t be managed by [niv] in a NixOS configuration because it’s imported even
 before `configuration.nix` is called. `configuration.nix` is called with `pkgs` argument which is
 imported already. Also all the root system dependencies are provided by that channel.*
-
-## Known issues
-
-1. In a new installed NixOS from this config I had to manually create
-   `/nix/var/nix/profiles/per-user/wenzel` directory and `chown` it to `wenzel:root` (as in the
-   first machine). Otherwise [Home Manager] systemd service was failing with error of that directory
-   doesn’t exists. NixOS also couldn’t be rebuilt before that directory has been created.
-
-   **TODO** Check on new installation whether there is still this error.
 
 ## Author
 
