@@ -150,7 +150,8 @@ multi sub MAIN('encrypt', Bool:D :f(:$force) = False, *@files) {
   for @files-to-encrypt {
     $*ERR.say: "Handling ‘$_’ file…";
 
-    unless $force {
+    # If *.asc file doesn’t exist it means it’s a new file to be encrypted for the first time
+    if !$force && "$_.asc".IO ~~ :e {
       my Str:D \encrypted-hash = do {
         my Proc:D \decrypt-proc = run «"{gpg}" --decrypt -- "$_.asc"», :out;
         given run "sha256sum", :in(decrypt-proc.out), :out {
@@ -171,6 +172,8 @@ multi sub MAIN('encrypt', Bool:D :f(:$force) = False, *@files) {
           "call the command with ‘--force’ flag. ‘$_’ file is skipped.";
         next
       }
+    } elsif !$force && "$_.asc".IO !~~ :e {
+      warn "‘$_’ seems to be a new file. Encrypting it for the first time…"
     }
 
     my Array:D \recipients-arguments =
