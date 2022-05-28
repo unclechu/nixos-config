@@ -12,7 +12,7 @@ constant %channels =
   'nixos'          => 'nixos-21.11',
   'nixos-unstable' => 'nixos-unstable';
 
-constant \channel-path-prefix = 'file:///etc/nixos/channels/';
+my Str:D \channel-path-prefix = "file://$*CWD/";
 
 constant \channel-url-prefix = 'https://nixos.org/channels/';
 sub channel-url(Str:D \channel-name) of Str:D { channel-url-prefix ~ channel-name }
