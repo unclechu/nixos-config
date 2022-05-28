@@ -76,6 +76,12 @@ in
     zsh.enable = true;
     zsh.enableCompletion = true;
 
+    gnupg.agent = {
+      enable = true;
+      enableSSHSupport = true;
+      pinentryFlavor = "gnome3";
+    };
+
     # TODO configure, see https://framagit.org/mpo/era-configuration-nix
     # chromium = {};
   };
