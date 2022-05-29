@@ -27,7 +27,10 @@ channels/manage.raku override
 
 1. Prepare file system according to a hardware configuration of a machine
    (see `hardware` directory, write new one for new hardware)
-   and mount everything into `/mnt` as the root of the system you’re about to build
+   and mount everything into `/mnt` as the root of the system you’re about to build.
+
+   _N.B. Keep in mind that for encrypted `/boot` you need to use LUKS1 instead of LUKS2
+   because GRUB doesn’t support LUKS2._
 
 1. Clone this repo into `/mnt/etc/nixos` and `cd` to that dir:
 
