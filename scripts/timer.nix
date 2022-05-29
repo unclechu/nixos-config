@@ -3,10 +3,8 @@
 { callPackage
 , lib
 
-, systemConfig # Needed for “wenzels-bash” (set to “null” to use in Nix REPL)
-
 # Overridable dependencies
-, __wenzels-bash ? callPackage ../apps/wenzels-bash.nix { inherit systemConfig; }
+, __wenzels-bash ? callPackage ../apps/wenzels-bash.nix {}
 }:
 assert
   builtins.isPath  __wenzels-bash.bashRC ||

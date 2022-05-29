@@ -55,7 +55,7 @@ let
 
   # *** apps ***
 
-  wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix      { inherit systemConfig; };
+  wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix      {};
   tmux-config        = pkgs.callPackage sources.tmuxrc             {};
   termite-config     = pkgs.callPackage sources.termiterc          {};
   alacritty-config   = pkgs.callPackage apps/alacritty             {};
@@ -91,7 +91,7 @@ let
   };
 
   dzen-box = pkgs.callPackage scripts/dzen-box {};
-  hsc2hs-pipe = pkgs.callPackage scripts/hsc2hs-pipe.nix { inherit systemConfig; };
+  hsc2hs-pipe = pkgs.callPackage scripts/hsc2hs-pipe.nix {};
   screen-backlight = pkgs.callPackage scripts/screen-backlight.nix {};
   locktop = pkgs.callPackage scripts/locktop.nix {};
   pamng = pkgs.callPackage scripts/pamng.nix {};
@@ -99,7 +99,7 @@ let
   autostart-setup = pkgs.callPackage scripts/autostart-setup.nix { inherit systemConfig; };
   input-setup = pkgs.callPackage scripts/input-setup.nix {};
   picom = pkgs.callPackage scripts/picom.nix {};
-  timer = pkgs.callPackage scripts/timer.nix { inherit systemConfig; };
+  timer = pkgs.callPackage scripts/timer.nix {};
   genpass = pkgs.callPackage scripts/genpass.nix {};
   pointers = pkgs.callPackage scripts/pointers.nix {};
 in
