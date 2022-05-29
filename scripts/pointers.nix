@@ -210,6 +210,16 @@ makePointer {
 }
 //
 makePointer {
+  pointerName = "dell-inspiron-laptop-touchpad";
+  deviceName = "MSFT0001:00 06CB:7E7E Touchpad";
+  rakuCommands = ''
+    with-prop 'libinput Natural Scrolling Enabled', { set-prop $_<name>, '1' }
+    with-prop 'libinput Left Handed Enabled', { set-prop $_<name>, '1' }
+    with-prop 'libinput Tapping Enabled', { set-prop $_<name>, '1' }
+  '';
+}
+//
+makePointer {
   pointerName = "dell-latitude-laptop-dot";
   deviceName = "DELL081C:00 044E:121F Mouse";
   rakuCommands = ''
