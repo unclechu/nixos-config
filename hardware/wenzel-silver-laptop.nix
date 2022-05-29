@@ -13,10 +13,10 @@
     kernelModules = [ "kvm-intel" "fuse" ];
 
     kernelParams = [
-      # "radeon.cik_support=0"
-      # "amdgpu.cik_support=1"
-      # "amdgpu.dc=1"
-      # "amdgpu.ppfeaturemask=0xffffffff" # allows to adjust clocks and voltages via sysfs
+      "radeon.cik_support=0"
+      "amdgpu.cik_support=1"
+      "amdgpu.dc=1"
+      "amdgpu.ppfeaturemask=0xffffffff" # allows to adjust clocks and voltages via sysfs
     ];
 
     kernelPackages = pkgs.linuxPackages_latest;
@@ -52,4 +52,16 @@
   powerManagement.cpuFreqGovernor = "powersave";
   hardware.enableRedistributableFirmware = true; # Need some non-free microcodes for "amdgpu"
   hardware.cpu.intel.updateMicrocode = config.hardware.enableRedistributableFirmware;
+
+  services.xserver = {
+    videoDrivers = [ "intel" "amdgpu" ];
+
+    deviceSection = ''
+      Option "TearFree" "true"
+    '';
+
+    screenSection = ''
+      DefaultDepth 24
+    '';
+  };
 }
