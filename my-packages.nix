@@ -11,10 +11,6 @@ let
     pkgs-unstable = import <nixos-unstable> {};
   in {
     inherit (pkgs-unstable.python3Packages) yt-dlp;
-    inherit (pkgs-unstable)
-      neovim # 0.6.* instead of 0.5.* from stable
-      nim # 1.6.2 with a fix for regression introduced in 1.6.0
-      ;
   };
 
   system-vim = rec {
@@ -31,7 +27,7 @@ let
       '';
     };
 
-    neovim = unstable.neovim.override {
+    neovim = pkgs.neovim.override {
       configure.packages.myPlugins = {
         start = [pkgs.vimPlugins.vim-nix];
         opt = [];
@@ -68,7 +64,7 @@ let
 
   wenzels-neovim = pkgs.callPackage apps/wenzels-neovim.nix {
     bashEnvFile = bashAliasesFile;
-    inherit (unstable) neovim;
+    inherit (pkgs) neovim;
   };
 
   wenzels-xlib-keys-hack = pkgs.callPackage apps/wenzels-xlib-keys-hack {};
@@ -87,7 +83,7 @@ let
   cursor-to-display = pkgs.callPackage "${sources.i3rc}/nix/apps/cursor-to-display.nix" {};
 
   invert-window-colors = pkgs.callPackage "${sources.i3rc}/nix/apps/invert-window-colors-nim.nix" {
-    inherit (unstable) nim;
+    inherit (pkgs) nim;
   };
 
   dzen-box = pkgs.callPackage scripts/dzen-box {};
@@ -130,7 +126,7 @@ in
       pkgs.tree
       pkgs.bat
       pkgs.lf
-      pkgs.ag
+      pkgs.silver-searcher
       pkgs.zip pkgs.unzip pkgs.p7zip
       pkgs.parallel
       pkgs.entr
@@ -240,7 +236,7 @@ in
 
       # desktop environment
       pkgs.tk
-      pkgs.xlibs.xev
+      pkgs.xorg.xev
       pkgs.gmrun pkgs.dmenu pkgs.dzen2 pkgs.rofi
       pkgs.xsel pkgs.xdotool pkgs.numlockx pkgs.xkb-switch
       pkgs.xbindkeys
@@ -248,7 +244,7 @@ in
       pkgs.place-cursor-at
       pkgs.xautolock
       pkgs.termite
-      pkgs.gnome3.networkmanagerapplet
+      pkgs.networkmanagerapplet
       pkgs.gnome3.gnome-system-monitor
       pkgs.gnome3.gnome-power-manager
       pkgs.gnome3.gnome-calendar

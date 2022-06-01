@@ -7,10 +7,14 @@ let
 in
 {
   home-manager.users.${wenzelUserName} = {
-    xsession.pointerCursor = {
+    home.pointerCursor = {
+      x11 = {
+        enable = true;
+        defaultCursor = "left_ptr";
+      };
+
       name = "Bibata-Original-Ice";
       package = left-handed-bibata-cursors;
-      defaultCursor = "left_ptr";
       size = 24;
     };
   };

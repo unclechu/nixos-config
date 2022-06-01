@@ -4,7 +4,7 @@ let sources = import ../nix/sources.nix; in
 { callPackage
 , lib
 , bash
-, xlibs # Just for ‘xinput’
+, xorg # Just for ‘xinput’
 
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
@@ -23,7 +23,7 @@ let
 
   dependencies = {
     bash = bash;
-    xinput = xlibs.xinput;
+    xinput = xorg.xinput;
     ${lib.getName __wenzels-keyboard} = __wenzels-keyboard;
   } // pointers;
 

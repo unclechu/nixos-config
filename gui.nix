@@ -102,7 +102,7 @@ in
 
         greeters.gtk = {
           cursorTheme =
-            let x = config.home-manager.users.${wenzelUserName}.xsession.pointerCursor;
+            let x = config.home-manager.users.${wenzelUserName}.home.pointerCursor;
             in { inherit (x) name package size; };
         };
       };

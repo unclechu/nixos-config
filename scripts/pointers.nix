@@ -9,7 +9,7 @@
 , shellcheck
 
 , rakudo
-, xlibs # Just for ‘xinput’
+, xorg # Just for ‘xinput’
 , which
 }:
 let
@@ -135,7 +135,7 @@ let
     {
       ${name} = writeShellApplication {
         inherit name;
-        runtimeInputs = [ xlibs.xinput ];
+        runtimeInputs = [ xorg.xinput ];
         text = ''
           raku_args=()
           VAR_NAME=${esc releaseModeVarName}

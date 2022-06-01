@@ -36,15 +36,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "home-manager": {
-        "branch": "release-21.11",
+        "branch": "release-22.05",
         "description": "Manage a user environment using Nix  [maintainer=@rycee] ",
         "homepage": "https://nix-community.github.io/home-manager/",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "d93d56ab8c1c6aa575854a79b9d2f69d491db7d0",
-        "sha256": "1fi27zabvqlyc2ggg7wr01j813gs46rswg1i897h9hqkbgqsjkny",
+        "rev": "bda2c80b4c1a8d85c84c343a25ac7303fbc7999d",
+        "sha256": "1jhly1xkmclwdnhn59v9kjizn1b68aay2fanqbacsf0ayryz09hz",
         "type": "tarball",
-        "url": "https://github.com/nix-community/home-manager/archive/d93d56ab8c1c6aa575854a79b9d2f69d491db7d0.tar.gz",
+        "url": "https://github.com/nix-community/home-manager/archive/bda2c80b4c1a8d85c84c343a25ac7303fbc7999d.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "i3rc": {
@@ -53,10 +53,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "i3rc",
-        "rev": "3c96cceeab11e2a44476b682bdb79df709c0b2cf",
-        "sha256": "1bigd11ciyk7n0imr69awl9gb8fyzn3vlv2skhk48lk573sj3fsx",
+        "rev": "77c7efe14c5000135acd7c36a74d8804e5457377",
+        "sha256": "0d0xj2vmsnb8hzzgrsc28ms0bnnq7hnajpbzni5kjd1wyl1w6jyx",
         "type": "tarball",
-        "url": "https://github.com/unclechu/i3rc/archive/3c96cceeab11e2a44476b682bdb79df709c0b2cf.tar.gz",
+        "url": "https://github.com/unclechu/i3rc/archive/77c7efe14c5000135acd7c36a74d8804e5457377.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "musnix": {
@@ -89,10 +89,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "360a0ee6df2547c2b2425c9b4b576616aa6cb967",
-        "sha256": "0dv9lwhv7gy7zib6liajbxln2vi2plva0hfm2p0vlq44b323pl4x",
+        "rev": "ce3fd809f88755dcd2903068f660db7fc859a7c6",
+        "sha256": "012dvg484nzvmwq9li491b08h053x6418gn80qaarn369gg68469",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/360a0ee6df2547c2b2425c9b4b576616aa6cb967.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/ce3fd809f88755dcd2903068f660db7fc859a7c6.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-utils": {
@@ -173,10 +173,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "unclechu-i3-status",
-        "rev": "43632940ab9f0dc438de9ff78ed0f3e2724c995a",
-        "sha256": "1ip4rbqid1k0yr1x35rgzjnbdpn6wgn1nvlys3hrb075nafwr9ir",
+        "rev": "d27dcdd655fcba5c5675930e1be1863a518a1210",
+        "sha256": "1mjqj5a5ikr4pqb79dls37hd91flgzjx4zswyhzkkp60y8j7b2j7",
         "type": "tarball",
-        "url": "https://github.com/unclechu/unclechu-i3-status/archive/43632940ab9f0dc438de9ff78ed0f3e2724c995a.tar.gz",
+        "url": "https://github.com/unclechu/unclechu-i3-status/archive/d27dcdd655fcba5c5675930e1be1863a518a1210.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "xlib-keys-hack": {
@@ -185,10 +185,10 @@
         "homepage": "",
         "owner": "unclechu",
         "repo": "xlib-keys-hack",
-        "rev": "33b49a9b1fc4bc87bdb95e2bb632a312ec2ebad0",
-        "sha256": "186sxspyz3lql05g9skjsgwvn2d67hhjird72x1gxzhb0zxd71wd",
+        "rev": "0ecd51845c9aaef89080ac21e32e03eb5ef3e516",
+        "sha256": "0h6fahi8wsfj3yfb86m935am29fhhzr4nixaj2jwva0ldhncv3dx",
         "type": "tarball",
-        "url": "https://github.com/unclechu/xlib-keys-hack/archive/33b49a9b1fc4bc87bdb95e2bb632a312ec2ebad0.tar.gz",
+        "url": "https://github.com/unclechu/xlib-keys-hack/archive/0ecd51845c9aaef89080ac21e32e03eb5ef3e516.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
