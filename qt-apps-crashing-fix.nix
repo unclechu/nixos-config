@@ -1,3 +1,5 @@
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 { pkgs, lib, ...  }:
 let
   missing-gsettings-schemas-fix = builtins.readFile "${pkgs.stdenv.mkDerivation {
