@@ -11,13 +11,6 @@ let
 
   my-packages = import ./my-packages.nix args;
   inherit (my-packages.my-apps) wenzels-bash;
-
-  missing-gsettings-schemas-fix = builtins.readFile "${pkgs.stdenv.mkDerivation {
-    name = "missing-gsettings-schemas-fix";
-    dontUnpack = true; # Make it buildable without “src” attribute
-    buildInputs = [ pkgs.gtk3 ];
-    installPhase = '' printf %s "$GSETTINGS_SCHEMAS_PATH" > "$out" '';
-  }}";
 in
 {
   imports = [
@@ -29,6 +22,7 @@ in
     ./network.nix
     ./user-specific.nix
     ./machine-specific.nix
+    ./qt-apps-crashing-fix.nix
   ] ++ (
     let path = ./secret.nix; in
     lib.optional (builtins.pathExists path) path
@@ -68,10 +62,6 @@ in
 
     sessionVariables = {
       LV2_PATH = "/run/current-system/sw/lib/lv2";
-
-      # Fix for “No GSettings schemas are installed on the system” error
-      # that causes Qt application to crash when opening file picker dialog window.
-      XDG_DATA_DIRS = lib.mkAfter [ "${missing-gsettings-schemas-fix}" ];
     };
   };
 
