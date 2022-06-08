@@ -3,7 +3,7 @@
 
 let sources = import ../nix/sources.nix; in
 
-{ nheko, libsForQt5, mtxclient }:
+{ nheko, libsForQt5, mtxclient, lib, gst_all_1 }:
 
 let
   qt-jdenticon = libsForQt5.callPackage (
@@ -33,11 +33,24 @@ let
       };
     }
   ) {};
+
+  # See https://github.com/NixOS/nixpkgs/issues/176482
+  # TODO Remove after https://github.com/NixOS/nixpkgs/pull/176345 is released for 22.05
+  fixBrokenQtSupportForGstPluginsGood = drv: drv.overrideAttrs (srcAttrs: {
+    buildInputs =
+      let
+        gst-plugins-good = gst_all_1.gst-plugins-good.overrideAttrs (srcAttrs: {
+          nativeBuildInputs = srcAttrs.nativeBuildInputs ++ [ libsForQt5.qtbase ];
+        });
+      in
+        builtins.filter (x: lib.getName x != "gst-plugins-good") srcAttrs.buildInputs
+        ++ [ gst-plugins-good ];
+  });
 in
 
-nheko.overrideAttrs (srcAttrs: {
+fixBrokenQtSupportForGstPluginsGood (nheko.overrideAttrs (srcAttrs: {
   buildInputs = srcAttrs.buildInputs ++ [
     libsForQt5.qtimageformats
     qt-jdenticon
   ];
-})
+}))
