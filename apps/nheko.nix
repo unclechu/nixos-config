@@ -3,7 +3,7 @@
 
 let sources = import ../nix/sources.nix; in
 
-{ nheko, libsForQt5, mtxclient, lib, gst_all_1 }:
+{ nheko, libsForQt5, lib, gst_all_1 }:
 
 let
   qt-jdenticon = libsForQt5.callPackage (
@@ -46,11 +46,18 @@ let
         builtins.filter (x: lib.getName x != "gst-plugins-good") srcAttrs.buildInputs
         ++ [ gst-plugins-good ];
   });
+
+  addMoreImageFormats = drv: drv.overrideAttrs (srcAttrs: {
+    buildInputs = srcAttrs.buildInputs ++ [ libsForQt5.qtimageformats ];
+  });
+
+  addIdenticonsSupport = drv: drv.overrideAttrs (srcAttrs: {
+    buildInputs = srcAttrs.buildInputs ++ [ qt-jdenticon ];
+  });
 in
 
-fixBrokenQtSupportForGstPluginsGood (nheko.overrideAttrs (srcAttrs: {
-  buildInputs = srcAttrs.buildInputs ++ [
-    libsForQt5.qtimageformats
-    qt-jdenticon
-  ];
-}))
+lib.pipe nheko [
+  addMoreImageFormats
+  addIdenticonsSupport
+  fixBrokenQtSupportForGstPluginsGood
+]
