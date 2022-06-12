@@ -3,7 +3,7 @@
 
 let sources = import ../nix/sources.nix; in
 
-{ nheko, libsForQt5, lib, gst_all_1 }:
+{ nheko, libsForQt5, lib }:
 
 let
   qt-jdenticon = libsForQt5.callPackage (
@@ -34,16 +34,11 @@ let
     }
   ) {};
 
-  addMoreImageFormats = drv: drv.overrideAttrs (srcAttrs: {
-    buildInputs = srcAttrs.buildInputs ++ [ libsForQt5.qtimageformats ];
-  });
-
   addIdenticonsSupport = drv: drv.overrideAttrs (srcAttrs: {
     buildInputs = srcAttrs.buildInputs ++ [ qt-jdenticon ];
   });
 in
 
 lib.pipe nheko [
-  addMoreImageFormats
   addIdenticonsSupport
 ]
