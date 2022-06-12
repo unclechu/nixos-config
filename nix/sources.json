@@ -77,10 +77,10 @@
         "homepage": "https://github.com/equalsraf/neovim-qt/wiki",
         "owner": "equalsraf",
         "repo": "neovim-qt",
-        "rev": "6291e6144b9b63b2fe9a650db50e03d04c2e3074",
-        "sha256": "1gzv0nyp7vgihyvfsinz3cr6rd6zkq94lmrd3iywybn2gdg92k3p",
+        "rev": "e6115d552ee737308e3b718093661b2ada40df06",
+        "sha256": "1wzgbbiiyxpnxwcmqm1zn5n013zdnbyc9736nmn90r3s4d27j90c",
         "type": "tarball",
-        "url": "https://github.com/equalsraf/neovim-qt/archive/6291e6144b9b63b2fe9a650db50e03d04c2e3074.tar.gz",
+        "url": "https://github.com/equalsraf/neovim-qt/archive/e6115d552ee737308e3b718093661b2ada40df06.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovimrc": {
