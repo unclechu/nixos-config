@@ -36,9 +36,15 @@ in
     fsPackages = [pkgs.xfsprogs.bin];
   };
 
-  nix.nixPath =
-    options.nix.nixPath.default ++
-    [ "nixpkgs-overlays=/etc/nixos/overlays-compat/" ];
+  nix = {
+    nixPath =
+      options.nix.nixPath.default
+      ++ [ "nixpkgs-overlays=/etc/nixos/overlays-compat/" ];
+
+    extraOptions = ''
+      experimental-features = nix-command flakes
+    '';
+  };
 
   nixpkgs.overlays = (import ./overlays) ++ [
     # A hack to make system profile name available in all of the modules
