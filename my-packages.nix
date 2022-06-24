@@ -98,6 +98,7 @@ let
   timer = pkgs.callPackage scripts/timer.nix {};
   genpass = pkgs.callPackage scripts/genpass.nix {};
   pointers = pkgs.callPackage scripts/pointers.nix {};
+  pulseaudio-share-server = pkgs.callPackage scripts/pulseaudio-share-server.nix {};
 in
 {
   my-apps = {
@@ -340,6 +341,7 @@ in
       pa-add-mono-sink
       picom.run-picom
       picom.no-picom
+      pulseaudio-share-server
     ] ++ mkCustomFontTerminals "ibm" "IBM Plex Mono"
       ++ mkCustomFontTerminals "iosevka" "IBM Plex Mono"
       ++ mkCustomFontTerminals "jetbrains" "JetBrains Mono"
