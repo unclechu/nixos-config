@@ -5,10 +5,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "bashrc",
-        "rev": "47be72fcddb760f83ba096bcd2268f4897b02f69",
-        "sha256": "1ywfl3mnpf5w592waj988kqiskvwm0zsjb891h49phyyv17xif0c",
+        "rev": "5d4009d47071ab9601cf1790979c58944a8155c8",
+        "sha256": "0ignijzr9hsy1pfv2hfqxvls23qnigx3ln5w1hkj2dql4ik13v85",
         "type": "tarball",
-        "url": "https://github.com/unclechu/bashrc/archive/47be72fcddb760f83ba096bcd2268f4897b02f69.tar.gz",
+        "url": "https://github.com/unclechu/bashrc/archive/5d4009d47071ab9601cf1790979c58944a8155c8.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "dino": {
