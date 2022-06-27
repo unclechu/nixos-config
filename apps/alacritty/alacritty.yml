@@ -8,5 +8,6 @@ cursor:
   blink_interval: 500
 
 font:
+  size: 6
   normal:
     family: Hack
