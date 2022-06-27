@@ -38,23 +38,10 @@ let
     neovide = pkgs.neovide;
   };
 
-  mkCustomFontTerminal = terminalConfig: defaultName: font:
-    let extract = lib.attrVals ["default" "dark" "light"]; in
-    extract terminalConfig ++
-    extract (terminalConfig.customize {
-      inherit defaultName font;
-    });
-
-  mkCustomFontTerminals = commandNameInfix: font:
-    mkCustomFontTerminal termite-config "termite-${commandNameInfix}-font" font
-    ++ mkCustomFontTerminal alacritty-config "alacritty-${commandNameInfix}-font" font;
-
   # *** apps ***
 
   wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix      {};
   tmux-config        = pkgs.callPackage sources.tmuxrc             {};
-  termite-config     = pkgs.callPackage sources.termiterc          {};
-  alacritty-config   = pkgs.callPackage apps/alacritty             {};
   gpaste-gui         = pkgs.callPackage sources.gpaste-gui         {};
   xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack     {};
   gnome-screenshot   = pkgs.callPackage apps/gnome-screenshot.nix  {};
@@ -99,6 +86,9 @@ let
   genpass = pkgs.callPackage scripts/genpass.nix {};
   pointers = pkgs.callPackage scripts/pointers.nix {};
   pulseaudio-share-server = pkgs.callPackage scripts/pulseaudio-share-server.nix {};
+
+  # *** helpers ***
+  inherit (pkgs.callPackage ./terminal-emulators.nix {}) mkCustomFontTerminals;
 in
 {
   my-apps = {
@@ -342,7 +332,8 @@ in
       picom.run-picom
       picom.no-picom
       pulseaudio-share-server
-    ] ++ mkCustomFontTerminals "ibm" "IBM Plex Mono"
+    ] ++ mkCustomFontTerminals "hack" "Hack"
+      ++ mkCustomFontTerminals "ibm" "IBM Plex Mono"
       ++ mkCustomFontTerminals "iosevka" "IBM Plex Mono"
       ++ mkCustomFontTerminals "jetbrains" "JetBrains Mono"
       ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
