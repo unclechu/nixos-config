@@ -27,6 +27,8 @@ let
     bashEnvFile = "${wenzels-bash.dir}/.bash_aliases";
   };
 
+  terminal-emulators = import ./terminal-emulators.nix { inherit pkgs lib; };
+
   wenzels-xlib-keys-hack = pkgs.callPackage apps/wenzels-xlib-keys-hack {};
   wenzels-keyboard-script = pkgs.callPackage scripts/wenzels-keyboard {};
   wenzels-xbindkeys = pkgs.callPackage apps/wenzels-xbindkeys.nix {};
@@ -59,9 +61,6 @@ let
   genpass = pkgs.callPackage scripts/genpass.nix {};
   pointers = pkgs.callPackage scripts/pointers.nix {};
   pulseaudio-share-server = pkgs.callPackage scripts/pulseaudio-share-server.nix {};
-
-  # *** helpers ***
-  inherit (pkgs.callPackage ./terminal-emulators.nix {}) mkCustomFontTerminals;
 in
 {
   my-apps = {
@@ -74,6 +73,7 @@ in
   configuration = {
     imports = [
       vims.configuration
+      terminal-emulators.configuration
     ];
 
     environment.shells = [
@@ -296,10 +296,6 @@ in
       picom.run-picom
       picom.no-picom
       pulseaudio-share-server
-    ] ++ mkCustomFontTerminals "hack" "Hack"
-      ++ mkCustomFontTerminals "ibm" "IBM Plex Mono"
-      ++ mkCustomFontTerminals "iosevka" "IBM Plex Mono"
-      ++ mkCustomFontTerminals "jetbrains" "JetBrains Mono"
-      ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
+    ] ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
   };
 }
