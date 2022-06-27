@@ -18,14 +18,20 @@ let
     mkCustomFontTerminal termite-config "termite-${commandNameInfix}-font" font
     ++ mkCustomFontTerminal alacritty-config "alacritty-${commandNameInfix}-font" font;
 
+  # All terminal emulators with all configs for them (different color schemes and fonts)
+  allTerminalEmulators = []
+    ++ mkCustomFontTerminals "hack" "Hack"
+    ++ mkCustomFontTerminals "ibm" "IBM Plex Mono"
+    ++ mkCustomFontTerminals "iosevka" "IBM Plex Mono"
+    ++ mkCustomFontTerminals "jetbrains" "JetBrains Mono";
+
   configuration = {
-    users.users.${wenzelUserName}.packages = []
-      ++ mkCustomFontTerminals "hack" "Hack"
-      ++ mkCustomFontTerminals "ibm" "IBM Plex Mono"
-      ++ mkCustomFontTerminals "iosevka" "IBM Plex Mono"
-      ++ mkCustomFontTerminals "jetbrains" "JetBrains Mono";
+    users.users.${wenzelUserName}.packages = allTerminalEmulators;
   };
 in
 {
   inherit configuration;
+
+  allTerminalEmulators =
+    builtins.listToAttrs (map (x: { name = lib.getName x; value = x; }) allTerminalEmulators);
 }

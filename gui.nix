@@ -7,6 +7,7 @@ let
   esc = lib.escapeShellArg;
 
   alacritty-config = pkgs.callPackage apps/alacritty {};
+  terminal-emulators = import ./terminal-emulators.nix { inherit pkgs lib; };
 
   i3-config =
     let
@@ -31,8 +32,8 @@ let
         "invert-window-colors" = exe apps.invert-window-colors;
       };
 
-      terminalDark  = exe alacritty-config.dark;
-      terminalLight = exe alacritty-config.light;
+      terminalDark  = exe terminal-emulators.allTerminalEmulators."alacritty-jetbrains-font-dark";
+      terminalLight = exe terminal-emulators.allTerminalEmulators."alacritty-jetbrains-font-light";
 
       runDark   = "${esc (exe pkgs.rofi)} -show run  -theme ${esc rofiTheme.dark}";
       runLight  = "${esc (exe pkgs.rofi)} -show run  -theme ${esc rofiTheme.light}";
