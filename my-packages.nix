@@ -13,31 +13,6 @@ let
     inherit (pkgs-unstable.python3Packages) yt-dlp;
   };
 
-  system-vim = rec {
-    vim = pkgs.vim_configurable.customize {
-      name = "vim";
-      vimrcConfig.packages.myplugins = {
-        start = [pkgs.vimPlugins.vim-nix];
-        opt = [];
-      };
-      vimrcConfig.customRC = ''
-        set nocompatible
-        set hidden
-        syntax on
-      '';
-    };
-
-    neovim = pkgs.neovim.override {
-      configure.packages.myPlugins = {
-        start = [pkgs.vimPlugins.vim-nix];
-        opt = [];
-      };
-    };
-
-    neovim-qt = pkgs.neovim-qt.override { inherit neovim; };
-    neovide = pkgs.neovide;
-  };
-
   # *** apps ***
 
   wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix      {};
@@ -47,11 +22,9 @@ let
   gnome-screenshot   = pkgs.callPackage apps/gnome-screenshot.nix  {};
   unclechu-i3-status = pkgs.callPackage sources.unclechu-i3-status {};
 
-  bashAliasesFile = "${wenzels-bash.dir}/.bash_aliases";
-
-  wenzels-neovim = pkgs.callPackage apps/wenzels-neovim.nix {
-    bashEnvFile = bashAliasesFile;
-    inherit (pkgs) neovim;
+  vims = import ./vims.nix {
+    inherit pkgs lib;
+    bashEnvFile = "${wenzels-bash.dir}/.bash_aliases";
   };
 
   wenzels-xlib-keys-hack = pkgs.callPackage apps/wenzels-xlib-keys-hack {};
@@ -99,6 +72,10 @@ in
   };
 
   configuration = {
+    imports = [
+      vims.configuration
+    ];
+
     environment.shells = [
       pkgs.bash
       pkgs.dash
@@ -144,13 +121,6 @@ in
       pkgs.usbutils
       pkgs.dnsutils
       pkgs.lm_sensors
-
-      # code editing
-      system-vim.vim
-      system-vim.neovim
-      system-vim.neovim-qt
-      system-vim.neovide
-      pkgs.neovim-remote
 
       # programming languages
       ## haskell
@@ -307,12 +277,6 @@ in
 
     users.users.${wenzelUserName}.packages = [
       wenzels-bash
-      wenzels-neovim.neovim
-      wenzels-neovim.neovim-qt
-      wenzels-neovim.neovide
-      wenzels-neovim.scripts.clean-vim
-      wenzels-neovim.scripts.git-grep-nvr
-      wenzels-neovim.scripts.nvimd
       wenzels-xlib-keys-hack
       wenzels-xbindkeys
       wenzels-keyboard-script
