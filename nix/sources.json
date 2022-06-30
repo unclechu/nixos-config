@@ -161,10 +161,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "tmuxrc",
-        "rev": "92bf01e515f4a86dc6708555d99f540913225669",
-        "sha256": "063nv72c68bjynmzgbg29c0cg94pikl752y67vdadb8fg5qjrmwk",
+        "rev": "caf2a1c8373654dc90d26ef443268f87a39444e7",
+        "sha256": "1v2qjj0bbmr3gg0sc9ljjx56w0yxx0bbn9bf0hk4ix6xyz2zhdx2",
         "type": "tarball",
-        "url": "https://github.com/unclechu/tmuxrc/archive/92bf01e515f4a86dc6708555d99f540913225669.tar.gz",
+        "url": "https://github.com/unclechu/tmuxrc/archive/caf2a1c8373654dc90d26ef443268f87a39444e7.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "unclechu-i3-status": {
