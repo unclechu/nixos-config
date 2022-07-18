@@ -1,4 +1,16 @@
 {
+    "MIDI-Trigger": {
+        "branch": "master",
+        "description": "LV2 plugin which generates MIDI notes by detected audio signal peaks.",
+        "homepage": "",
+        "owner": "unclechu",
+        "repo": "MIDI-Trigger",
+        "rev": "d4af983fe171fc2bc8bed9802c0476005a4134ab",
+        "sha256": "019ysq87pl02q6bwvhlr23pvnms99x1cn0wjx6w1ks6xckrcvjdl",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/MIDI-Trigger/archive/d4af983fe171fc2bc8bed9802c0476005a4134ab.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "bashrc": {
         "branch": "master",
         "description": "bash configs",

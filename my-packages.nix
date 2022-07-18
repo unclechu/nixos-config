@@ -39,6 +39,10 @@ let
 
   hell = pkgs.callPackage apps/hell.nix {};
 
+  midi-trigger = pkgs.callPackage sources.MIDI-Trigger {
+    src = sources.MIDI-Trigger;
+  };
+
   # *** scripts ***
 
   autolock = pkgs.callPackage scripts/autolock.nix {};
@@ -173,6 +177,7 @@ in
       pkgs.swh_lv2
       pkgs.x42-plugins
       pkgs.zam-plugins
+      midi-trigger
 
       # graphics
       pkgs.glxinfo
