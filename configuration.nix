@@ -10,7 +10,6 @@ let
   laptop-backlight              = pkgs.callPackage utils/laptop-backlight              {};
 
   my-packages = import ./my-packages.nix args;
-  inherit (my-packages.my-apps) wenzels-bash;
 in
 {
   imports = [

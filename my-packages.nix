@@ -52,8 +52,10 @@ let
     inherit (pkgs) nim;
   };
 
+  hsc2hs-pipe = wenzels-bash.hsc2hs-pipe;
+  timer = wenzels-bash.timer;
+
   dzen-box = pkgs.callPackage scripts/dzen-box {};
-  hsc2hs-pipe = pkgs.callPackage scripts/hsc2hs-pipe.nix {};
   screen-backlight = pkgs.callPackage scripts/screen-backlight.nix {};
   locktop = pkgs.callPackage scripts/locktop.nix {};
   pamng = pkgs.callPackage scripts/pamng.nix {};
@@ -61,7 +63,6 @@ let
   autostart-setup = pkgs.callPackage scripts/autostart-setup.nix { inherit systemConfig; };
   input-setup = pkgs.callPackage scripts/input-setup.nix {};
   picom = pkgs.callPackage scripts/picom.nix {};
-  timer = pkgs.callPackage scripts/timer.nix {};
   genpass = pkgs.callPackage scripts/genpass.nix {};
   pointers = pkgs.callPackage scripts/pointers.nix {};
   pulseaudio-share-server = pkgs.callPackage scripts/pulseaudio-share-server.nix {};
@@ -71,7 +72,8 @@ in
     inherit
       autostart-setup input-setup
       cursor-to-display invert-window-colors gpaste-gui pamng screen-backlight
-      wenzels-bash;
+      ;
+    inherit (wenzels-bash) wenzels-bash;
   };
 
   configuration = {
@@ -84,7 +86,7 @@ in
       pkgs.bash
       pkgs.dash
       pkgs.zsh
-      wenzels-bash
+      wenzels-bash.wenzels-bash
     ];
 
     environment.systemPackages = [
@@ -281,7 +283,7 @@ in
     ];
 
     users.users.${wenzelUserName}.packages = [
-      wenzels-bash
+      wenzels-bash.wenzels-bash
       wenzels-xlib-keys-hack
       wenzels-xbindkeys
       wenzels-keyboard-script
