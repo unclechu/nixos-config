@@ -3,9 +3,33 @@
 
 let sources = import ../nix/sources.nix; in
 
-{ nheko, libsForQt5, lib }:
+{ libsForQt5, lib, mtxclient, nheko }:
 
 let
+  newer = {
+    mtxclient = mtxclient.overrideAttrs (old: {
+      version = sources.mtxclient.version;
+      src = sources.mtxclient;
+    });
+
+    nheko = lib.pipe nheko [
+      # Newer version
+      (x: x.overrideAttrs (old: {
+        version = sources.nheko.version;
+        src = sources.nheko;
+      }))
+
+      # Use newer “mtxclient”
+      (x: x.override { mtxclient = newer.mtxclient; })
+
+      addIdenticonsSupport
+    ];
+  };
+
+  addIdenticonsSupport = drv: drv.overrideAttrs (srcAttrs: {
+    buildInputs = srcAttrs.buildInputs ++ [ qt-jdenticon ];
+  });
+
   qt-jdenticon = libsForQt5.callPackage (
     { lib, mkDerivation, qmake, qtbase }:
     mkDerivation rec {
@@ -33,12 +57,6 @@ let
       };
     }
   ) {};
-
-  addIdenticonsSupport = drv: drv.overrideAttrs (srcAttrs: {
-    buildInputs = srcAttrs.buildInputs ++ [ qt-jdenticon ];
-  });
 in
 
-lib.pipe nheko [
-  addIdenticonsSupport
-]
+newer.nheko

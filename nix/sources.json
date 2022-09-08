@@ -71,6 +71,19 @@
         "url": "https://github.com/unclechu/i3rc/archive/77c7efe14c5000135acd7c36a74d8804e5457377.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "mtxclient": {
+        "branch": "master",
+        "description": "Client API library for Matrix, built on top of libcurl",
+        "homepage": "",
+        "owner": "Nheko-Reborn",
+        "repo": "mtxclient",
+        "rev": "d4301e79862f5167806ecebd12746da21d6b3886",
+        "sha256": "11xh7q7186b2zc08iwxirxy5cyiaycqcgwssi2ms25k2gyg2ki2s",
+        "type": "tarball",
+        "url": "https://github.com/Nheko-Reborn/mtxclient/archive/d4301e79862f5167806ecebd12746da21d6b3886.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz",
+        "version": "v0.8.1"
+    },
     "musnix": {
         "branch": "master",
         "description": "Real-time audio in NixOS",
@@ -107,6 +120,19 @@
         "url": "https://github.com/unclechu/neovimrc/archive/a6867f673bc6056749b7620ab570dee70346ddd7.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "nheko": {
+        "branch": "master",
+        "description": "Desktop client for Matrix using Qt and C++17.",
+        "homepage": "https://nheko-reborn.github.io/",
+        "owner": "Nheko-Reborn",
+        "repo": "nheko",
+        "rev": "143d7c9b6a8e77d99d0d79c243f3c8f9ba9a7e27",
+        "sha256": "0a3wvv7vzh60hvyzy6776v6wa9d6n020684dqbcl4dw608mf4ahk",
+        "type": "tarball",
+        "url": "https://github.com/Nheko-Reborn/nheko/archive/143d7c9b6a8e77d99d0d79c243f3c8f9ba9a7e27.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz",
+        "version": "v0.10.1"
+    },
     "nix-utils": {
         "branch": "master",
         "description": "My own Nix utils",
@@ -132,15 +158,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "psi-plus": {
-        "branch": "1.5.1633",
+        "branch": "1.5.1640",
         "description": "Codebase snapshots for Psi+ project",
         "homepage": "https://psi-plus.com/",
         "owner": "psi-plus",
         "repo": "psi-plus-snapshots",
-        "rev": "6efa145c9041ad4699344e2f4877ae6a6ee83899",
-        "sha256": "1p1zdvhy8cpky4sd4c6zcfq7vbgi8jlv59p3rc2hfwqfjb346xwi",
+        "rev": "6fd067d0187c606f872990d6d26b7d70c86731b6",
+        "sha256": "11nkcdqknk0z0rdq11qhh3h9ffrhvq4i3d2ffvbf7224ix8ijcdz",
         "type": "tarball",
-        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/6efa145c9041ad4699344e2f4877ae6a6ee83899.tar.gz",
+        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/6fd067d0187c606f872990d6d26b7d70c86731b6.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "qt-jdenticon": {
