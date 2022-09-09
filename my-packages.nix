@@ -149,6 +149,7 @@ in
 
       # audio
       pkgs.pavucontrol
+      pkgs.pulsemixer
       pkgs.jack2
       pkgs.qjackctl
       pkgs.audacious
