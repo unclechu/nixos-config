@@ -8,14 +8,14 @@ let sources = import ../nix/sources.nix; in
 let
   newer = {
     mtxclient = mtxclient.overrideAttrs (old: {
-      version = sources.mtxclient.version;
+      version = sources.mtxclient.branch;
       src = sources.mtxclient;
     });
 
     nheko = lib.pipe nheko [
       # Newer version
       (x: x.overrideAttrs (old: {
-        version = sources.nheko.version;
+        version = sources.nheko.branch;
         src = sources.nheko;
       }))
 

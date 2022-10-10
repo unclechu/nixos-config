@@ -72,17 +72,16 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "mtxclient": {
-        "branch": "master",
+        "branch": "v0.8.2",
         "description": "Client API library for Matrix, built on top of libcurl",
         "homepage": "",
         "owner": "Nheko-Reborn",
         "repo": "mtxclient",
-        "rev": "d4301e79862f5167806ecebd12746da21d6b3886",
-        "sha256": "11xh7q7186b2zc08iwxirxy5cyiaycqcgwssi2ms25k2gyg2ki2s",
+        "rev": "42bf1fd01d5b5aca58c1b284510fc1a30d949785",
+        "sha256": "041ckjvfxapv1q6x9xd8q70x43cz10x7p11aql58lnc0jp0kwry7",
         "type": "tarball",
-        "url": "https://github.com/Nheko-Reborn/mtxclient/archive/d4301e79862f5167806ecebd12746da21d6b3886.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz",
-        "version": "v0.8.1"
+        "url": "https://github.com/Nheko-Reborn/mtxclient/archive/42bf1fd01d5b5aca58c1b284510fc1a30d949785.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "musnix": {
         "branch": "master",
@@ -90,10 +89,10 @@
         "homepage": "",
         "owner": "musnix",
         "repo": "musnix",
-        "rev": "c28a81cfdc33cbe95bce3aa853da5d8e5d8f5d00",
-        "sha256": "0gi49hlz1n63617rwk8lv7n6fldsh8k6dqagy2a7scpi1njj6zk2",
+        "rev": "85d2886931663ab77e806013a84b443971e63b49",
+        "sha256": "175r3frikngn4hhdmphimlhsk9nhihn9jsqzylj6d33d1608vzjw",
         "type": "tarball",
-        "url": "https://github.com/musnix/musnix/archive/c28a81cfdc33cbe95bce3aa853da5d8e5d8f5d00.tar.gz",
+        "url": "https://github.com/musnix/musnix/archive/85d2886931663ab77e806013a84b443971e63b49.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {
@@ -102,10 +101,10 @@
         "homepage": "https://github.com/equalsraf/neovim-qt/wiki",
         "owner": "equalsraf",
         "repo": "neovim-qt",
-        "rev": "7b230767dd04d921ca5c2c31ad46ffd00111aed2",
-        "sha256": "008ckjy608iimf9kh0l2ghkj358akh7hxz1zvwi561kkw3q57afx",
+        "rev": "409fad81323f44e83ebcdbd4e8fa13bfff3f844c",
+        "sha256": "168zkwlv1wag5a82ipdbc56pxnp1l0h3bkr3898m31k1m05svs6j",
         "type": "tarball",
-        "url": "https://github.com/equalsraf/neovim-qt/archive/7b230767dd04d921ca5c2c31ad46ffd00111aed2.tar.gz",
+        "url": "https://github.com/equalsraf/neovim-qt/archive/409fad81323f44e83ebcdbd4e8fa13bfff3f844c.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovimrc": {
@@ -121,17 +120,16 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nheko": {
-        "branch": "master",
+        "branch": "v0.10.2",
         "description": "Desktop client for Matrix using Qt and C++17.",
         "homepage": "https://nheko-reborn.github.io/",
         "owner": "Nheko-Reborn",
         "repo": "nheko",
-        "rev": "143d7c9b6a8e77d99d0d79c243f3c8f9ba9a7e27",
-        "sha256": "0a3wvv7vzh60hvyzy6776v6wa9d6n020684dqbcl4dw608mf4ahk",
+        "rev": "031a129591d79266055c7bebb9751f893766d4ea",
+        "sha256": "114hbv58209bwar6qjdjg2l1vh3xk20ppv6n301i7zkmwrf7q9w2",
         "type": "tarball",
-        "url": "https://github.com/Nheko-Reborn/nheko/archive/143d7c9b6a8e77d99d0d79c243f3c8f9ba9a7e27.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz",
-        "version": "v0.10.1"
+        "url": "https://github.com/Nheko-Reborn/nheko/archive/031a129591d79266055c7bebb9751f893766d4ea.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-utils": {
         "branch": "master",
@@ -158,15 +156,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "psi-plus": {
-        "branch": "1.5.1640",
+        "branch": "1.5.1642",
         "description": "Codebase snapshots for Psi+ project",
         "homepage": "https://psi-plus.com/",
         "owner": "psi-plus",
         "repo": "psi-plus-snapshots",
-        "rev": "6fd067d0187c606f872990d6d26b7d70c86731b6",
-        "sha256": "11nkcdqknk0z0rdq11qhh3h9ffrhvq4i3d2ffvbf7224ix8ijcdz",
+        "rev": "21de2a5783cac159af551b37291488a42e89bc0b",
+        "sha256": "0lkbn9mprn6rpvqpf2l0nan5vk54ds2vr2p9ibqr82bmidhqd1my",
         "type": "tarball",
-        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/6fd067d0187c606f872990d6d26b7d70c86731b6.tar.gz",
+        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/21de2a5783cac159af551b37291488a42e89bc0b.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "qt-jdenticon": {
