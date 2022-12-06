@@ -48,7 +48,7 @@
     memoryPercent = 100 / 5;
   };
 
-  nix.maxJobs = 4;
+  nix.settings.max-jobs = 4;
   powerManagement.cpuFreqGovernor = "powersave";
   hardware.enableRedistributableFirmware = true; # Need some non-free microcodes for "amdgpu"
   hardware.cpu.intel.updateMicrocode = config.hardware.enableRedistributableFirmware;

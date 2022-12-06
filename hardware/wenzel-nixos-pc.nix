@@ -82,6 +82,6 @@
   # need some non-free microcodes for "amdgpu"
   hardware.enableRedistributableFirmware = true;
 
-  nix.maxJobs = 4;
+  nix.settings.max-jobs = 4;
   powerManagement.cpuFreqGovernor = "performance"; # "powersave"
 }
