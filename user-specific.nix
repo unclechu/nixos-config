@@ -46,6 +46,8 @@ in
   };
 
   home-manager.users.${wenzelUserName} = {
+    home.stateVersion = "22.05";
+
     programs.git = {
       enable = true;
       userName = "Viacheslav Lotsmanov";
