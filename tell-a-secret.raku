@@ -16,7 +16,7 @@ my Str:D \machine-specific-secret-symlink = 'machine-specific.secret.nix';
 
 sub expand-executable(Str:D \e) of Str:D {
   { given IO::Path.new: e, :CWD($_) { return .absolute if .e } } for $*SPEC.path;
-  die
+  die error
     "‘{e}’ executable is not found! Paths used for searching:\n" ~
     $*SPEC.path.map({"  $_"}).join("\n")
 }
@@ -25,6 +25,18 @@ sub expand-executable(Str:D \e) of Str:D {
 constant \ls  = expand-executable 'ls';
 constant \ln  = expand-executable 'ln';
 constant \gpg = expand-executable 'gpg';
+
+# Shell text coloring helpers
+sub red(Str:D \x --> Str:D) { "\e[31m{x}\e[0m" }
+sub green(Str:D \x --> Str:D) { "\e[32m{x}\e[0m" }
+sub blue(Str:D \x --> Str:D) { "\e[34m{x}\e[0m" }
+sub yellow(Str:D \x --> Str:D) { "\e[1;33m{x}\e[0m" }
+
+# More abstract shell text coloring helpers
+sub error(Str:D \x --> Str:D) { red x }
+sub warning(Str:D \x --> Str:D) { yellow x }
+sub info(Str:D \x --> Str:D) { green x }
+sub debug(Str:D \x --> Str:D) { blue x }
 
 sub get-hardware-dir-files(--> Seq:D) {
   given run «"{ls}" -- "{hardware-dir}/"», :out { LEAVE {.sink}; .out.slurp(:close).lines }
@@ -39,7 +51,7 @@ sub get-hardware-secret-configs(Bool:D \encrypted, Str:D @hardware-dir-files, --
 sub validate-list-of-files(Array:D \given-list-files, Array:D \expected-list-of-files) {
   return if given-list-files ⊆ expected-list-of-files;
 
-  die
+  die error
     "Provided list of files ({given-list-files.map({qq/‘$_’/}).join: ', '}) is not a subset of " ~
     "or equal to this list of expected files: {expected-list-of-files.map({qq/‘$_’/}).join: ', '}!"
 }
@@ -52,7 +64,7 @@ multi sub MAIN('decrypt', *@files) {
   my Str:D @hardware-configs-decrypted = get-hardware-secret-configs False, @hardware-dir-files;
   my Str:D @hardware-configs-encrypted = get-hardware-secret-configs True,  @hardware-dir-files;
 
-  warn
+  warn warning
     "Could not find associated encrypted machine-specific config for ‘{hostname}’ hostname. " ~
     'Maybe you didn’t rebuild your system yet? Build it without the decrypted secrets first ' ~
     'and then run this script, then you can rebuild the system again. Or maybe you just didn’t ' ~
@@ -72,7 +84,7 @@ multi sub MAIN('decrypt', *@files) {
   }
 
   for @files-to-decrypt {
-    $*ERR.say: "Handling ‘$_’ file…";
+    $*ERR.say: debug "\nHandling ‘$_’ file…";
     sub decrypt(Str:D \f) of Proc:D { run «"{gpg}" --decrypt --output "{f}" -- "{f}.asc"» }
     unless $_.IO ~~ :f { decrypt $_; next }
 
@@ -90,11 +102,11 @@ multi sub MAIN('decrypt', *@files) {
     };
 
     if encrypted-hash eq decrypted-hash {
-      $*ERR.say:
+      $*ERR.say: debug
         "Decrypted ‘$_’ file already exists and matches the checksum of the contents of " ~
         'encrypted file. File is skipped.';
     } else {
-      $*ERR.say:
+      $*ERR.say: warning
         "Decrypted ‘$_’ file already exists and its content is different from encrypted file " ~
         "(‘$_.asc’). GPG will ask you to confirm overwriting the file. Be cautious! " ~
         'Maybe you made some changes in the file that you haven’t encrypted yet? ' ~
@@ -104,7 +116,7 @@ multi sub MAIN('decrypt', *@files) {
   }
 
   unless machine-specific-secret-symlink.IO ~~ :f {
-    $*ERR.say: "‘{machine-specific-secret-symlink}’ symlink does not exists, creating it…";
+    $*ERR.say: info "‘{machine-specific-secret-symlink}’ symlink does not exists, creating it…";
 
     run «
       "{ln}" -s --
@@ -116,7 +128,7 @@ multi sub MAIN('decrypt', *@files) {
 
 #| Encrypt your changes in secret files thus you can commit them and push to the repo.
 multi sub MAIN('encrypt', Bool:D :f(:$force) = False, *@files) {
-  die "‘{keys-file}’ does not exists. Did you run ‘decrypt’ command first?"
+  die error "‘{keys-file}’ does not exists. Did you run ‘decrypt’ command first?"
     unless keys-file.IO ~~ :f;
 
   my Array:D \recipients =
@@ -144,11 +156,11 @@ multi sub MAIN('encrypt', Bool:D :f(:$force) = False, *@files) {
     @files-to-encrypt = @files;
   }
 
-  die "Secret file ‘{$_}’ not found! Did you run ‘decrypt’ command first?"
+  die error "Secret file ‘{$_}’ not found! Did you run ‘decrypt’ command first?"
     unless .IO ~~ :f for @files-to-encrypt;
 
   for @files-to-encrypt {
-    $*ERR.say: "Handling ‘$_’ file…";
+    $*ERR.say: debug "\nHandling ‘$_’ file…";
 
     # If *.asc file doesn’t exist it means it’s a new file to be encrypted for the first time
     if !$force && "$_.asc".IO ~~ :e {
@@ -166,14 +178,14 @@ multi sub MAIN('encrypt', Bool:D :f(:$force) = False, *@files) {
       };
 
       if encrypted-hash eq decrypted-hash {
-        $*ERR.say:
+        $*ERR.say: debug
           "The checksum of ‘$_’ file and checksum of content of encrypted ‘$_.asc’ file match. " ~
           'There are no changes to encrypt. If you still want to re-encrypt the file then just ' ~
           "call the command with ‘--force’ flag. ‘$_’ file is skipped.";
         next
       }
     } elsif !$force && "$_.asc".IO !~~ :e {
-      $*ERR.say: "‘$_’ seems to be a new file. Encrypting it for the first time…"
+      $*ERR.say: info "‘$_’ seems to be a new file. Encrypting it for the first time…"
     }
 
     my Array:D \recipients-arguments =
@@ -188,14 +200,15 @@ multi sub MAIN('encrypt', Bool:D :f(:$force) = False, *@files) {
       «--output "{$_}.asc" -- "$_"»
     ).flat;
 
-    @args.flat.map({ /^<[a..zA..Z0..9.\-_]>+$/ ?? $_ !! "'$_'" }).Array.prepend('+').join(' ').say;
+    $*ERR.say: debug
+      @args.map({ /^<[a..zA..Z0..9.\-_]>+$/ ?? $_ !! "'$_'" }).Array.prepend('+').join(' ');
     run @args
   }
 }
 
 #| Import public keys to use them for encryption.
 multi sub MAIN('import') {
-  die "‘{keys-file}’ does not exists. Did you run ‘decrypt’ command first?"
+  die error "‘{keys-file}’ does not exists. Did you run ‘decrypt’ command first?"
     unless keys-file.IO ~~ :f;
 
   run «"{gpg}" --import -- "{keys-file}"»
