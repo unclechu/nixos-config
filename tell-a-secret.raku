@@ -55,7 +55,7 @@ multi sub MAIN('decrypt', *@files) {
   warn
     "Could not find associated encrypted machine-specific config for ‘{hostname}’ hostname. " ~
     'Maybe you didn’t rebuild your system yet? Build it without the decrypted secrets first ' ~
-    'and then run this script, then your can rebuild the system again. Or maybe you just didn’t ' ~
+    'and then run this script, then you can rebuild the system again. Or maybe you just didn’t ' ~
     'create machine-specific secret config yet. In this case create ' ~
     "‘{hardware-dir}/{hostname}{decrypted-secret-postfix}’ " ~
     '(with at least this dummy-plug: ‘{...}: {}’) and run ‘encrypt’ command.'
@@ -94,7 +94,7 @@ multi sub MAIN('decrypt', *@files) {
         "Decrypted ‘$_’ file already exists and matches the checksum of the contents of " ~
         'encrypted file. File is skipped.';
     } else {
-      warn
+      $*ERR.say:
         "Decrypted ‘$_’ file already exists and its content is different from encrypted file " ~
         "(‘$_.asc’). GPG will ask you to confirm overwriting the file. Be cautious! " ~
         'Maybe you made some changes in the file that you haven’t encrypted yet? ' ~
@@ -166,14 +166,14 @@ multi sub MAIN('encrypt', Bool:D :f(:$force) = False, *@files) {
       };
 
       if encrypted-hash eq decrypted-hash {
-        warn
+        $*ERR.say:
           "The checksum of ‘$_’ file and checksum of content of encrypted ‘$_.asc’ file match. " ~
           'There are no changes to encrypt. If you still want to re-encrypt the file then just ' ~
           "call the command with ‘--force’ flag. ‘$_’ file is skipped.";
         next
       }
     } elsif !$force && "$_.asc".IO !~~ :e {
-      warn "‘$_’ seems to be a new file. Encrypting it for the first time…"
+      $*ERR.say: "‘$_’ seems to be a new file. Encrypting it for the first time…"
     }
 
     my Array:D \recipients-arguments =
