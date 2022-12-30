@@ -24,15 +24,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "dino": {
-        "branch": "v0.3.0",
+        "branch": "v0.3.1",
         "description": "Modern XMPP (\"Jabber\") Chat Client using GTK+/Vala",
         "homepage": "https://dino.im/",
         "owner": "dino",
         "repo": "dino",
-        "rev": "9838d5679470d1add098accaeae8eaf0ee3c58ee",
-        "sha256": "1m6v3880azv9g5klbzbikpj89wvfvfk4sipqbzw5makxa51bk5ig",
+        "rev": "322cafdc46c87c8be74a4003ca359f64a51cb49f",
+        "sha256": "0ysb8wnkivgna7iarh27y9d9x8zimjjmwpn6zzimwcclb6rs0d62",
         "type": "tarball",
-        "url": "https://github.com/dino/dino/archive/9838d5679470d1add098accaeae8eaf0ee3c58ee.tar.gz",
+        "url": "https://github.com/dino/dino/archive/322cafdc46c87c8be74a4003ca359f64a51cb49f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "gpaste-gui": {
