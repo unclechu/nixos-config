@@ -276,6 +276,13 @@ in
       extraConfig = tmux-config.config;
     };
 
+    # Some plugins for Thunar file manager.
+    # Thunar itself is added to “environment.systemPackages”.
+    programs.thunar.plugins = [
+      pkgs.xfce.thunar-archive-plugin
+      pkgs.xfce.thunar-volman
+    ];
+
     services.xserver.windowManager.i3.extraPackages = [
       pkgs.i3status
       pkgs.i3lock

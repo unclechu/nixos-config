@@ -109,6 +109,7 @@ in
     printing.enable = false; # CUPS to print documents (have no printer yet)
     upower.enable = true; # Getting info about battery charge via D-Bus
     gvfs.enable = true; # Mount, trash, and other stuff
+    tumbler.enable = true; # Thumbnails for images
     ratbagd.enable = true; # Gaming mouse configuration daemon
 
     # See also https://nixos.wiki/wiki/JACK
