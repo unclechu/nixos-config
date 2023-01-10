@@ -34,7 +34,9 @@ in
   ];
 
   nixpkgs.overlays = import ./overlays ++ [
-    # A hack to make system profile name available in all of the modules
+    # A hack to make system profile name available in all of the modules.
+    # It’s available as “pkgs.systemProfile” but only inside this NixOS configuration
+    # (not available in <nixpkgs> channel).
     (self: super: { systemProfile = systemProfile.audio; })
   ];
 

@@ -46,7 +46,9 @@ in
   };
 
   nixpkgs.overlays = (import ./overlays) ++ [
-    # A hack to make system profile name available in all of the modules
+    # A hack to make system profile name available in all of the modules.
+    # It’s available as “pkgs.systemProfile” but only inside this NixOS configuration
+    # (not available in <nixpkgs> channel).
     (self: super: { systemProfile = systemProfile.default; })
   ];
 
@@ -97,18 +99,20 @@ in
   hardware = {
     pulseaudio = {
       enable = true;
-      support32Bit = true;
+      support32Bit = true; # Support 32-bit applications just in case
+      # Usually I’m permanently running JACK daemon forwarding PulseAudio into it
       package = pkgs.pulseaudio.override { jackaudioSupport = true; };
     };
   };
 
   services = {
     printing.enable = false; # CUPS to print documents (have no printer yet)
-    upower.enable = true;
-    gvfs.enable = true;
-    ratbagd.enable = true;
+    upower.enable = true; # Getting info about battery charge via D-Bus
+    gvfs.enable = true; # Mount, trash, and other stuff
+    ratbagd.enable = true; # Gaming mouse configuration daemon
 
-    # see also https://nixos.wiki/wiki/JACK
+    # See also https://nixos.wiki/wiki/JACK
+    # I’m starting JACK manually via “jack_control start” or QjackCtl
     # jack = {
     #   jackd.enable = true;
     #   # alsa.enable = true; # support ALSA-only programs via ALSA JACK PCM plugin
