@@ -23,6 +23,13 @@
         "url": "https://github.com/unclechu/bashrc/archive/7da13608d3405a9c3847ebc8bffa7a21f504dd0d.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "coeurl": {
+        "sha256": "1b435c2szwibm4i4r7mh22klyv9ncdkwkiy95p4xjfalsx4ripxh",
+        "type": "tarball",
+        "url": "https://nheko.im/nheko-reborn/coeurl/-/archive/v0.3.0/coeurl-v0.3.0.tar.gz",
+        "url_template": "https://nheko.im/nheko-reborn/coeurl/-/archive/<version>/coeurl-<version>.tar.gz",
+        "version": "v0.3.0"
+    },
     "dino": {
         "branch": "v0.3.1",
         "description": "Modern XMPP (\"Jabber\") Chat Client using GTK+/Vala",
@@ -72,15 +79,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "mtxclient": {
-        "branch": "v0.8.2",
+        "branch": "v0.9.0",
         "description": "Client API library for Matrix, built on top of libcurl",
         "homepage": "",
         "owner": "Nheko-Reborn",
         "repo": "mtxclient",
-        "rev": "42bf1fd01d5b5aca58c1b284510fc1a30d949785",
-        "sha256": "041ckjvfxapv1q6x9xd8q70x43cz10x7p11aql58lnc0jp0kwry7",
+        "rev": "f30d77a719f3deb66b17b99f3585ee919dbbe120",
+        "sha256": "1hzbcpr18amcxcshnvrjx1nga2bikmgc4w8n2zzxv64yim6mvnyz",
         "type": "tarball",
-        "url": "https://github.com/Nheko-Reborn/mtxclient/archive/42bf1fd01d5b5aca58c1b284510fc1a30d949785.tar.gz",
+        "url": "https://github.com/Nheko-Reborn/mtxclient/archive/f30d77a719f3deb66b17b99f3585ee919dbbe120.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "musnix": {
@@ -120,15 +127,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nheko": {
-        "branch": "v0.10.2",
+        "branch": "v0.11.0",
         "description": "Desktop client for Matrix using Qt and C++17.",
         "homepage": "https://nheko-reborn.github.io/",
         "owner": "Nheko-Reborn",
         "repo": "nheko",
-        "rev": "031a129591d79266055c7bebb9751f893766d4ea",
-        "sha256": "114hbv58209bwar6qjdjg2l1vh3xk20ppv6n301i7zkmwrf7q9w2",
+        "rev": "3507698ea565d0fedc4cad98c7598a4c61a45241",
+        "sha256": "09m4115m242im4fdhmj7dydpwfsrq723ym780yc0r4n335wvfxz1",
         "type": "tarball",
-        "url": "https://github.com/Nheko-Reborn/nheko/archive/031a129591d79266055c7bebb9751f893766d4ea.tar.gz",
+        "url": "https://github.com/Nheko-Reborn/nheko/archive/3507698ea565d0fedc4cad98c7598a4c61a45241.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-utils": {

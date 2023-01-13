@@ -3,25 +3,44 @@
 
 let sources = import ../nix/sources.nix; in
 
-{ libsForQt5, lib, mtxclient, nheko }:
+{ libsForQt5, lib, mtxclient, coeurl, re2, nheko }:
 
 let
+  addRe2Dependency = x: x.overrideAttrs (old: { buildInputs = old.buildInputs ++ [ re2 ]; });
+
   newer = {
-    mtxclient = mtxclient.overrideAttrs (old: {
-      version = sources.mtxclient.branch;
-      src = sources.mtxclient;
+    mtxclient = lib.pipe mtxclient [
+      addRe2Dependency
+
+      # Pinned “coeurl” (as in the “io.github.NhekoReborn.Nheko.yaml” file)
+      (x: x.override { coeurl = newer.coeurl; })
+
+      # Pinned version of the sources of “mtxclient”
+      (x: x.overrideAttrs (old: {
+        version = sources.mtxclient.branch;
+        src = sources.mtxclient;
+      }))
+    ];
+
+    coeurl = coeurl.overrideAttrs (old: {
+      version = sources.coeurl.version;
+      src = sources.coeurl;
     });
 
     nheko = lib.pipe nheko [
-      # Newer version
+      # Pinned version (some dependencies are pinned by the version of Nheko)
       (x: x.overrideAttrs (old: {
         version = sources.nheko.branch;
         src = sources.nheko;
       }))
 
-      # Use newer “mtxclient”
+      # Pinned “mtxclient” (as in the “io.github.NhekoReborn.Nheko.yaml” file)
       (x: x.override { mtxclient = newer.mtxclient; })
 
+      # Pinned “coeurl” (as in the “io.github.NhekoReborn.Nheko.yaml” file)
+      (x: x.override { coeurl = newer.coeurl; })
+
+      addRe2Dependency
       addIdenticonsSupport
     ];
   };
