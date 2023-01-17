@@ -127,15 +127,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nheko": {
-        "branch": "v0.11.0",
+        "branch": "v0.11.1",
         "description": "Desktop client for Matrix using Qt and C++17.",
         "homepage": "https://nheko-reborn.github.io/",
         "owner": "Nheko-Reborn",
         "repo": "nheko",
-        "rev": "3507698ea565d0fedc4cad98c7598a4c61a45241",
-        "sha256": "09m4115m242im4fdhmj7dydpwfsrq723ym780yc0r4n335wvfxz1",
+        "rev": "c13a9d3b16748a9a45bc9c5c9b20603849943d06",
+        "sha256": "0j5y5jfimmflynrg7003wr7i75b102cpv3afyp3j7z69b2apkhys",
         "type": "tarball",
-        "url": "https://github.com/Nheko-Reborn/nheko/archive/3507698ea565d0fedc4cad98c7598a4c61a45241.tar.gz",
+        "url": "https://github.com/Nheko-Reborn/nheko/archive/c13a9d3b16748a9a45bc9c5c9b20603849943d06.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-utils": {
