@@ -193,6 +193,7 @@ in
       pkgs.gimp
       pkgs.inkscape
       pkgs.optipng
+      pkgs.graphviz
 
       # video
       pkgs.vlc
