@@ -150,18 +150,6 @@
         "url": "https://github.com/unclechu/nix-utils/archive/6fbb12ea371ee6610bf240778fca9c68a68c19d8.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "nixpkgs-master": {
-        "branch": "master",
-        "description": "Nix Packages collection",
-        "homepage": "",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "e4265b76be0369737633d32205bcfafa82891235",
-        "sha256": "1glckxwnigipap4yjja6klvlj093m4fm5x8v6dsm01qh8j83q6n2",
-        "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/e4265b76be0369737633d32205bcfafa82891235.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "place-cursor-at": {
         "branch": "v1.0.1",
         "description": "Utility for X11 that helps to move cursor using only keyboard written in Haskell",
