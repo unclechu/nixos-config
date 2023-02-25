@@ -155,7 +155,7 @@ in
       pkgs.qjackctl
       pkgs.audacious
       pkgs.audacity
-      pkgs.ardour
+      (pkgs.callPackage apps/ardour.nix {})
       pkgs.guitarix
       pkgs.normalize
       pkgs.jack_capture
