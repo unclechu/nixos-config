@@ -18,7 +18,7 @@ let
   executableFileCheck = x: "[[ -f ${x} || -r ${x} || -x ${x} ]]";
 in
 writeTextFile rec {
-  name = "launch-rt-audio";
+  name = "rt-audio";
   executable = true;
   destination = "/bin/${name}";
   checkPhase = ''(
@@ -31,6 +31,6 @@ writeTextFile rec {
     #! ${let n = "bash"; in bin executables.${n} n}
     set -o errexit || exit
     export PATH=${esc (lib.makeBinPath [ bash jack2 ])}''${PATH:+:}''${PATH}
-    ${builtins.readFile ./launch-rt-audio.sh}
+    ${builtins.readFile ./rt-audio.sh}
   '';
 }

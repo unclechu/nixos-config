@@ -66,7 +66,7 @@ let
   genpass = pkgs.callPackage scripts/genpass.nix {};
   pointers = pkgs.callPackage scripts/pointers.nix {};
   pulseaudio-share-server = pkgs.callPackage scripts/pulseaudio-share-server.nix {};
-  launch-rt-audio = pkgs.callPackage scripts/launch-rt-audio {};
+  rt-audio = pkgs.callPackage scripts/rt-audio {};
 in
 {
   my-apps = {
@@ -313,7 +313,7 @@ in
       picom.run-picom
       picom.no-picom
       pulseaudio-share-server
-      launch-rt-audio
+      rt-audio
     ] ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
   };
 }
