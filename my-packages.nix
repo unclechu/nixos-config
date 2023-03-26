@@ -237,7 +237,7 @@ in
       pkgs.hexchat
       pkgs.weechat
       nheko
-      pkgs.dino
+      (pkgs.callPackage apps/dino.nix {})
       pkgs.thunderbird
 
       # clipboard management
