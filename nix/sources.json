@@ -79,15 +79,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "mtxclient": {
-        "branch": "v0.9.0",
+        "branch": "v0.9.2",
         "description": "Client API library for Matrix, built on top of libcurl",
         "homepage": "",
         "owner": "Nheko-Reborn",
         "repo": "mtxclient",
-        "rev": "f30d77a719f3deb66b17b99f3585ee919dbbe120",
-        "sha256": "1hzbcpr18amcxcshnvrjx1nga2bikmgc4w8n2zzxv64yim6mvnyz",
+        "rev": "a9a6087ae820c8fb9332422b094cab8e2301db25",
+        "sha256": "151ck1bpb330yx195s9ykibzn9zv1h5igdw6flj0rp3ypvcc7rmg",
         "type": "tarball",
-        "url": "https://github.com/Nheko-Reborn/mtxclient/archive/f30d77a719f3deb66b17b99f3585ee919dbbe120.tar.gz",
+        "url": "https://github.com/Nheko-Reborn/mtxclient/archive/a9a6087ae820c8fb9332422b094cab8e2301db25.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "musnix": {
@@ -127,15 +127,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nheko": {
-        "branch": "v0.11.1",
+        "branch": "v0.11.3",
         "description": "Desktop client for Matrix using Qt and C++17.",
         "homepage": "https://nheko-reborn.github.io/",
         "owner": "Nheko-Reborn",
         "repo": "nheko",
-        "rev": "c13a9d3b16748a9a45bc9c5c9b20603849943d06",
-        "sha256": "0j5y5jfimmflynrg7003wr7i75b102cpv3afyp3j7z69b2apkhys",
+        "rev": "d27e42dec6b6255246bd488e12ea2662018f12ab",
+        "sha256": "0yjbxyba87nkpjmql7s6nv2r2i9s956zgwlfhdi4jjg96v2rgmnr",
         "type": "tarball",
-        "url": "https://github.com/Nheko-Reborn/nheko/archive/c13a9d3b16748a9a45bc9c5c9b20603849943d06.tar.gz",
+        "url": "https://github.com/Nheko-Reborn/nheko/archive/d27e42dec6b6255246bd488e12ea2662018f12ab.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-utils": {
