@@ -153,6 +153,7 @@ in
       pkgs.pulsemixer
       pkgs.jack2
       pkgs.qjackctl
+      pkgs.patchage
       pkgs.audacious
       pkgs.audacity
       (pkgs.callPackage apps/ardour.nix {})
