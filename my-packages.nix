@@ -67,6 +67,7 @@ let
   pointers = pkgs.callPackage scripts/pointers.nix {};
   pulseaudio-share-server = pkgs.callPackage scripts/pulseaudio-share-server.nix {};
   rt-audio = pkgs.callPackage scripts/rt-audio {};
+  screen-saver = pkgs.callPackage scripts/screen-saver {};
 in
 {
   my-apps = {
@@ -315,6 +316,7 @@ in
       picom.no-picom
       pulseaudio-share-server
       rt-audio
+      screen-saver
     ] ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
   };
 }
