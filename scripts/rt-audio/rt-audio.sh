@@ -19,7 +19,7 @@ for arg in "$@"; do
 	elif [[ $arg =~ ^(on|off)$ ]]; then
 		action=$arg
 	else
-		>&2 printf 'Incorrect argument: "%s"' "$arg"
+		>&2 printf 'Incorrect argument: "%s"\n' "$arg"
 		exit 1
 	fi
 done

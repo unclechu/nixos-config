@@ -30,7 +30,11 @@ writeTextFile rec {
   text = ''
     #! ${let n = "bash"; in bin executables.${n} n}
     set -o errexit || exit
-    export PATH=${esc (lib.makeBinPath [ bash jack2 ])}''${PATH:+:}''${PATH}
+
+    export PATH=${
+      esc (lib.makeBinPath (builtins.attrValues executables))
+    }''${PATH:+:}''${PATH}
+
     ${builtins.readFile ./rt-audio.sh}
   '';
 }
