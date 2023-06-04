@@ -3,7 +3,7 @@
 ## Usage
 
 This config is designed to be used with own precise `nixos` channel pin.
-Not that it wouldn’t work with default `nixos-22.11` channel
+Not that it wouldn’t work with default `nixos-23.05` channel
 but I like to manually update it and to store the precise pin in the repo
 in order to be sure my machines are 100% in sync.
 In short, to have better reproducibility.

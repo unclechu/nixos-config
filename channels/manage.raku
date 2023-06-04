@@ -1,6 +1,6 @@
 #! /usr/bin/env nix-shell
 #! nix-shell --pure -i raku -E
-#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];s=fetchTarball{url=\"https://releases.nixos.org/nixos/22.11/nixos-22.11.4382.9886352ec9a/nixexprs.tar.xz\";sha256=\"09fn6lc9zz57mp4s2vh11p6brqjma3in3vplp08f240vys9bzgv8\";};p=import s {};in p.mkShell{buildInputs=d;}"
+#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];s=fetchTarball{url=\"https://releases.nixos.org/nixos/23.05/nixos-23.05.457.f0ba8235153/nixexprs.tar.xz\";sha256=\"0knn1l3r85w4176vbcrpv22zkn6vq95qxa7qryw6y7d9abq1bspz\";};p=import s {};in p.mkShell{buildInputs=d;}"
 
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
@@ -9,7 +9,7 @@ use v6.d;
 $*PROGRAM.dirname.&*chdir;
 
 constant %channels =
-  'nixos'          => 'nixos-22.11',
+  'nixos'          => 'nixos-23.05',
   'nixos-unstable' => 'nixos-unstable';
 
 my Str:D \channel-path-prefix = "file://$*CWD/";

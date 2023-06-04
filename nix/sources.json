@@ -55,15 +55,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "home-manager": {
-        "branch": "release-22.11",
+        "branch": "release-23.05",
         "description": "Manage a user environment using Nix  [maintainer=@rycee] ",
         "homepage": "https://nix-community.github.io/home-manager/",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "f9edbedaf015013eb35f8caacbe0c9666bbc16af",
-        "sha256": "1cp2rpprcfl4mjsrsrpfg6278nf05a0mpl3m0snksvdalfmc5si5",
+        "rev": "93db05480c0c0f30382d3e80779e8386dcb4f9dd",
+        "sha256": "1ixy1bi21nq0dlfzpn72k1gjdm8aq7h84wvl1ysff7lmqc4gi1jf",
         "type": "tarball",
-        "url": "https://github.com/nix-community/home-manager/archive/f9edbedaf015013eb35f8caacbe0c9666bbc16af.tar.gz",
+        "url": "https://github.com/nix-community/home-manager/archive/93db05480c0c0f30382d3e80779e8386dcb4f9dd.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "i3rc": {
@@ -120,10 +120,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "dd49a25dc360c3d2ed14e78706f1096a340d6418",
-        "sha256": "1pqh7ddaifm8ypylj8r0hqgl7nnaims4d26hn919dxpjnhyyxx3f",
+        "rev": "cb82280a61f43e75acac9742daf73da42ec2d701",
+        "sha256": "0bpmz79w2h846qafdavabnfpca8ilx96jhbml9v34xx6krn5krz9",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/dd49a25dc360c3d2ed14e78706f1096a340d6418.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/cb82280a61f43e75acac9742daf73da42ec2d701.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nheko": {
@@ -148,6 +148,18 @@
         "sha256": "11ihrs3s9ar3ww9wr9rbx8py4grkhfyvx27gabf1ifwx1ch2ng0r",
         "type": "tarball",
         "url": "https://github.com/unclechu/nix-utils/archive/6fbb12ea371ee6610bf240778fca9c68a68c19d8.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nixpkgs-22.11": {
+        "branch": "release-22.11",
+        "description": "Nix Packages collection & NixOS",
+        "homepage": "",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "eaf03591711b46d21abc7082a8ebee4681f9dbeb",
+        "sha256": "1shmhx8562gf2fnm74gyax1x24xdi8mlzhqnzgmglsd1c7jijgi1",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/eaf03591711b46d21abc7082a8ebee4681f9dbeb.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "place-cursor-at": {
@@ -216,10 +228,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "unclechu-i3-status",
-        "rev": "0f380f921b84e64e874da1dff52ce9df9248ac2c",
-        "sha256": "1dd7vajkc2fy2rqqg09kdx4llfvjysld2gc1hg7m7zdjrbs8igcx",
+        "rev": "cf93028ee3947033c809e7cb37c46f749ba49ef8",
+        "sha256": "037wgh4ll7flbkdvmahkvqyp0xagf4wp304s5cci06nj9g8z9kcy",
         "type": "tarball",
-        "url": "https://github.com/unclechu/unclechu-i3-status/archive/0f380f921b84e64e874da1dff52ce9df9248ac2c.tar.gz",
+        "url": "https://github.com/unclechu/unclechu-i3-status/archive/cf93028ee3947033c809e7cb37c46f749ba49ef8.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "xlib-keys-hack": {
@@ -228,10 +240,10 @@
         "homepage": "",
         "owner": "unclechu",
         "repo": "xlib-keys-hack",
-        "rev": "0ecd51845c9aaef89080ac21e32e03eb5ef3e516",
-        "sha256": "0h6fahi8wsfj3yfb86m935am29fhhzr4nixaj2jwva0ldhncv3dx",
+        "rev": "75cfcd2cfadef00a22596386d9f17bd0ec7b1edc",
+        "sha256": "1lg12v832qlw743lsg4w54sy8mapaayv30divm0pks022xn0a5p4",
         "type": "tarball",
-        "url": "https://github.com/unclechu/xlib-keys-hack/archive/0ecd51845c9aaef89080ac21e32e03eb5ef3e516.tar.gz",
+        "url": "https://github.com/unclechu/xlib-keys-hack/archive/75cfcd2cfadef00a22596386d9f17bd0ec7b1edc.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

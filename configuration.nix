@@ -45,12 +45,22 @@ in
     '';
   };
 
-  nixpkgs.overlays = (import ./overlays) ++ [
-    # A hack to make system profile name available in all of the modules.
-    # It’s available as “pkgs.systemProfile” but only inside this NixOS configuration
-    # (not available in <nixpkgs> channel).
-    (self: super: { systemProfile = systemProfile.default; })
-  ];
+  nixpkgs = {
+    config.permittedInsecurePackages = [
+      # In 23.05 Python 2 marked as end-of-life.
+      # It seems like system-activation scripts depends on Python 2.
+      # Or maybe some NixOS module causes this dependency to appear in there.
+      # TODO: Try to figure out what depends on Python 2.
+      "python-2.7.18.6"
+    ];
+
+    overlays = (import ./overlays) ++ [
+      # A hack to make system profile name available in all of the modules.
+      # It’s available as “pkgs.systemProfile” but only inside this NixOS configuration
+      # (not available in <nixpkgs> channel).
+      (self: super: { systemProfile = systemProfile.default; })
+    ];
+  };
 
   i18n.defaultLocale = "en_US.UTF-8";
   console.keyMap = "us";

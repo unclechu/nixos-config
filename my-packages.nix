@@ -267,7 +267,7 @@ in
       pkgs.gnupg
       pkgs.pass
       pkgs.monkeysphere
-      pkgs.keepassx2
+      pkgs.keepassxc
 
       # antivirus
       pkgs.clamav

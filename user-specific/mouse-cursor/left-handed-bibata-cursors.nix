@@ -2,8 +2,16 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 { pkgs, ... }:
 
-pkgs.bibata-cursors.overrideAttrs (srcAttrs: {
-  nativeBuildInputs = srcAttrs.nativeBuildInputs ++ [
+let
+  sources = import ../../nix/sources.nix;
+  pkgs-2211 = import sources."nixpkgs-22.11" {};
+
+  # FIXME: Fix the left-handed patching script for the version from 23.05
+  bibata-cursors = pkgs-2211.bibata-cursors;
+in
+
+bibata-cursors.overrideAttrs (srcAttrs: {
+  nativeBuildInputs = (srcAttrs.nativeBuildInputs or []) ++ [
     pkgs.findutils
     pkgs.gnugrep
     pkgs.perl
