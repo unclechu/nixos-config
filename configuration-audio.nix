@@ -44,7 +44,7 @@ in
     kernel.sysctl = { "vm.swappiness" = 10; "fs.inotify.max_user_watches" = 524288; };
     kernelModules = lib.mkForce (boot.kernelModules ++ [ "snd-seq" "snd-rawmidi" ]);
     kernelParams = lib.mkForce (boot.kernelParams ++ [ "threadirq" ]);
-    kernelPackages = lib.mkForce pkgs.linuxPackages_rt_5_10;
+    kernelPackages = lib.mkForce pkgs.linuxPackages-rt_latest;
 
     postBootCommands = ''
       echo 2048 > /sys/class/rtc/rtc0/max_user_freq
