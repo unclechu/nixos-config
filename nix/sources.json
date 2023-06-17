@@ -102,6 +102,18 @@
         "url": "https://github.com/musnix/musnix/archive/79a6cf5a711e7d2dbf0a3ba0df9bae016d6247f8.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "neovide": {
+        "branch": "main",
+        "description": "No Nonsense Neovim Client in Rust",
+        "homepage": "https://neovide.dev",
+        "owner": "neovide",
+        "repo": "neovide",
+        "rev": "f412399676c83ea670cd22745b850dad9ee210a0",
+        "sha256": "1qvhmkcc77i1f8qzimnqxj0va0721ggywbz2f0vd89lv2640g38c",
+        "type": "tarball",
+        "url": "https://github.com/neovide/neovide/archive/f412399676c83ea670cd22745b850dad9ee210a0.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "neovim-qt": {
         "branch": "master",
         "description": "Neovim client library and GUI, in Qt5.",
