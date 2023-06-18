@@ -103,15 +103,16 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovide": {
-        "branch": "main",
+        "branch": "fsundvik/fix-keyboard-api",
+        "comment": "This is a WIP branch of #1899 pull request that fixes some key mapping issues",
         "description": "No Nonsense Neovim Client in Rust",
-        "homepage": "https://neovide.dev",
-        "owner": "neovide",
+        "homepage": "",
+        "owner": "fredizzimo",
         "repo": "neovide",
-        "rev": "f412399676c83ea670cd22745b850dad9ee210a0",
-        "sha256": "1qvhmkcc77i1f8qzimnqxj0va0721ggywbz2f0vd89lv2640g38c",
+        "rev": "b14fb402aa9a9a137594606787755f337e5da22f",
+        "sha256": "02bzpyb05vfqgpn5khb2q7jn5n22fym3znkd1wfmpx6na75jgd1s",
         "type": "tarball",
-        "url": "https://github.com/neovide/neovide/archive/f412399676c83ea670cd22745b850dad9ee210a0.tar.gz",
+        "url": "https://github.com/fredizzimo/neovide/archive/b14fb402aa9a9a137594606787755f337e5da22f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {
