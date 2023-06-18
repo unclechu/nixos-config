@@ -5,46 +5,12 @@ let
   sources = import nix/sources.nix;
   inherit (import ./constants.nix) xkb keyRepeat wenzelUserName;
   esc = lib.escapeShellArg;
-
-  alacritty-config = pkgs.callPackage apps/alacritty {};
-  terminal-emulators = import ./terminal-emulators.nix { inherit pkgs lib; };
-
-  i3-config =
-    let
-      apps = (import ./my-packages.nix args).my-apps;
-      exe = app: "${app}/bin/${lib.getName app}";
-
-      rofiTheme = {
-        dark  = "gruvbox-dark";
-        light = "gruvbox-light-soft";
-      };
-    in
-    pkgs.callPackage sources.i3rc rec {
-      autostartScript = exe apps.autostart-setup;
-
-      scriptsPaths = {
-        "autostart.sh"         = autostartScript;
-        "input.sh"             = exe apps.input-setup;
-        "cursor-to-display.pl" = exe apps.cursor-to-display;
-        "gpaste-gui.pl"        = exe apps.gpaste-gui;
-        "pamng.sh"             = exe apps.pamng;
-        "screen-backlight.sh"  = exe apps.screen-backlight;
-        "invert-window-colors" = exe apps.invert-window-colors;
-      };
-
-      terminalDark  = exe terminal-emulators.allTerminalEmulators."alacritty-jetbrains-font-dark";
-      terminalLight = exe terminal-emulators.allTerminalEmulators."alacritty-jetbrains-font-light";
-
-      runDark   = "${esc (exe pkgs.rofi)} -show run  -theme ${esc rofiTheme.dark}";
-      runLight  = "${esc (exe pkgs.rofi)} -show run  -theme ${esc rofiTheme.light}";
-      drunDark  = "${esc (exe pkgs.rofi)} -show drun -theme ${esc rofiTheme.dark}";
-      drunLight = "${esc (exe pkgs.rofi)} -show drun -theme ${esc rofiTheme.light}";
-
-      selectWindowDark  = "${esc (exe pkgs.rofi)} -show window -theme ${esc rofiTheme.dark}";
-      selectWindowLight = "${esc (exe pkgs.rofi)} -show window -theme ${esc rofiTheme.light}";
-    };
 in
 {
+  imports = [
+    gui/i3.nix
+  ];
+
   environment = {
     variables = {
       # XCompose and XIM setup
@@ -111,11 +77,6 @@ in
       sessionCommands = ''
         ${esc pkgs.xorg.xset}/bin/xset r rate ${esc keyRepeat.delay} ${esc keyRepeat.interval}
       '';
-    };
-
-    windowManager.i3 = {
-      enable     = true;
-      configFile = i3-config;
     };
 
     libinput.enable = true; # touchpad
