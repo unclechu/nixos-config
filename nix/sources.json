@@ -109,10 +109,10 @@
         "homepage": "",
         "owner": "fredizzimo",
         "repo": "neovide",
-        "rev": "b14fb402aa9a9a137594606787755f337e5da22f",
-        "sha256": "02bzpyb05vfqgpn5khb2q7jn5n22fym3znkd1wfmpx6na75jgd1s",
+        "rev": "402382c0a2dd51aa8e14801f80956294eee7fe8f",
+        "sha256": "09ybxwmnrpddvgbldycxn5xlyimfsfx81va164slidzzn9kdcrxa",
         "type": "tarball",
-        "url": "https://github.com/fredizzimo/neovide/archive/b14fb402aa9a9a137594606787755f337e5da22f.tar.gz",
+        "url": "https://github.com/fredizzimo/neovide/archive/402382c0a2dd51aa8e14801f80956294eee7fe8f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {
