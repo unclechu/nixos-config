@@ -26,8 +26,12 @@ import Data.Foldable (traverse_)
 import qualified XMonad.Layout.Tabbed as Tabbed
 import XMonad.Layout.NoBorders (noBorders)
 import XMonad.Hooks.ManageDocks (avoidStruts)
--- import XMonad.Layout.SimplestFloat (simplestFloat)
 import XMonad.Hooks.ManageHelpers (doCenterFloat)
+import qualified XMonad.Layout.Spacing as Spacing
+import qualified XMonad.Layout.LayoutModifier as LayoutModifier
+import qualified XMonad.Layout.GridVariants as GridVariants
+import qualified XMonad.Layout.ResizableThreeColumns as ResizableThreeColumns
+import qualified XMonad.Layout.Renamed as Renamed
 
 main ∷ IO ()
 main = XMonad.xmonad . configCustomizations $ XMonad.def
@@ -132,7 +136,7 @@ myConfig x = x
   , focusedBorderColor = "#ff0000"
 
   -- This startup script is provided by my NixOS configuration
-  , startupHook = XMonad.spawn "autostart-setup"
+  , startupHook = XMonad.spawn "sleep 1s ; autostart-setup"
 
   , layoutHook = myLayout
   , manageHook = myManageHook
@@ -141,15 +145,40 @@ myConfig x = x
   , clickJustFocuses = False
   }
 
+tabsLayoutName, fullscreenLayoutName ∷ String
+tabsLayoutName = "Tabs"
+fullscreenLayoutName = "Fullscreen"
+
 myLayout ∷ _layout
 myLayout = go where
   go =
-    avoidStruts (tiled ||| XMonad.Mirror tiled ||| tabbed ||| XMonad.Full)
-    -- ||| simplestFloat
-    ||| noBorders XMonad.Full -- Fullscreen-like
+    -- “avoidStruts” to avoid overlapping with the bars
+    avoidStruts (layoutSpacing tiles ||| tabbed ||| XMonad.Full)
+    ||| fullscreen
 
-  tiled = ResizableTile.ResizableTall 1 (3 / 100) (1 / 2) []
-  tabbed = Tabbed.tabbed Tabbed.shrinkText myTabTheme
+  -- | Fullscreen-ish layout (no borders, no bars, just one window)
+  fullscreen
+    = Renamed.renamed [Renamed.Replace fullscreenLayoutName]
+    $ noBorders XMonad.Full
+
+  -- | Layouts where multiple windows are showing at the same time
+  tiles = tall ||| XMonad.Mirror tall ||| grid
+
+  -- | Two-column (or two-row when mirrored) layout
+  tall = ResizableTile.ResizableTall 1 delta ratio []
+
+  -- | Tree-column (or three-row) or grid-like layouts
+  grid
+    = GridVariants.SplitGrid GridVariants.L 2 3 (2 / 3) (16 / 10) delta
+    ||| ResizableThreeColumns.ResizableThreeColMid 1 delta ratio []
+
+  -- | Regular tabs layout where only one window shows at a time
+  tabbed
+    = Renamed.renamed [Renamed.Replace tabsLayoutName]
+    $ Tabbed.tabbed Tabbed.shrinkText myTabTheme
+
+  delta = 1 / 100 -- Resize step
+  ratio = 1 / 2 -- Default ratio between the master and the slave windows
 
   myTabTheme :: Tabbed.Theme
   myTabTheme = XMonad.def
@@ -169,6 +198,12 @@ myLayout = go where
     , Tabbed.decoHeight = 20
     }
 
+-- | Add some space gap to a given layout
+layoutSpacing ∷ layout a -> LayoutModifier.ModifiedLayout Spacing.Spacing layout a
+layoutSpacing =
+  Spacing.spacingRaw False (Spacing.Border 0 size 0 size) True (Spacing.Border size 0 size 0) True
+  where size = 10
+
 -- ** Key binding modes
 
 -- | Key mapping set
@@ -178,8 +213,11 @@ a, s ∷ XMonad.KeyMask
 a = XMonad.mod1Mask -- “a” for “Alt”
 s = XMonad.shiftMask
 
-hjklKeys, arrowKeys, displayKeys ∷ [XMonad.KeySym]
+hjklKeys, mirroredHjklKeys, arrowKeys, displayKeys ∷ [XMonad.KeySym]
 hjklKeys = [XMonad.xK_h, XMonad.xK_j, XMonad.xK_k, XMonad.xK_l]
+-- Like HJLK but for the left hand.
+-- They are not really mirrored, the left-to-right order is the same.
+mirroredHjklKeys = [XMonad.xK_a, XMonad.xK_s, XMonad.xK_d, XMonad.xK_f]
 arrowKeys = [XMonad.xK_Left, XMonad.xK_Down, XMonad.xK_Up, XMonad.xK_Right]
 displayKeys = [XMonad.xK_u, XMonad.xK_i, XMonad.xK_o, XMonad.xK_p]
 
@@ -335,10 +373,6 @@ defaultModeKeys
   -- bindsym $m+c split v
   -- bindsym $m+v split h
 
-  -- TODO: Come up with an XMonad alternative of this i3wm binding.
-  --       Maybe just jump to the fullscreen-ish layout?
-  -- bindsym $m+f fullscreen toggle
-
   -- TODO: Try to port this from my i3wm config.
   --       I’ve seen in the past there are some extensions that simulate those i3-like layout splits.
   --   bindsym $m+s layout stacking
@@ -349,6 +383,10 @@ defaultModeKeys
   -- , ((m, XMonad.xK_s), _)
   , ((m, XMonad.xK_w), XMonad.setLayout layout) -- Reset layout state
   , ((m, XMonad.xK_e), XMonad.sendMessage XMonad.NextLayout)
+  -- Switch to tabs
+  , ((m .|. a, XMonad.xK_w), XMonad.sendMessage (XMonad.JumpToLayout tabsLayoutName))
+  -- Fullscreen the window (jump to no border fullscreen layout)
+  , ((m, XMonad.xK_f), XMonad.sendMessage (XMonad.JumpToLayout fullscreenLayoutName))
 
   -- TODO: Try to port this from my i3wm config.
   --       It only makes sense.
@@ -436,6 +474,18 @@ resizeKeysMode mode = go where
         | directionKeys ← [hjklKeys, arrowKeys]
         , (key, operation) ← zip directionKeys operations
         ]
+
+      colsRowsAmountKeys = Map.fromList
+        [ ((0, key), XMonad.sendMessage operation)
+        | (key, operation) ←
+            zip
+              mirroredHjklKeys
+              [ GridVariants.IncMasterCols (-1)
+              , GridVariants.IncMasterRows (-1)
+              , GridVariants.IncMasterRows 1
+              , GridVariants.IncMasterCols 1
+              ]
+        ]
     in
     Map.fromList
     [ ((0, XMonad.xK_Escape), Modal.exitMode)
@@ -453,12 +503,16 @@ resizeKeysMode mode = go where
           ResizeKeysModeNormal → PositioningKeysModeNormal
           ResizeKeysModeBigSteps → PositioningKeysModeBigSteps
       )
+
+    , ((0, XMonad.xK_z), XMonad.sendMessage $ XMonad.IncMasterN (-1))
+    , ((0, XMonad.xK_x), XMonad.sendMessage $ XMonad.IncMasterN 1)
     ]
     <> modeLeavingKeys (floatingWindowsKeys m)
     <> windowFocusKeys m
     <> growShrink 0 repeatN
     <> growShrink a (2 * repeatN)
     <> growShrink s (3 * repeatN)
+    <> colsRowsAmountKeys
 
 data PositioningKeysMode
   = PositioningKeysModeNormal
@@ -595,9 +649,15 @@ doKeysMode ∷ Modal.Mode
     -- bindsym $m+f sticky toggle; mode "default"
     -- bindsym    f sticky toggle
 
-    -- # mnemonic: ‘b’ is for ‘Border’
-    -- bindsym $m+b border toggle; mode "default"
-    -- bindsym    b border toggle
+    -- Mnemonic: ‘b’ is for ‘Border’
+    , ( (m, XMonad.xK_b)
+      , Spacing.toggleWindowSpacingEnabled >> Spacing.toggleScreenSpacingEnabled >> Modal.exitMode
+      )
+    , ( (0, XMonad.xK_b)
+      , Spacing.toggleWindowSpacingEnabled >> Spacing.toggleScreenSpacingEnabled
+      )
+    , ((a, XMonad.xK_b), Spacing.decWindowSpacing 1 >> Spacing.decScreenSpacing 1)
+    , ((s, XMonad.xK_b), Spacing.incWindowSpacing 1 >> Spacing.incScreenSpacing 1)
 
     -- Mnemonic: ‘s’ is for ‘Shutter’
     , ((m, XMonad.xK_s), XMonad.spawn "shutter" >> Modal.exitMode)
