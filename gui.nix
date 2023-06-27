@@ -63,7 +63,7 @@ in
     };
 
     displayManager = {
-      defaultSession = "none+i3";
+      defaultSession = "none+xmonad";
 
       lightdm = {
         enable = true;
