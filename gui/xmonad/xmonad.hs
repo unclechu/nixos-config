@@ -66,6 +66,8 @@ import qualified XMonad.Actions.TagWindows as TagWindows
 import qualified XMonad.Actions.FloatKeys as FloatKeys
 import qualified XMonad.Actions.FlexibleResize as FlexibleResize
 import qualified XMonad.Actions.CycleWS as CycleWS
+import Data.List (partition)
+import Data.Maybe (listToMaybe)
 
 main ∷ IO ()
 main = XMonad.xmonad . configCustomizations $ XMonad.def
@@ -321,11 +323,7 @@ floatingWindowsKeys ∷ XMonad.KeyMask → Keys
 floatingWindowsKeys m = Map.fromList
   -- Toggle tiling / floating
   [ ((m .|. a, XMonad.xK_space), XMonad.withFocused toggleFloatWindow)
-
-  -- TODO: Try to port this from my i3wm config.
-  --       In XMonad you can just focus a floating window by moving between all windows.
-  -- # change focus between tiling / floating windows
-  -- bindsym $m+space focus mode_toggle
+  , ((m, XMonad.xK_space), toggleFloatingTiledFocus)
   ]
 
 type WorkspaceLabel = String
@@ -951,5 +949,19 @@ toggleStickyWindow = XMonad.withFocused $ \window → do
     (killAllOtherCopies >> TagWindows.delTag stickyWindowTag window)
     (XMonad.windows copyToAll >> TagWindows.addTag stickyWindowTag window)
 
+-- | Check if the window is a floating one
 isWindowFloating ∷ XMonad.Window → X Bool
 isWindowFloating window = XMonad.gets (Map.member window . W.floating . XMonad.windowset)
+
+-- | Toggle the focus between tiled and floating windows
+toggleFloatingTiledFocus ∷ X ()
+toggleFloatingTiledFocus =
+  XMonad.withFocused $ \window → do
+    isFloating ← isWindowFloating window
+    windowSet ← XMonad.gets XMonad.windowset
+    -- “Current” means all windows of current screen/workspace
+    let allCurrentWindows = W.integrate' . W.stack . W.workspace . W.current $ windowSet
+    let allFloatingWindows = Map.keys . W.floating $ windowSet
+    let (currentFloating, currentTiled) = partition (`elem` allFloatingWindows) allCurrentWindows
+    let current = if isFloating then currentTiled else currentFloating
+    maybe (pure ()) XMonad.focus (listToMaybe current)
