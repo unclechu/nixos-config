@@ -37,6 +37,7 @@ import XMonad.Util.WindowProperties (getProp32)
 import qualified XMonad.Actions.TagWindows as TagWindows
 import qualified XMonad.Actions.FloatKeys as FloatKeys
 import qualified XMonad.Actions.FlexibleResize as FlexibleResize
+import qualified XMonad.Actions.CycleWS as CycleWS
 
 main ∷ IO ()
 main = XMonad.xmonad . configCustomizations $ XMonad.def
@@ -374,14 +375,16 @@ defaultModeKeys
 
     -- | Next/previous workspace switching keys
     --
-    -- TODO: Port from my i3wm config:
-    -- @
-    -- bindsym $m+z workspace prev_on_output
-    -- bindsym $m+x workspace next_on_output
-    -- bindsym $m+$a+z move container to workspace prev_on_output
-    -- bindsym $m+$a+x move container to workspace next_on_output
-    -- @
-    rotateWorkspacesKeys = Map.empty
+    -- TODO: Either filter workspaces that are not bound to other displays
+    --       or make independent set of workspaces for each display,
+    --       and cicle only through screen’s own workspaces.
+    --       Currently while cycling it “steal” workspace from other display.
+    rotateWorkspacesKeys = Map.fromList
+      [ ((m, XMonad.xK_z), CycleWS.prevWS)
+      , ((m, XMonad.xK_x), CycleWS.nextWS)
+      , ((m .|. a, XMonad.xK_z), CycleWS.shiftToPrev)
+      , ((m .|. a, XMonad.xK_x), CycleWS.shiftToNext)
+      ]
 
     -- | Moving workspaces to specific displays
     --
