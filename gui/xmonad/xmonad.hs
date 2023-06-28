@@ -35,6 +35,7 @@ import qualified XMonad.Layout.Renamed as Renamed
 import XMonad.Actions.CopyWindow (copyToAll, killAllOtherCopies)
 import XMonad.Util.WindowProperties (getProp32)
 import qualified XMonad.Actions.TagWindows as TagWindows
+import qualified XMonad.Actions.FloatKeys as FloatKeys
 
 main ∷ IO ()
 main = XMonad.xmonad . configCustomizations $ XMonad.def
@@ -528,14 +529,24 @@ positioningKeysModeToLabel PositioningKeysModeBigSteps = "Positioning (big steps
 
 positioningKeysModeToStepRepeats ∷ Num a ⇒ PositioningKeysMode → a
 positioningKeysModeToStepRepeats PositioningKeysModeNormal = 1
-positioningKeysModeToStepRepeats PositioningKeysModeBigSteps = 5
+positioningKeysModeToStepRepeats PositioningKeysModeBigSteps = 10
 
 positioningKeysMode ∷ PositioningKeysMode → Modal.Mode
 positioningKeysMode mode = go where
   label = positioningKeysModeToLabel mode
   go = Modal.mode label $ \XConfig { XMonad.modMask = m } →
     let
-      _repeatN = positioningKeysModeToStepRepeats mode
+      repeatN = positioningKeysModeToStepRepeats mode
+
+      moveKeys = Map.fromList
+        [ ((mask, key), XMonad.withFocused . FloatKeys.keysMoveWindow $ vectorIsh change step)
+        | keys ← [hjklKeys, arrowKeys]
+        , (key, change) ← zip keys [(LT, EQ), (EQ, GT), (EQ, LT), (GT, EQ)]
+        , (mask, step) ← [(0, 1), (a, 5), (s, 10)]
+        ]
+        where
+          vectorIsh (x, y) step = (f x step, f y step)
+          f o n = (case o of EQ → const 0 ; LT → negate; GT → id) (n * repeatN)
     in
     Map.fromList
     [ ((0, XMonad.xK_Escape), Modal.exitMode)
@@ -553,29 +564,10 @@ positioningKeysMode mode = go where
           PositioningKeysModeNormal → PositioningKeysModeBigSteps
           PositioningKeysModeBigSteps → PositioningKeysModeNormal
       )
-
-    -- bindsym h move left
-    -- bindsym j move down
-    -- bindsym k move up
-    -- bindsym l move right
-
-    -- bindsym $a+h move left  ; move left
-    -- bindsym $a+j move down  ; move down
-    -- bindsym $a+k move up    ; move up
-    -- bindsym $a+l move right ; move right
-
-    -- bindsym $s+h move left  ; move left  ; move left  ; move left
-    -- bindsym $s+j move down  ; move down  ; move down  ; move down
-    -- bindsym $s+k move up    ; move up    ; move up    ; move up
-    -- bindsym $s+l move right ; move right ; move right ; move right
-
-    -- bindsym Left  move left
-    -- bindsym Down  move down
-    -- bindsym Up    move up
-    -- bindsym Right move right
     ]
     <> modeLeavingKeys (floatingWindowsKeys m)
     <> windowFocusKeys m
+    <> moveKeys
 
 -- | A tag name for the floating window that appears on all workspaces
 stickyWindowTag ∷ String
