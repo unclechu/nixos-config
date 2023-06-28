@@ -334,7 +334,7 @@ navigationBetweenWorkspacesKeys ws (switchMask, moveMask) = Map.fromList
   [ ((mask, key), XMonad.windows $ operation workspace)
   | (workspace, key) <- zip ws $ [XMonad.xK_1 .. XMonad.xK_9] <> [XMonad.xK_0]
   , (mask, operation) <-
-      [ (switchMask, W.greedyView) -- %! Switch to workspace
+      [ (switchMask, W.view) -- %! Switch to workspace
       , (moveMask, W.shift) -- %! Move focused window to workspace
       ]
   ]
