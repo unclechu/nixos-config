@@ -395,28 +395,19 @@ defaultModeKeys
     -- @
     -- bindsym $m+b exec $new_workspace
     -- @
-    workspaceControlKeys =
-      rotateWorkspacesKeys
-      <> movingWorkspacesKeys
-
-    -- | Next/previous workspace switching keys
-    rotateWorkspacesKeys = Map.fromList
+    workspaceControlKeys = Map.fromList
+      -- Next/previous workspace switching keys
       [ ((m, XMonad.xK_z), CycleWS.moveTo CycleWS.Prev CycleWS.hiddenWS)
       , ((m, XMonad.xK_x), CycleWS.moveTo CycleWS.Next CycleWS.hiddenWS)
       , ((m .|. a, XMonad.xK_z), CycleWS.shiftTo CycleWS.Prev CycleWS.hiddenWS)
       , ((m .|. a, XMonad.xK_x), CycleWS.shiftTo CycleWS.Next CycleWS.hiddenWS)
-      ]
 
-    -- | Moving workspaces to specific displays
-    --
-    -- TODO: Port from my i3wm config:
-    -- @
-    -- bindsym $m+comma     move workspace to output left
-    -- bindsym $m+$s+comma  move workspace to output down
-    -- bindsym $m+period    move workspace to output right
-    -- bindsym $m+$s+period move workspace to output up
-    -- @
-    movingWorkspacesKeys = Map.empty
+      -- Moving workspaces between displays
+      , ((m, XMonad.xK_comma), CycleWS.swapPrevScreen >> CycleWS.prevScreen)
+      , ((m, XMonad.xK_period), CycleWS.swapNextScreen >> CycleWS.nextScreen)
+      , ((m .|. a, XMonad.xK_comma), CycleWS.swapPrevScreen)
+      , ((m .|. a, XMonad.xK_period), CycleWS.swapNextScreen)
+      ]
 
     -- | Keys for controlling current layout or switch between layouts
     layoutControlKeys = Map.fromList
