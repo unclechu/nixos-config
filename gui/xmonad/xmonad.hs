@@ -656,9 +656,9 @@ doKeysMode ∷ Modal.Mode
 
     -- Make the window appear on other workspaces.
     -- Mnemonic: ‘f’ is for ‘Force’ (force a window to appear on all workspaces).
-    -- It works weird or rather doesn’t work/misbehaves with multiple screens.
-    -- I’ve been told it’s fixed in XMonad “master” branch.
-    -- Have to try later if it helps.
+    -- FIXME: It works weird or rather doesn’t work/misbehaves with multiple screens.
+    --        I’ve been told this bug is fixed in XMonad “master” branch.
+    --        Have to try later, after next XMonad release.
     , ((m, XMonad.xK_f), toggleStickyWindow >> Modal.exitMode)
     , ((0, XMonad.xK_f), toggleStickyWindow)
 
