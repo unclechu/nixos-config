@@ -32,6 +32,9 @@ import qualified XMonad.Layout.LayoutModifier as LayoutModifier
 import qualified XMonad.Layout.GridVariants as GridVariants
 import qualified XMonad.Layout.ResizableThreeColumns as ResizableThreeColumns
 import qualified XMonad.Layout.Renamed as Renamed
+import XMonad.Actions.CopyWindow (copyToAll, killAllOtherCopies)
+import XMonad.Util.WindowProperties (getProp32)
+import qualified XMonad.Actions.TagWindows as TagWindows
 
 main ∷ IO ()
 main = XMonad.xmonad . configCustomizations $ XMonad.def
@@ -574,6 +577,10 @@ positioningKeysMode mode = go where
     <> modeLeavingKeys (floatingWindowsKeys m)
     <> windowFocusKeys m
 
+-- | A tag name for the floating window that appears on all workspaces
+stickyWindowTag ∷ String
+stickyWindowTag = "sticky-window"
+
 doKeysModeLabel ∷ String
 doKeysMode ∷ Modal.Mode
 (doKeysModeLabel, doKeysMode) = (label, mode) where
@@ -645,9 +652,13 @@ doKeysMode ∷ Modal.Mode
     , ((m, XMonad.xK_g), XMonad.spawn "place-cursor-at" >> Modal.exitMode)
     , ((0, XMonad.xK_g), XMonad.spawn "place-cursor-at")
 
-    -- # mnemonic: ‘f’ is for ‘Force’ (force a window to appear on all workspaces)
-    -- bindsym $m+f sticky toggle; mode "default"
-    -- bindsym    f sticky toggle
+    -- Make the window appear on other workspaces.
+    -- Mnemonic: ‘f’ is for ‘Force’ (force a window to appear on all workspaces).
+    -- It works weird or rather doesn’t work/misbehaves with multiple screens.
+    -- I’ve been told it’s fixed in XMonad “master” branch.
+    -- Have to try later if it helps.
+    , ((m, XMonad.xK_f), toggleStickyWindow >> Modal.exitMode)
+    , ((0, XMonad.xK_f), toggleStickyWindow)
 
     -- Mnemonic: ‘b’ is for ‘Border’
     , ( (m, XMonad.xK_b)
@@ -772,6 +783,7 @@ mouseCursorKeysMode ∷ Modal.Mode
     <> cursorMoveKeys
     <> mouseButtonsKeys
 
+-- | Add all modes to the XMonad config
 withKeysModes ∷ XConfig layout → XConfig layout
 withKeysModes = HModal.modal . mconcat $
   [ [doKeysMode, workspaceKeysMode, mouseCursorKeysMode]
@@ -790,10 +802,30 @@ myManageHook = XMonad.composeAll
   , XMonad.className =? "thunderbird" --> moveTo imWsLabel
   , XMonad.className =? "nheko" --> moveTo imWsLabel
   , XMonad.className =? "Psi+" --> moveTo imWsLabel
+
+  , isAbove --> XMonad.doFloat
+  , isStickyWindow --> XMonad.doF copyToAll
   ]
   where
     moveTo = XMonad.doF . W.shift
     imWsLabel = "10"
+
+    -- | Get the @_NET_WM_STATE@ property as a list of atoms
+    --
+    -- See https://unix.stackexchange.com/a/708140
+    getNetWMState ∷ XMonad.Window → X [XMonad.Atom]
+    getNetWMState window = do
+      atom <- XMonad.getAtom "_NET_WM_STATE"
+      maybe [] (fmap fromIntegral) <$> getProp32 atom window
+
+    hasNetWMState ∷ String → XMonad.Window → X Bool
+    hasNetWMState state window = elem <$> XMonad.getAtom state <*> getNetWMState window
+
+    isAbove ∷ XMonad.Query Bool
+    isAbove = XMonad.liftX . hasNetWMState "_NET_WM_STATE_ABOVE" =<< XMonad.ask
+
+    isStickyWindow ∷ XMonad.Query Bool
+    isStickyWindow = XMonad.liftX . hasNetWMState "_NET_WM_STATE_STICKY" =<< XMonad.ask
 
 -- * Helpers
 
@@ -810,6 +842,7 @@ rofiCmd mode theme = unwords [ "rofi -show", rofiModeForCmd mode, "-theme", rofi
 
 -- ** Keys
 
+-- | Make all key binding in a given set to trigger mode exit after they are pressed
 modeLeavingKeys ∷ Keys → Keys
 modeLeavingKeys = Map.map (>> Modal.exitMode)
 
@@ -825,3 +858,14 @@ toggleFloatWindow w = go where
     where
       f (Just _) = Nothing -- Remove from floating windows list if it’s a floating window
       f Nothing = Just r -- Add to floating windows list if it’s a tiled window
+
+-- | Toggle window stickyness state
+--
+-- Window being “sticky” means it appears on all workspaces.
+-- Useful for floating windows that can sit in a corner of a screen.
+toggleStickyWindow ∷ X ()
+toggleStickyWindow = XMonad.withFocused $ \window → do
+  XMonad.ifM
+    (TagWindows.hasTag stickyWindowTag window)
+    (killAllOtherCopies >> TagWindows.delTag stickyWindowTag window)
+    (XMonad.windows copyToAll >> TagWindows.addTag stickyWindowTag window)
