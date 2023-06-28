@@ -1,6 +1,34 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
+-- Useful readings:
+--
+-- * https://tronche.com/gui/x/icccm/sec-4.html
+-- * https://specifications.freedesktop.org/wm-spec/wm-spec-1.3.html
+
+-- TODO: Prevent focus grabbing by other windows that are not explicitly allowed to do so.
+--       Look how it’s done in my old config: https://github.com/unclechu/xmonadrc
+
+-- TODO: Try out dynamic workspaces.
+--       XMonad.Actions.DynamicWorkspaces
+--       XMonad.Actions.DynamicWorkspaceOrder
+--       XMonad.Actions.DynamicWorkspaceGroups
+
+-- TODO: Try out Polybar. There is no bar used yet in this config.
+--       https://polybar.github.io
+--       https://github.com/polybar/polybar
+--       https://gvolpe.com/blog/xmonad-polybar-nixos/
+
+-- TODO: Find out if “free layouts” like in i3wm are possible in XMonad.
+--       Every tile can be either one window or nest one of the layouts:
+--       1. Vertical/horizontal split
+--       2. Tabs/Stacks
+--       And it’s recursive. Any nested tile can nest other tiles, etc.
+
+-- TODO: Add some multiple windows killing key bindings. See: XMonad.Actions.WithAll
+
+-- TODO: Check out https://github.com/Procrat/xmonad-contexts and see if it can be useful
+
 {-# OPTIONS_GHC -Wall -Wno-partial-type-signatures #-}
 
 {-# LANGUAGE UnicodeSyntax #-}
