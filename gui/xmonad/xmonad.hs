@@ -133,22 +133,27 @@ configCustomizations
 
 myConfig ∷ XConfig _layoutA → XConfig _layoutB
 myConfig x = x
-  { modMask = XMonad.mod4Mask -- Super key
+  { modMask = XMonad.mod4Mask -- Super/Meta/Windows key
   , workspaces = show <$> [1 .. 10 ∷ Word]
 
-  , terminal = "alacritty"
+  , terminal = "alacritty" -- I don’t really use this value, I have some custom key bindings instead
   , normalBorderColor = "#222222"
   , focusedBorderColor = "#ff0000"
+  , focusFollowsMouse = False
+  , clickJustFocuses = False
+
+  -- Key/button bindings:
+
+  , keys = defaultModeKeys
+  , mouseBindings = myMouseBindings
+
+  -- Hooks:
 
   -- This startup script is provided by my NixOS configuration
   , startupHook = XMonad.spawn "sleep 1s ; autostart-setup"
 
   , layoutHook = myLayout
   , manageHook = myManageHook
-  , keys = defaultModeKeys
-  , mouseBindings = myMouseBindings
-  , focusFollowsMouse = False
-  , clickJustFocuses = False
   }
 
 tabsLayoutName, fullscreenLayoutName ∷ String
@@ -346,113 +351,27 @@ defaultModeKeys
     , XMonad.workspaces = ws
     , XMonad.layoutHook = layout
     } =
-
-  Map.fromList
-  -- Terminals
-  [ ((m, XMonad.xK_Return), XMonad.spawn cmdTerminalDark)
-  , ((m .|. a, XMonad.xK_Return), XMonad.spawn cmdTerminalLight)
-
-  -- App/command GUI runners
-  , ((m, XMonad.xK_semicolon), XMonad.spawn cmdRunDark)
-  , ((m .|. a, XMonad.xK_semicolon), XMonad.spawn cmdRunLight)
-  , ((m .|. s, XMonad.xK_semicolon), XMonad.spawn cmdDRunDark)
-  , ((m .|. s .|. a, XMonad.xK_semicolon), XMonad.spawn cmdDRunLight)
-
-  -- Window selection GUI
-  , ((m, XMonad.xK_slash), XMonad.spawn cmdSelectWindowDark)
-  , ((m .|. a, XMonad.xK_slash), XMonad.spawn cmdSelectWindowLight)
-
-  -- Clipboard management tool
-  , ((m, XMonad.xK_apostrophe), XMonad.spawn "gpaste-gui")
-  , ((m .|. a, XMonad.xK_apostrophe), XMonad.spawn "gpaste-gui -m=choose")
-
-  -- Inverting window colors
-  , ((m, XMonad.xK_n), XMonad.spawn "timeout 2s invert-window-colors")
-
-  -- Mouse cursor jump helper
-  , ((m, XMonad.xK_m), XMonad.spawn "place-cursor-at")
-
-  -- Making screenshots
-  , ((0, XMonad.xK_Print), XMonad.spawn "gnome-screenshot")
-  , ((m, XMonad.xK_Print), XMonad.spawn "gnome-screenshot -w")
-  -- TODO: Test it ↓ This bind was with “--release” flag in my i3wm config.
-  , ((0, XMonad.xK_Pause), XMonad.spawn "gnome-screenshot -a")
-  , ((m, XMonad.xK_Pause), XMonad.spawn "gnome-screenshot -ia")
-
-  -- Calculator
-  , ((0, XF86.xF86XK_Calculator), XMonad.spawn "gnome-calculator")
-
-  -- Audio player control
-  , ((m, XF86.xF86XK_AudioPlay), XMonad.spawn "audacious --play")
-  , ((0, XF86.xF86XK_AudioPlay), XMonad.spawn "audacious --play-pause")
-  , ((0, XF86.xF86XK_AudioPrev), XMonad.spawn "audacious --rew")
-  , ((0, XF86.xF86XK_AudioNext), XMonad.spawn "audacious --fwd")
-  , ((0, XF86.xF86XK_AudioStop), XMonad.spawn "audacious --stop")
-
-  -- Audio control
-  , ((m, XF86.xF86XK_AudioMute), XMonad.spawn "pamng reset")
-  , ((0, XF86.xF86XK_AudioMute), XMonad.spawn "pamng mute")
-  , ((0, XF86.xF86XK_AudioLowerVolume), XMonad.spawn "pamng dec")
-  , ((s, XF86.xF86XK_AudioLowerVolume), XMonad.spawn "pamng dec '5.0dB'")
-  , ((0, XF86.xF86XK_AudioRaiseVolume), XMonad.spawn "pamng inc")
-  , ((s, XF86.xF86XK_AudioRaiseVolume), XMonad.spawn "pamng inc '5.0dB'")
-
-  -- Adjust screen backlight level
-  , ((0, XF86.xF86XK_MonBrightnessDown), XMonad.spawn "screen-backlight -1%")
-  , ((s, XF86.xF86XK_MonBrightnessDown), XMonad.spawn "screen-backlight -5%")
-  , ((0, XF86.xF86XK_MonBrightnessUp), XMonad.spawn "screen-backlight +1%")
-  , ((s, XF86.xF86XK_MonBrightnessUp), XMonad.spawn "screen-backlight +5%")
-
-  -- TODO: Port from my i3wm config.
-  -- TODO: Try out the i3wm-like layout.
-  -- bindsym $m+c split v
-  -- bindsym $m+v split h
-
-  -- TODO: Try to port this from my i3wm config.
-  --       I’ve seen in the past there are some extensions that simulate those i3-like layout splits.
-  --   bindsym $m+s layout stacking
-  --   bindsym $m+w layout tabbed
-  --   bindsym $m+e layout toggle split
-  -- Until I figure out how to do i3-like layouting
-  -- I use these keys for regular XMonad layout rotation.
-  -- , ((m, XMonad.xK_s), _)
-  , ((m, XMonad.xK_w), XMonad.setLayout layout) -- Reset layout state
-  , ((m, XMonad.xK_e), XMonad.sendMessage XMonad.NextLayout)
-  -- Switch to tabs
-  , ((m .|. a, XMonad.xK_w), XMonad.sendMessage (XMonad.JumpToLayout tabsLayoutName))
-  -- Fullscreen the window (jump to no border fullscreen layout)
-  , ((m, XMonad.xK_f), XMonad.sendMessage (XMonad.JumpToLayout fullscreenLayoutName))
-
-  -- TODO: Try to port this from my i3wm config.
-  --       It only makes sense.
-  -- # focus the parent container
-  -- bindsym $m+a focus parent
-  -- # focus the child container
-  -- bindsym $m+q focus child
-
-  -- TODO: Find out if I can do dynamic workspaces in XMonad like in i3wm.
-  -- bindsym $m+b exec $new_workspace
-
-  -- XMonad master windows amount manipulation
-  , ((m, XMonad.xK_c), XMonad.sendMessage $ XMonad.IncMasterN 1)
-  , ((m .|. a, XMonad.xK_c), XMonad.sendMessage $ XMonad.IncMasterN (-1))
-  , ((m .|. s, XMonad.xK_c), XMonad.refresh)
-
-  -- Switching to different modes
-  , ((m, XMonad.xK_d), Modal.setMode doKeysModeLabel)
-  , ((m, XMonad.xK_g), Modal.setMode workspaceKeysModeLabel)
-  , ((m, XMonad.xK_r), Modal.setMode $ resizeKeysModeToLabel ResizeKeysModeNormal)
-  , ((m, XMonad.xK_t), Modal.setMode $ positioningKeysModeToLabel PositioningKeysModeNormal)
-  , ((m .|. a, XMonad.xK_m), Modal.setMode mouseCursorKeysModeLabel)
-  ]
-  <> windowFocusKeys m
+  windowFocusKeys m
   <> windowMoveKeys (m .|. a)
   <> floatingWindowsKeys m
   <> navigationBetweenWorkspacesKeys ws (m, m .|. a)
-  <> rotateWorkspacesKeys
   <> navigationBetweenDisplaysKeys (m, m .|. a, m .|. s)
-  <> movingWorkspacesKeys
+  <> workspaceControlKeys
+  <> layoutControlKeys
+  <> modeSwitchingKeys
+  <> commandSpawningKeys
+  <> mediaKeys
   where
+    -- | Keys for controlling workspaces
+    --
+    -- TODO: Find out if I can do dynamic workspaces in XMonad like in i3wm.
+    -- @
+    -- bindsym $m+b exec $new_workspace
+    -- @
+    workspaceControlKeys =
+      rotateWorkspacesKeys
+      <> movingWorkspacesKeys
+
     -- | Next/previous workspace switching keys
     --
     -- TODO: Port from my i3wm config:
@@ -474,6 +393,109 @@ defaultModeKeys
     -- bindsym $m+$s+period move workspace to output up
     -- @
     movingWorkspacesKeys = Map.empty
+
+    -- | Keys for controlling current layout or switch between layouts
+    layoutControlKeys = Map.fromList
+      -- TODO: Port from my i3wm config.
+      -- TODO: Try out the i3wm-like layout.
+      -- bindsym $m+c split v
+      -- bindsym $m+v split h
+
+      -- TODO: Try to port this from my i3wm config.
+      --       I’ve seen in the past there are some extensions that simulate those i3-like layout splits.
+      --   bindsym $m+s layout stacking
+      --   bindsym $m+w layout tabbed
+      --   bindsym $m+e layout toggle split
+      -- Until I figure out how to do i3-like layouting
+      -- I use these keys for regular XMonad layout rotation.
+      -- , ((m, XMonad.xK_s), _)
+      [ ((m, XMonad.xK_w), XMonad.setLayout layout) -- Reset layout state
+      , ((m, XMonad.xK_e), XMonad.sendMessage XMonad.NextLayout)
+      -- Switch to tabs
+      , ((m .|. a, XMonad.xK_w), XMonad.sendMessage (XMonad.JumpToLayout tabsLayoutName))
+      -- Fullscreen the window (jump to no border fullscreen layout)
+      , ((m, XMonad.xK_f), XMonad.sendMessage (XMonad.JumpToLayout fullscreenLayoutName))
+
+      -- TODO: Try to port this from my i3wm config.
+      --       It only makes sense.
+      -- # focus the parent container
+      -- bindsym $m+a focus parent
+      -- # focus the child container
+      -- bindsym $m+q focus child
+
+      -- XMonad master windows amount manipulation
+      , ((m, XMonad.xK_c), XMonad.sendMessage $ XMonad.IncMasterN 1)
+      , ((m .|. a, XMonad.xK_c), XMonad.sendMessage $ XMonad.IncMasterN (-1))
+      , ((m .|. s, XMonad.xK_c), XMonad.refresh)
+      ]
+
+    -- | Keys for switching to different modes
+    modeSwitchingKeys = Map.fromList
+      [ ((m, XMonad.xK_d), Modal.setMode doKeysModeLabel)
+      , ((m, XMonad.xK_g), Modal.setMode workspaceKeysModeLabel)
+      , ((m, XMonad.xK_r), Modal.setMode $ resizeKeysModeToLabel ResizeKeysModeNormal)
+      , ((m, XMonad.xK_t), Modal.setMode $ positioningKeysModeToLabel PositioningKeysModeNormal)
+      , ((m .|. a, XMonad.xK_m), Modal.setMode mouseCursorKeysModeLabel)
+      ]
+
+    commandSpawningKeys = Map.fromList
+      -- Terminals
+      [ ((m, XMonad.xK_Return), XMonad.spawn cmdTerminalDark)
+      , ((m .|. a, XMonad.xK_Return), XMonad.spawn cmdTerminalLight)
+
+      -- App/command GUI runners
+      , ((m, XMonad.xK_semicolon), XMonad.spawn cmdRunDark)
+      , ((m .|. a, XMonad.xK_semicolon), XMonad.spawn cmdRunLight)
+      , ((m .|. s, XMonad.xK_semicolon), XMonad.spawn cmdDRunDark)
+      , ((m .|. s .|. a, XMonad.xK_semicolon), XMonad.spawn cmdDRunLight)
+
+      -- Window selection GUI
+      , ((m, XMonad.xK_slash), XMonad.spawn cmdSelectWindowDark)
+      , ((m .|. a, XMonad.xK_slash), XMonad.spawn cmdSelectWindowLight)
+
+      -- Clipboard management tool
+      , ((m, XMonad.xK_apostrophe), XMonad.spawn "gpaste-gui")
+      , ((m .|. a, XMonad.xK_apostrophe), XMonad.spawn "gpaste-gui -m=choose")
+
+      -- Inverting window colors
+      , ((m, XMonad.xK_n), XMonad.spawn "timeout 2s invert-window-colors")
+
+      -- Mouse cursor jump helper
+      , ((m, XMonad.xK_m), XMonad.spawn "place-cursor-at")
+      ]
+
+    mediaKeys = Map.fromList
+      -- Making screenshots
+      [ ((0, XMonad.xK_Print), XMonad.spawn "gnome-screenshot")
+      , ((m, XMonad.xK_Print), XMonad.spawn "gnome-screenshot -w")
+      -- TODO: Test it ↓ This bind was with “--release” flag in my i3wm config.
+      , ((0, XMonad.xK_Pause), XMonad.spawn "gnome-screenshot -a")
+      , ((m, XMonad.xK_Pause), XMonad.spawn "gnome-screenshot -ia")
+
+      -- Calculator
+      , ((0, XF86.xF86XK_Calculator), XMonad.spawn "gnome-calculator")
+
+      -- Audio player control
+      , ((m, XF86.xF86XK_AudioPlay), XMonad.spawn "audacious --play")
+      , ((0, XF86.xF86XK_AudioPlay), XMonad.spawn "audacious --play-pause")
+      , ((0, XF86.xF86XK_AudioPrev), XMonad.spawn "audacious --rew")
+      , ((0, XF86.xF86XK_AudioNext), XMonad.spawn "audacious --fwd")
+      , ((0, XF86.xF86XK_AudioStop), XMonad.spawn "audacious --stop")
+
+      -- Audio control
+      , ((m, XF86.xF86XK_AudioMute), XMonad.spawn "pamng reset")
+      , ((0, XF86.xF86XK_AudioMute), XMonad.spawn "pamng mute")
+      , ((0, XF86.xF86XK_AudioLowerVolume), XMonad.spawn "pamng dec")
+      , ((s, XF86.xF86XK_AudioLowerVolume), XMonad.spawn "pamng dec '5.0dB'")
+      , ((0, XF86.xF86XK_AudioRaiseVolume), XMonad.spawn "pamng inc")
+      , ((s, XF86.xF86XK_AudioRaiseVolume), XMonad.spawn "pamng inc '5.0dB'")
+
+      -- Adjust screen backlight level
+      , ((0, XF86.xF86XK_MonBrightnessDown), XMonad.spawn "screen-backlight -1%")
+      , ((s, XF86.xF86XK_MonBrightnessDown), XMonad.spawn "screen-backlight -5%")
+      , ((0, XF86.xF86XK_MonBrightnessUp), XMonad.spawn "screen-backlight +1%")
+      , ((s, XF86.xF86XK_MonBrightnessUp), XMonad.spawn "screen-backlight +5%")
+      ]
 
 data ResizeKeysMode
   = ResizeKeysModeNormal
