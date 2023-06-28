@@ -795,12 +795,14 @@ workspaceKeysMode ∷ Modal.Mode
     -- bindsym    c                   workspace code; mode "default"
     -- bindsym $s+c move container to workspace code; mode "default"
 
-    -- bindsym    z                   workspace prev_on_output
-    -- bindsym $s+z move container to workspace prev_on_output
-    -- bindsym    x                   workspace next_on_output
-    -- bindsym $s+x move container to workspace next_on_output
+    , ((0, XMonad.xK_z), CycleWS.moveTo CycleWS.Prev CycleWS.hiddenWS)
+    , ((0, XMonad.xK_x), CycleWS.moveTo CycleWS.Next CycleWS.hiddenWS)
+    , ((s, XMonad.xK_z), CycleWS.shiftTo CycleWS.Prev CycleWS.hiddenWS)
+    , ((s, XMonad.xK_x), CycleWS.shiftTo CycleWS.Next CycleWS.hiddenWS)
 
-    -- bindsym b workspace back_and_forth; mode "default"
+    , ((m, XMonad.xK_b), CycleWS.toggleWS >> Modal.exitMode)
+    , ((0, XMonad.xK_b), CycleWS.toggleWS)
+
     -- bindsym n exec $new_workspace; mode "default"
     ]
     <> modeLeavingKeys (floatingWindowsKeys m)
