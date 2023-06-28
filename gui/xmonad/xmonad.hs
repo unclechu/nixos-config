@@ -465,16 +465,26 @@ resizeKeysMode mode = go where
       repeatN = resizeKeysModeToStepRepeats mode
 
       operations =
-        [ f XMonad.Shrink
-        , f ResizableTile.MirrorShrink
-        , f ResizableTile.MirrorExpand
-        , f XMonad.Expand
+        [ f (XMonad.Shrink, (LT, EQ))
+        , f (ResizableTile.MirrorShrink, (EQ, LT))
+        , f (ResizableTile.MirrorExpand, (EQ, GT))
+        , f (XMonad.Expand, (GT, EQ))
         ]
         where
-          f = XMonad.sendMessage
+          vectorIsh = \case EQ → const 0 ; LT → negate ; GT → id
 
-      growShrink mask repeats = Map.fromList
-        [ ((mask, key), replicateM_ repeats operation)
+          f (msg, (x, y)) (repeats, step) =
+            XMonad.withFocused $ \window → do
+              isFloating ← isWindowFloating window
+              if not isFloating
+                then replicateM_ repeats (XMonad.sendMessage msg)
+                else
+                  FloatKeys.keysResizeWindow (vectorIsh x step, vectorIsh y step) (0, 0) window
+
+      growShrink mask (repeats, step) = Map.fromList
+        -- TODO: Refactor (repeatN * 2) which is supposed to be the same as in “Positioning” mode.
+        --       “resizeKeysModeToStepRepeats” can probably return 2 independent numbers.
+        [ ((mask, key), operation (repeats, step * (repeatN * 2)))
         | directionKeys ← [hjklKeys, arrowKeys]
         , (key, operation) ← zip directionKeys operations
         ]
@@ -513,9 +523,9 @@ resizeKeysMode mode = go where
     ]
     <> modeLeavingKeys (floatingWindowsKeys m)
     <> windowFocusKeys m
-    <> growShrink 0 repeatN
-    <> growShrink a (2 * repeatN)
-    <> growShrink s (3 * repeatN)
+    <> growShrink 0 (repeatN, 1)
+    <> growShrink a (2 * repeatN, 5)
+    <> growShrink s (3 * repeatN, 10)
     <> colsRowsAmountKeys
 
 data PositioningKeysMode
@@ -861,3 +871,6 @@ toggleStickyWindow = XMonad.withFocused $ \window → do
     (TagWindows.hasTag stickyWindowTag window)
     (killAllOtherCopies >> TagWindows.delTag stickyWindowTag window)
     (XMonad.windows copyToAll >> TagWindows.addTag stickyWindowTag window)
+
+isWindowFloating ∷ XMonad.Window → X Bool
+isWindowFloating window = XMonad.gets (Map.member window . W.floating . XMonad.windowset)
