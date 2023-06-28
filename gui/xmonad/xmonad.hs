@@ -36,6 +36,7 @@ import XMonad.Actions.CopyWindow (copyToAll, killAllOtherCopies)
 import XMonad.Util.WindowProperties (getProp32)
 import qualified XMonad.Actions.TagWindows as TagWindows
 import qualified XMonad.Actions.FloatKeys as FloatKeys
+import qualified XMonad.Actions.FlexibleResize as FlexibleResize
 
 main ∷ IO ()
 main = XMonad.xmonad . configCustomizations $ XMonad.def
@@ -145,6 +146,7 @@ myConfig x = x
   , layoutHook = myLayout
   , manageHook = myManageHook
   , keys = defaultModeKeys
+  , mouseBindings = myMouseBindings
   , focusFollowsMouse = False
   , clickJustFocuses = False
   }
@@ -207,6 +209,35 @@ layoutSpacing ∷ layout a -> LayoutModifier.ModifiedLayout Spacing.Spacing layo
 layoutSpacing =
   Spacing.spacingRaw False (Spacing.Border 0 size 0 size) True (Spacing.Border size 0 size 0) True
   where size = 10
+
+-- ** Mouse bindings
+
+-- | Mouse button mapping set
+type MouseButtons = Map.Map (XMonad.KeyMask, XMonad.Button) (XMonad.Window -> X ())
+
+-- | Mouse bindings: default actions bound to mouse events
+myMouseBindings :: XConfig layout -> MouseButtons
+myMouseBindings XConfig { XMonad.modMask = m } = Map.fromList
+  -- %! Set the window to floating mode and move by dragging
+  [ ( (m, XMonad.button1)
+    , \window -> do
+        XMonad.focus window
+        XMonad.mouseMoveWindow window
+        XMonad.windows W.shiftMaster
+    )
+
+  -- %! Raise the window to the top of the stack
+  , ((m, XMonad.button2), XMonad.windows . (W.shiftMaster .) . W.focusWindow)
+
+  -- %! Set the window to floating mode and resize by dragging
+  , ( (m, XMonad.button3)
+    , \window -> do
+        XMonad.focus window
+        -- XMonad.mouseResizeWindow window
+        FlexibleResize.mouseResizeWindow window
+        XMonad.windows W.shiftMaster
+    )
+  ]
 
 -- ** Key binding modes
 
