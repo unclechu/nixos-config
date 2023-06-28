@@ -374,16 +374,11 @@ defaultModeKeys
       <> movingWorkspacesKeys
 
     -- | Next/previous workspace switching keys
-    --
-    -- TODO: Either filter workspaces that are not bound to other displays
-    --       or make independent set of workspaces for each display,
-    --       and cicle only through screen’s own workspaces.
-    --       Currently while cycling it “steal” workspace from other display.
     rotateWorkspacesKeys = Map.fromList
-      [ ((m, XMonad.xK_z), CycleWS.prevWS)
-      , ((m, XMonad.xK_x), CycleWS.nextWS)
-      , ((m .|. a, XMonad.xK_z), CycleWS.shiftToPrev)
-      , ((m .|. a, XMonad.xK_x), CycleWS.shiftToNext)
+      [ ((m, XMonad.xK_z), CycleWS.moveTo CycleWS.Prev CycleWS.hiddenWS)
+      , ((m, XMonad.xK_x), CycleWS.moveTo CycleWS.Next CycleWS.hiddenWS)
+      , ((m .|. a, XMonad.xK_z), CycleWS.shiftTo CycleWS.Prev CycleWS.hiddenWS)
+      , ((m .|. a, XMonad.xK_x), CycleWS.shiftTo CycleWS.Next CycleWS.hiddenWS)
       ]
 
     -- | Moving workspaces to specific displays
