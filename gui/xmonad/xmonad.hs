@@ -53,7 +53,8 @@ import qualified XMonad.Layout.ResizableTile as ResizableTile
 import Data.Foldable (traverse_)
 import qualified XMonad.Layout.Tabbed as Tabbed
 import XMonad.Layout.NoBorders (noBorders)
-import XMonad.Hooks.ManageDocks (avoidStruts)
+import XMonad.Actions.NoBorders (toggleBorder)
+import qualified XMonad.Hooks.ManageDocks as ManageDocks
 import XMonad.Hooks.ManageHelpers (doCenterFloat)
 import qualified XMonad.Layout.Spacing as Spacing
 import qualified XMonad.Layout.LayoutModifier as LayoutModifier
@@ -68,6 +69,7 @@ import qualified XMonad.Actions.FlexibleResize as FlexibleResize
 import qualified XMonad.Actions.CycleWS as CycleWS
 import Data.List (partition)
 import Data.Maybe (listToMaybe)
+import XMonad.Hooks.TaffybarPagerHints (pagerHints)
 
 main ∷ IO ()
 main = XMonad.xmonad . configCustomizations $ XMonad.def
@@ -158,7 +160,9 @@ configCustomizations
   -- N.B. Note that this one must come above “ewmh”.
   -- ewmhFullscreen
 
-  = EwmhDesktops.ewmh
+  = ManageDocks.docks
+  . EwmhDesktops.ewmh
+  . pagerHints
   . withKeysModes
   . myConfig
 
@@ -195,7 +199,7 @@ myLayout ∷ _layout
 myLayout = go where
   go =
     -- “avoidStruts” to avoid overlapping with the bars
-    avoidStruts (layoutSpacing tiles ||| tabbed ||| XMonad.Full)
+    ManageDocks.avoidStruts (layoutSpacing tiles ||| tabbed ||| XMonad.Full)
     ||| fullscreen
 
   -- | Fullscreen-ish layout (no borders, no bars, just one window)
@@ -442,6 +446,10 @@ defaultModeKeys
       , ((m, XMonad.xK_c), XMonad.sendMessage $ XMonad.IncMasterN 1)
       , ((m .|. a, XMonad.xK_c), XMonad.sendMessage $ XMonad.IncMasterN (-1))
       , ((m .|. s, XMonad.xK_c), XMonad.refresh)
+
+      -- Toggling struts for the layout, and border on/off for the window
+      , ((m, XMonad.xK_v), XMonad.sendMessage ManageDocks.ToggleStruts)
+      , ((m .|. a, XMonad.xK_v), XMonad.withFocused toggleBorder)
       ]
 
     -- | Keys for switching to different modes
