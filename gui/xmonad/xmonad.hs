@@ -35,6 +35,13 @@
 --       As pointed out by geekosaur from #xmonad:libera.chat here is the place to change:
 --       https://github.com/xmonad/xmonad/blob/1aac661/src/XMonad/Operations.hs#L197-L202
 
+-- TODO: Come up with a i3wm-like solution where workspaces are assigned to
+--       particular screens. So workspaces would have some kind of memory
+--       effect what screen they were on last time. And if you try to go to
+--       that workspace it opens on a screen where it was on last time.
+--       The key bindings for moving current workspace between screens
+--       can work as a way to bind a workspace to another screen.
+
 {-# OPTIONS_GHC -Wall -Wno-partial-type-signatures #-}
 
 {-# LANGUAGE UnicodeSyntax #-}
