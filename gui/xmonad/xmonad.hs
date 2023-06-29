@@ -29,6 +29,12 @@
 
 -- TODO: Check out https://github.com/Procrat/xmonad-contexts and see if it can be useful
 
+-- TODO: Fix resizing of the floating windows when worksapces are moved between
+--       screens with different resolution.
+--       Try to patch XMonad.Operations.windows.
+--       As pointed out by geekosaur from #xmonad:libera.chat here is the place to change:
+--       https://github.com/xmonad/xmonad/blob/1aac661/src/XMonad/Operations.hs#L197-L202
+
 {-# OPTIONS_GHC -Wall -Wno-partial-type-signatures #-}
 
 {-# LANGUAGE UnicodeSyntax #-}
