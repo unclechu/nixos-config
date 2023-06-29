@@ -63,7 +63,7 @@ import XMonad.Actions.NoBorders (toggleBorder)
 import qualified XMonad.Hooks.ManageDocks as ManageDocks
 import XMonad.Hooks.ManageHelpers (doCenterFloat)
 import qualified XMonad.Layout.Spacing as Spacing
-import qualified XMonad.Layout.LayoutModifier as LayoutModifier
+import XMonad.Layout.LayoutModifier (ModifiedLayout)
 import qualified XMonad.Layout.GridVariants as GridVariants
 import qualified XMonad.Layout.ResizableThreeColumns as ResizableThreeColumns
 import qualified XMonad.Layout.Renamed as Renamed
@@ -205,29 +205,33 @@ myLayout ∷ _layout
 myLayout = go where
   go =
     -- “avoidStruts” to avoid overlapping with the bars
-    ManageDocks.avoidStruts (layoutSpacing tiles ||| tabbed ||| XMonad.Full)
+    ManageDocks.avoidStruts (layoutSpacing tiles ||| tabbed ||| full)
     ||| fullscreen
 
   -- | Fullscreen-ish layout (no borders, no bars, just one window)
-  fullscreen
-    = Renamed.renamed [Renamed.Replace fullscreenLayoutName]
-    $ noBorders XMonad.Full
+  fullscreen = named fullscreenLayoutName $ noBorders XMonad.Full
+
+  -- | One window takes whole screen except it respects the struts/bars and window border
+  full = named "Full" XMonad.Full
 
   -- | Layouts where multiple windows are showing at the same time
-  tiles = tall ||| XMonad.Mirror tall ||| grid
+  tiles
+    = named "V-split" tall
+    ||| named "H-split" (XMonad.Mirror tall)
+    ||| grids
 
   -- | Two-column (or two-row when mirrored) layout
   tall = ResizableTile.ResizableTall 1 delta ratio []
 
   -- | Tree-column (or three-row) or grid-like layouts
-  grid
-    = GridVariants.SplitGrid GridVariants.L 2 3 (2 / 3) (16 / 10) delta
-    ||| ResizableThreeColumns.ResizableThreeColMid 1 delta ratio []
+  grids
+    = named "Grid" (GridVariants.SplitGrid GridVariants.L 2 3 (2 / 3) (16 / 10) delta)
+    ||| named "Three Columns" (ResizableThreeColumns.ResizableThreeColMid 1 delta ratio [])
 
   -- | Regular tabs layout where only one window shows at a time
-  tabbed
-    = Renamed.renamed [Renamed.Replace tabsLayoutName]
-    $ Tabbed.tabbed Tabbed.shrinkText myTabTheme
+  tabbed = named tabsLayoutName $ Tabbed.tabbed Tabbed.shrinkText myTabTheme
+
+  named name = Renamed.renamed [Renamed.Replace name]
 
   delta = 1 / 100 -- Resize step
   ratio = 1 / 2 -- Default ratio between the master and the slave windows
@@ -251,9 +255,12 @@ myLayout = go where
     }
 
 -- | Add some space gap to a given layout
-layoutSpacing ∷ layout a -> LayoutModifier.ModifiedLayout Spacing.Spacing layout a
-layoutSpacing =
-  Spacing.spacingRaw False (Spacing.Border 0 size 0 size) True (Spacing.Border size 0 size 0) True
+layoutSpacing
+  ∷ layout a
+  → ModifiedLayout Renamed.Rename (ModifiedLayout Spacing.Spacing layout) a
+layoutSpacing
+  = Renamed.renamed [Renamed.CutWordsLeft 1] -- Remove “Spacing” prefix
+  . Spacing.spacingRaw False (Spacing.Border 0 size 0 size) True (Spacing.Border size 0 size 0) True
   where size = 10
 
 -- ** Mouse bindings
