@@ -463,8 +463,13 @@ defaultModeKeys
       , ((m, XMonad.xK_e), XMonad.sendMessage XMonad.NextLayout)
       -- Switch to tabs
       , ((m .|. a, XMonad.xK_w), XMonad.sendMessage (XMonad.JumpToLayout tabsLayoutName))
+
       -- Fullscreen the window (jump to no border fullscreen layout)
-      , ((m, XMonad.xK_f), XMonad.sendMessage (XMonad.JumpToLayout fullscreenLayoutName))
+      , ( (m, XMonad.xK_f)
+        -- Tile the window first in case it’s floating so it can be fullscreened-ish
+        , XMonad.withFocused (XMonad.windows . W.sink)
+          >> XMonad.sendMessage (XMonad.JumpToLayout fullscreenLayoutName)
+        )
 
       -- TODO: Try to port this from my i3wm config.
       --       It only makes sense.
