@@ -414,11 +414,6 @@ defaultModeKeys
   <> mediaKeys
   where
     -- | Keys for controlling workspaces
-    --
-    -- TODO: Find out if I can do dynamic workspaces in XMonad like in i3wm.
-    -- @
-    -- bindsym $m+b exec $new_workspace
-    -- @
     workspaceControlKeys = Map.fromList
       -- Next/previous workspace switching keys
       [ ((m, XMonad.xK_z), CycleWS.moveTo CycleWS.Prev CycleWS.hiddenWS)
@@ -431,6 +426,22 @@ defaultModeKeys
       , ((m, XMonad.xK_period), CycleWS.swapNextScreen >> CycleWS.nextScreen)
       , ((m .|. a, XMonad.xK_comma), CycleWS.swapPrevScreen)
       , ((m .|. a, XMonad.xK_period), CycleWS.swapNextScreen)
+
+      -- Find an empty workspace that’s currently not on any of the screens and open it.
+      -- TODO: When implementing dynamic workspaces this should create a new workspace
+      --       in case it runs out of pre-existing workspaces
+      --       (unless I’ll implement those dynamic workspaces with no pre-existing
+      --       workspaces, except few matching the amount of screens, in this case
+      --       it should just create a new workspace).
+      , ( (m, XMonad.xK_b)
+        , CycleWS.moveTo CycleWS.Next (CycleWS.emptyWS CycleWS.:&: CycleWS.hiddenWS)
+        )
+      -- Move the window to an empty hidden workspace and jump to the window on that new workspace
+      , ( (m .|. a, XMonad.xK_b)
+        , XMonad.withFocused $ \w → do
+            CycleWS.shiftTo CycleWS.Next (CycleWS.emptyWS CycleWS.:&: CycleWS.hiddenWS)
+            XMonad.focus w -- Jump to the window on the new workspace (switch to that workspace)
+        )
       ]
 
     -- | Keys for controlling current layout or switch between layouts
