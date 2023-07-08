@@ -22,7 +22,7 @@ let
   allTerminalEmulators = []
     ++ mkCustomFontTerminals "hack" "Hack"
     ++ mkCustomFontTerminals "ibm" "IBM Plex Mono"
-    ++ mkCustomFontTerminals "iosevka" "IBM Plex Mono"
+    ++ mkCustomFontTerminals "iosevka" "IosevkaTerm Nerd Font"
     ++ mkCustomFontTerminals "jetbrains" "JetBrains Mono";
 
   configuration = {
