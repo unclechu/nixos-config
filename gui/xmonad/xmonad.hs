@@ -914,6 +914,8 @@ myManageHook = XMonad.composeAll
   [ XMonad.className =? "Gpaste-gui" --> doCenterFloat
   , XMonad.className =? "gnome-calculator" --> doCenterFloat
 
+  , XMonad.className =? "calfjackhost" --> doTile
+
   -- Moving to last workspace
   , XMonad.className =? "thunderbird" --> moveTo imWsLabel
   , XMonad.className =? "nheko" --> moveTo imWsLabel
@@ -924,6 +926,8 @@ myManageHook = XMonad.composeAll
   ]
   where
     moveTo = XMonad.doF . W.shift
+    doTile = XMonad.ask >>= XMonad.doF . W.sink
+
     imWsLabel = "10"
 
     -- | Get the @_NET_WM_STATE@ property as a list of atoms
