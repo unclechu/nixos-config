@@ -273,6 +273,9 @@ in
       pkgs.clamav
       pkgs.lynis
       pkgs.vulnix
+
+      # extra utils
+      pkgs.mat2
     ];
 
     programs.tmux = {
