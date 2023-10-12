@@ -11,6 +11,7 @@ let
     pkgs-unstable = import <nixos-unstable> {};
   in {
     inherit (pkgs-unstable.python3Packages) yt-dlp;
+    inherit (pkgs-unstable) freetube;
   };
 
   # *** apps ***
@@ -255,6 +256,7 @@ in
       # web browsers
       firefox
       pkgs.chromium
+      unstable.freetube
 
       # task management
       pkgs.hledger pkgs.hledger-ui pkgs.hledger-web
