@@ -133,10 +133,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "680063f4ef0aa9a89a7e297272a03dcf8cffdde6",
-        "sha256": "0hq1al37n9343cbxqhf9szw8gbnd4qh6s5nycvnn5xzn6j11bw3j",
+        "rev": "a571980862f505309f0be96c36ae3cc9d7d5817b",
+        "sha256": "1adz0pw552ypj2rfjzxsf45l0agzj9nfkb1g5jsli3lj8w5957mw",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/680063f4ef0aa9a89a7e297272a03dcf8cffdde6.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/a571980862f505309f0be96c36ae3cc9d7d5817b.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nheko": {
