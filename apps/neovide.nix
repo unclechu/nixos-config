@@ -19,8 +19,10 @@ let sources = import ../nix/sources.nix; in
   cargoDeps = rustPlatform.importCargoLock {
     lockFile = "${newNeovideSrc}/Cargo.lock";
 
-    outputHashes = {
-      "winit-0.28.6" = "sha256-mxX+v16lMdYahPxVsDg2gMmZtx6qBF4Wu4SlNh4MYY0=";
-    };
+    # This is not needed at the moment, just keeping a comment here as an
+    # example how some dependencies can be overridden if I need it again.
+    # outputHashes = {
+    #   "winit-0.28.6" = "sha256-mxX+v16lMdYahPxVsDg2gMmZtx6qBF4Wu4SlNh4MYY0=";
+    # };
   };
 })

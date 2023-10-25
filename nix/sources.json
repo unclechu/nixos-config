@@ -31,15 +31,15 @@
         "version": "v0.3.0"
     },
     "dino": {
-        "branch": "v0.4.2",
+        "branch": "v0.4.3",
         "description": "Modern XMPP (\"Jabber\") Chat Client using GTK+/Vala",
         "homepage": "https://dino.im/",
         "owner": "dino",
         "repo": "dino",
-        "rev": "baf96d9d9fac7480fed777ac87d917f8dec8f0f6",
-        "sha256": "1m25ai8wfvp7y3n7d6bm35wl4jmn181ddz4jdszacc989kfs357k",
+        "rev": "df0013e3f45afa595b1f889e4683f89e9c369f05",
+        "sha256": "0k7ax08xqqrvclgvv103wjl4lhrckq62nig4jas722hkmjvvyv5j",
         "type": "tarball",
-        "url": "https://github.com/dino/dino/archive/baf96d9d9fac7480fed777ac87d917f8dec8f0f6.tar.gz",
+        "url": "https://github.com/dino/dino/archive/df0013e3f45afa595b1f889e4683f89e9c369f05.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "gpaste-gui": {
@@ -103,16 +103,16 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovide": {
-        "branch": "fsundvik/fix-keyboard-api",
+        "branch": "main",
         "comment": "This is a WIP branch of #1899 pull request that fixes some key mapping issues",
         "description": "No Nonsense Neovim Client in Rust",
         "homepage": "",
-        "owner": "fredizzimo",
+        "owner": "neovide",
         "repo": "neovide",
-        "rev": "402382c0a2dd51aa8e14801f80956294eee7fe8f",
-        "sha256": "09ybxwmnrpddvgbldycxn5xlyimfsfx81va164slidzzn9kdcrxa",
+        "rev": "85234dc3e69a7b3ecbbe13ba63f7f384a481f013",
+        "sha256": "0h5ifqn2paljmzq5fwlp49dm9zvqq280bddmvy3fasihclgjz7wk",
         "type": "tarball",
-        "url": "https://github.com/fredizzimo/neovide/archive/402382c0a2dd51aa8e14801f80956294eee7fe8f.tar.gz",
+        "url": "https://github.com/neovide/neovide/archive/85234dc3e69a7b3ecbbe13ba63f7f384a481f013.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {
@@ -121,10 +121,10 @@
         "homepage": "https://github.com/equalsraf/neovim-qt/wiki",
         "owner": "equalsraf",
         "repo": "neovim-qt",
-        "rev": "b4ca557cd133eb049cf4c977a81437a23a1fcd06",
-        "sha256": "0zbwwq5lq97ldjipd24qwalrakh1lm5rda5p36sinfzcs16mhlv1",
+        "rev": "f5c95b19512ad0e3662be32507adfca8e2401c13",
+        "sha256": "0s6gfjy9kmbxqfx1004y62f6z0b4vbhz2gwnaa0smn8bghf4aaq6",
         "type": "tarball",
-        "url": "https://github.com/equalsraf/neovim-qt/archive/b4ca557cd133eb049cf4c977a81437a23a1fcd06.tar.gz",
+        "url": "https://github.com/equalsraf/neovim-qt/archive/f5c95b19512ad0e3662be32507adfca8e2401c13.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovimrc": {
@@ -188,15 +188,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "psi-plus": {
-        "branch": "1.5.1650",
+        "branch": "1.5.1652",
         "description": "Codebase snapshots for Psi+ project",
         "homepage": "https://psi-plus.com/",
         "owner": "psi-plus",
         "repo": "psi-plus-snapshots",
-        "rev": "776d5762112480dcba36094060aff04131d491f4",
-        "sha256": "18japb83ssr0dn6aj23gkpxgk4qknca9rn2n7kl2nvl21nrax2ma",
+        "rev": "1c40387c802acdce84ef4f1f1d546a94f6a5d189",
+        "sha256": "16jd9ili307f74dgb98d19ms4h15w97s3zm21d3wgmh03phfg75v",
         "type": "tarball",
-        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/776d5762112480dcba36094060aff04131d491f4.tar.gz",
+        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/1c40387c802acdce84ef4f1f1d546a94f6a5d189.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "qt-jdenticon": {
