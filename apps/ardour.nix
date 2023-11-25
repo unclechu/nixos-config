@@ -6,6 +6,7 @@ let sources = import ../nix/sources.nix; in
 { lib, fetchgit, ardour }:
 
 # Using newer Ardour (7.5 instead of 7.3)
+# TODO: Update to 8.x branch 24.05 nixpkgs-unstable is already using it.
 ardour.overrideAttrs (old: rec {
   # “postInstall” contains links to 7 major version of Ardour
   version = assert lib.versions.major old.version == "7"; "7.5";
