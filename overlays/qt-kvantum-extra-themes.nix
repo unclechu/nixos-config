@@ -6,31 +6,6 @@ self: super:
 let
   esc = super.lib.escapeShellArg;
 
-  fetchThemeTarballFromPath =
-    { name, srcPath, sha256 }:
-    assert builtins.isString name;
-    assert builtins.isPath srcPath;
-    assert builtins.isString sha256;
-    let src = "${srcPath}"; in
-    # Extract archive contents
-    super.runCommand name {} ''
-      set -o nounset
-      set -o pipefail
-
-      CHECKSUM=$(sha256sum -- ${esc src} | cut -d ' ' -f 1)
-      if [[ $CHECKSUM != ${esc sha256} ]]; then
-        >&2 printf "Checksum %s mismatches expectation: %s\n" "$CHECKSUM" ${esc sha256}
-        exit 1
-      fi
-
-      OUT_THEME_DIR="$out"/${esc name}
-      mkdir -p -- "$OUT_THEME_DIR"
-
-      tar -xvf ${esc src}
-      cp -- ${esc "${name}/${name}.svg"} "$OUT_THEME_DIR"
-      cp -- ${esc "${name}/${name}.kvconfig"} "$OUT_THEME_DIR"
-    '';
-
   addThemesPatch =
     { pkg # Theme source package
     , themes # Attrset where name is theme name and value is source dir to copy the theme files from
@@ -57,6 +32,7 @@ let
         pkg = super.fetchFromGitHub {
           owner = "GabePoel";
           repo = "KvLibadwaita";
+          # 5 August 2022
           rev = "61f2e0b04937b6d31f0f4641c9c9f1cc3600a723";
           hash = "sha256-65Gz3WNAwuoWWbBZJL0Ifl+PVLOHjpl6GNhR1oVmGZ0=";
         };
@@ -68,26 +44,26 @@ let
 
       # Vivid-Dark-Kvantum
       ${addThemesPatch {
-        pkg = fetchThemeTarballFromPath {
-          name = "Vivid-Dark-Kvantum";
-          # Downloaded the archive from this page: https://store.kde.org/p/2110194
-          # File is dated 2023-11-29
-          srcPath = qt-kvantum-extra-themes/Vivid-Dark-Kvantum.tar.gz;
-          sha256 = "643b7c6feafe92fd931c7720782d4e93a482605044e9159f331844dbb90f8aba";
+        pkg = super.fetchFromGitHub {
+          owner = "L4ki";
+          repo = "Vivid-Plasma-Themes";
+          # 29 November 2023
+          rev = "a049363b24618900084633e2b9af2298abb17472";
+          hash = "sha256-vXwqLTNXUavPxUqv+SMgqLwUujzt9XWFVeofMEHZWwc=";
         };
-        themes = { Vivid-Dark-Kvantum = "Vivid-Dark-Kvantum"; };
+        themes = { Vivid-Dark-Kvantum = "Vivid Kvantum Themes/Vivid-Dark-Kvantum"; };
       }}
 
       # Otto
       ${addThemesPatch {
-        pkg = fetchThemeTarballFromPath {
-          name = "Otto";
-          # Downloaded the archive from this page: https://store.kde.org/p/1358260
-          # Version 1.4 dated 2023-10-28
-          srcPath = qt-kvantum-extra-themes/Otto.tar.gz;
-          sha256 = "afba731aa93f020292319be984defc34731ca809685417505ecfc0debeadb3eb";
+        pkg = super.fetchFromGitLab {
+          owner = "jomada";
+          repo = "otto";
+          # 28 October 2023
+          rev = "16d5a62a3af67dad5d4c975e1773d78a4111a043";
+          hash = "sha256-6qR62CLLvQxnvcfAvmG956DTMUiD8A/PaVI6fK2LuFg=";
         };
-        themes = { Otto = "Otto"; };
+        themes = { Otto = "kvantum/Otto"; };
       }}
     '';
   };
