@@ -13,18 +13,26 @@ let
     hash = "sha256-65Gz3WNAwuoWWbBZJL0Ifl+PVLOHjpl6GNhR1oVmGZ0=";
   };
 
-  vividDarkKvantum =
-    let
-      name = "Vivid-Dark-Kvantum";
-      srcArchive = "${qt-kvantum-extra-themes/Vivid-Dark-Kvantum.tar.gz}";
-      sha256 = "643b7c6feafe92fd931c7720782d4e93a482605044e9159f331844dbb90f8aba";
-    in
+  vividDarkKvantum = fetchThemeTarballFromPath {
+    name = "Vivid-Dark-Kvantum";
+    # Downloaded the archive from this page: https://store.kde.org/p/2110194
+    # File is dated 2023-11-29
+    srcPath = qt-kvantum-extra-themes/Vivid-Dark-Kvantum.tar.gz;
+    sha256 = "643b7c6feafe92fd931c7720782d4e93a482605044e9159f331844dbb90f8aba";
+  };
+
+  fetchThemeTarballFromPath =
+    { name, srcPath, sha256 }:
+    assert builtins.isString name;
+    assert builtins.isPath srcPath;
+    assert builtins.isString sha256;
+    let src = "${srcPath}"; in
     # Extract archive contents
     super.runCommand name {} ''
       set -o nounset
       set -o pipefail
 
-      CHECKSUM=$(sha256sum -- ${esc srcArchive} | cut -d ' ' -f 1)
+      CHECKSUM=$(sha256sum -- ${esc src} | cut -d ' ' -f 1)
       if [[ $CHECKSUM != ${esc sha256} ]]; then
         >&2 printf "Checksum %s mismatches expectation: %s\n" "$CHECKSUM" ${esc sha256}
         exit 1
@@ -33,33 +41,44 @@ let
       OUT_THEME_DIR="$out"/${esc name}
       mkdir -p -- "$OUT_THEME_DIR"
 
-      tar -xvf ${esc srcArchive}
+      tar -xvf ${esc src}
       cp -- ${esc "${name}/${name}.svg"} "$OUT_THEME_DIR"
       cp -- ${esc "${name}/${name}.kvconfig"} "$OUT_THEME_DIR"
     '';
 
-  addKvLibadwaitaTheme = ''
-    mkdir themes/kvthemes/KvLibadwaita
-    mkdir themes/kvthemes/KvLibadwaitaDark
-    cp -- ${esc kvLibadwaita}/src/KvLibadwaita/KvLibadwaita.kvconfig themes/kvthemes/KvLibadwaita
-    cp -- ${esc kvLibadwaita}/src/KvLibadwaita/KvLibadwaita.svg themes/kvthemes/KvLibadwaita
-    cp -- ${esc kvLibadwaita}/src/KvLibadwaita/KvLibadwaitaDark.kvconfig themes/kvthemes/KvLibadwaitaDark
-    cp -- ${esc kvLibadwaita}/src/KvLibadwaita/KvLibadwaitaDark.svg themes/kvthemes/KvLibadwaitaDark
-  '';
-
-  # Downloaded the archive from this page: https://store.kde.org/p/2110194
-  # File was dated 2023-11-29.
-  addVividDarkKvantumTheme = ''
-    mkdir themes/kvthemes/Vivid-Dark-Kvantum
-    cp -- ${esc vividDarkKvantum}/Vivid-Dark-Kvantum/Vivid-Dark-Kvantum.kvconfig themes/kvthemes/Vivid-Dark-Kvantum
-    cp -- ${esc vividDarkKvantum}/Vivid-Dark-Kvantum/Vivid-Dark-Kvantum.svg themes/kvthemes/Vivid-Dark-Kvantum
-  '';
+  addThemePatch =
+    { pkg # Theme source package
+    , themes # Attrset where name is theme name and value is source dir to copy the theme files from
+    }:
+    assert super.lib.isDerivation pkg;
+    assert builtins.isAttrs themes;
+    assert builtins.all builtins.isString (builtins.attrValues themes);
+    super.lib.pipe themes [
+      super.lib.attrsToList
+      (map ({ name, value }: ''
+        mkdir -- themes/kvthemes/${esc name}
+        cp -- ${esc pkg}/${esc value}/${esc name}.kvconfig themes/kvthemes/${esc name}
+        cp -- ${esc pkg}/${esc value}/${esc name}.svg themes/kvthemes/${esc name}
+      ''))
+      (builtins.concatStringsSep "\n")
+    ];
 
   kvantumOverride = old: {
     postPatch = ''
       ${old.postPatch}
-      ${addKvLibadwaitaTheme}
-      ${addVividDarkKvantumTheme}
+
+      ${addThemePatch {
+        pkg = kvLibadwaita;
+        themes = {
+          KvLibadwaita = "src/KvLibadwaita";
+          KvLibadwaitaDark = "src/KvLibadwaita";
+        };
+      }}
+
+      ${addThemePatch {
+        pkg = vividDarkKvantum;
+        themes = { Vivid-Dark-Kvantum = "Vivid-Dark-Kvantum"; };
+      }}
     '';
   };
 in
