@@ -77,6 +77,18 @@ let
         };
         themes = { Vivid-Dark-Kvantum = "Vivid-Dark-Kvantum"; };
       }}
+
+      # Otto
+      ${addThemesPatch {
+        pkg = fetchThemeTarballFromPath {
+          name = "Otto";
+          # Downloaded the archive from this page: https://store.kde.org/p/1358260
+          # Version 1.4 dated 2023-10-28
+          srcPath = qt-kvantum-extra-themes/Otto.tar.gz;
+          sha256 = "afba731aa93f020292319be984defc34731ca809685417505ecfc0debeadb3eb";
+        };
+        themes = { Otto = "Otto"; };
+      }}
     '';
   };
 in
