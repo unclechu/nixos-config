@@ -15,6 +15,7 @@ in
     (import "${sources.home-manager}/nixos")
     user-specific/dunst.nix
     user-specific/mouse-cursor
+    user-specific/gui.nix
   ];
 
   users = {
