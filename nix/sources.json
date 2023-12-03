@@ -55,15 +55,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "home-manager": {
-        "branch": "release-23.05",
+        "branch": "release-23.11",
         "description": "Manage a user environment using Nix  [maintainer=@rycee] ",
         "homepage": "https://nix-community.github.io/home-manager/",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "28535c3a34d79071f2ccb68671971ce0c0984d7e",
-        "sha256": "1q7wnf4ffvzgxsn828gl6hgfqbpynk9b77grsqzfxpki86nfk4mz",
+        "rev": "aeb2232d7a32530d3448318790534d196bf9427a",
+        "sha256": "16078fwcmqq41dqfnm124xxm8l6zykvqlj1kzgi0fvfil4y86slm",
         "type": "tarball",
-        "url": "https://github.com/nix-community/home-manager/archive/28535c3a34d79071f2ccb68671971ce0c0984d7e.tar.gz",
+        "url": "https://github.com/nix-community/home-manager/archive/aeb2232d7a32530d3448318790534d196bf9427a.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "i3rc": {
@@ -241,10 +241,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "unclechu-i3-status",
-        "rev": "cf93028ee3947033c809e7cb37c46f749ba49ef8",
-        "sha256": "037wgh4ll7flbkdvmahkvqyp0xagf4wp304s5cci06nj9g8z9kcy",
+        "rev": "1a2668a0ececd15b8b761b86465c7762469f77c9",
+        "sha256": "1jry56mqbmw37gsrmwm139z1s1f7r75b3vpy0qnap2cbqwv0383l",
         "type": "tarball",
-        "url": "https://github.com/unclechu/unclechu-i3-status/archive/cf93028ee3947033c809e7cb37c46f749ba49ef8.tar.gz",
+        "url": "https://github.com/unclechu/unclechu-i3-status/archive/1a2668a0ececd15b8b761b86465c7762469f77c9.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "xlib-keys-hack": {
@@ -253,10 +253,10 @@
         "homepage": "",
         "owner": "unclechu",
         "repo": "xlib-keys-hack",
-        "rev": "75cfcd2cfadef00a22596386d9f17bd0ec7b1edc",
-        "sha256": "1lg12v832qlw743lsg4w54sy8mapaayv30divm0pks022xn0a5p4",
+        "rev": "16ab00b3edadd4ea4c56688a70a62d8dc1850692",
+        "sha256": "13hs1n2vww1a025hil96hfzyfc85rs4ad2j0xjlhxcy81yyga006",
         "type": "tarball",
-        "url": "https://github.com/unclechu/xlib-keys-hack/archive/75cfcd2cfadef00a22596386d9f17bd0ec7b1edc.tar.gz",
+        "url": "https://github.com/unclechu/xlib-keys-hack/archive/16ab00b3edadd4ea4c56688a70a62d8dc1850692.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

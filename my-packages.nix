@@ -100,7 +100,7 @@ in
       pkgs.inotify-tools
       pkgs.bindfs
       pkgs.skim pkgs.fzf # fuzzy search
-      pkgs.exa
+      pkgs.eza
       pkgs.tree
       pkgs.bat
       pkgs.lf
@@ -155,14 +155,15 @@ in
       pkgs.pavucontrol
       pkgs.pulsemixer
       pkgs.jack2
+      pkgs.jack-example-tools
+      pkgs.jack_capture
       pkgs.qjackctl
       pkgs.patchage
       pkgs.audacious
       pkgs.audacity
-      (pkgs.callPackage apps/ardour.nix {})
+      pkgs.ardour_7 # TODO: Try Ardour 8
       pkgs.guitarix
       pkgs.normalize
-      pkgs.jack_capture
       pkgs.sonic-visualiser
       pkgs.zita-njbridge # JACK in/out bridge over UDP
       pkgs.espeak
@@ -261,7 +262,8 @@ in
 
       # task management
       pkgs.hledger pkgs.hledger-ui pkgs.hledger-web
-      pkgs.taskell # Kanban board TUI written in Haskell
+      # FIXME: In the 23.11 nixpkgs it is marked a broken.
+      # pkgs.taskell # Kanban board TUI written in Haskell
 
       # version control
       pkgs.git
@@ -309,7 +311,8 @@ in
       autostart-setup
       autolock
       cursor-to-display
-      invert-window-colors
+      # FIXME: Fails to compile after migrated to 23.11
+      # invert-window-colors
       dzen-box
       locktop
       pamng

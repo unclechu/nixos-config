@@ -4,12 +4,13 @@
 , writeTextFile
 , bash
 , jack2
+, jack-example-tools
 }:
 let
   executables = {
     bash = bash;
     jack_control = jack2;
-    jack_bufsize = jack2;
+    jack_bufsize = jack-example-tools;
   };
 
   esc = lib.escapeShellArg;
@@ -24,7 +25,7 @@ writeTextFile rec {
   checkPhase = ''(
     set -o nounset
     ${builtins.concatStringsSep "\n" (map (x: ''
-      if ! ${executableFileCheck x}; then ${executableFileCheck x}; fi
+      if ! ${executableFileCheck x}; then (set -o xtrace && ${executableFileCheck x}); fi
     '') (builtins.attrValues e))}
   )'';
   text = ''

@@ -20,7 +20,8 @@ let
       "gpaste-gui.pl" = exe apps.gpaste-gui;
       "pamng.sh" = exe apps.pamng;
       "screen-backlight.sh" = exe apps.screen-backlight;
-      "invert-window-colors" = exe apps.invert-window-colors;
+      # FIXME: Fails to compile after migrated to 23.11
+      # "invert-window-colors" = exe apps.invert-window-colors;
     };
 
     terminalDark = exe terminal-emulators.allTerminalEmulators."alacritty-jetbrains-font-dark";

@@ -6,10 +6,10 @@
 
   fonts = {
     fontDir.enable = true;
-    enableDefaultFonts = true;
+    enableDefaultPackages = true;
     enableGhostscriptFonts = true;
 
-    fonts = [
+    packages = [
       pkgs.hack-font
       pkgs.fira-code-symbols
       pkgs.iosevka
