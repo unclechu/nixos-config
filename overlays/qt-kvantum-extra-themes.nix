@@ -6,21 +6,6 @@ self: super:
 let
   esc = super.lib.escapeShellArg;
 
-  kvLibadwaita = super.fetchFromGitHub {
-    owner = "GabePoel";
-    repo = "KvLibadwaita";
-    rev = "61f2e0b04937b6d31f0f4641c9c9f1cc3600a723";
-    hash = "sha256-65Gz3WNAwuoWWbBZJL0Ifl+PVLOHjpl6GNhR1oVmGZ0=";
-  };
-
-  vividDarkKvantum = fetchThemeTarballFromPath {
-    name = "Vivid-Dark-Kvantum";
-    # Downloaded the archive from this page: https://store.kde.org/p/2110194
-    # File is dated 2023-11-29
-    srcPath = qt-kvantum-extra-themes/Vivid-Dark-Kvantum.tar.gz;
-    sha256 = "643b7c6feafe92fd931c7720782d4e93a482605044e9159f331844dbb90f8aba";
-  };
-
   fetchThemeTarballFromPath =
     { name, srcPath, sha256 }:
     assert builtins.isString name;
@@ -46,7 +31,7 @@ let
       cp -- ${esc "${name}/${name}.kvconfig"} "$OUT_THEME_DIR"
     '';
 
-  addThemePatch =
+  addThemesPatch =
     { pkg # Theme source package
     , themes # Attrset where name is theme name and value is source dir to copy the theme files from
     }:
@@ -67,16 +52,29 @@ let
     postPatch = ''
       ${old.postPatch}
 
-      ${addThemePatch {
-        pkg = kvLibadwaita;
+      # KvLibadwaita
+      ${addThemesPatch {
+        pkg = super.fetchFromGitHub {
+          owner = "GabePoel";
+          repo = "KvLibadwaita";
+          rev = "61f2e0b04937b6d31f0f4641c9c9f1cc3600a723";
+          hash = "sha256-65Gz3WNAwuoWWbBZJL0Ifl+PVLOHjpl6GNhR1oVmGZ0=";
+        };
         themes = {
           KvLibadwaita = "src/KvLibadwaita";
           KvLibadwaitaDark = "src/KvLibadwaita";
         };
       }}
 
-      ${addThemePatch {
-        pkg = vividDarkKvantum;
+      # Vivid-Dark-Kvantum
+      ${addThemesPatch {
+        pkg = fetchThemeTarballFromPath {
+          name = "Vivid-Dark-Kvantum";
+          # Downloaded the archive from this page: https://store.kde.org/p/2110194
+          # File is dated 2023-11-29
+          srcPath = qt-kvantum-extra-themes/Vivid-Dark-Kvantum.tar.gz;
+          sha256 = "643b7c6feafe92fd931c7720782d4e93a482605044e9159f331844dbb90f8aba";
+        };
         themes = { Vivid-Dark-Kvantum = "Vivid-Dark-Kvantum"; };
       }}
     '';
