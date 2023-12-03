@@ -65,11 +65,11 @@ let
 in
 
 {
-  libsForQt5 = super.libsForQt5.overrideScope' (qtSelf: qtSuper: {
+  libsForQt5 = super.libsForQt5.overrideScope (qtSelf: qtSuper: {
     qtstyleplugin-kvantum = qtSuper.qtstyleplugin-kvantum.overrideAttrs kvantumOverride;
   });
 
-  qt6Packages = super.qt6Packages.overrideScope' (qtSelf: qtSuper: {
+  qt6Packages = super.qt6Packages.overrideScope (qtSelf: qtSuper: {
     qtstyleplugin-kvantum = qtSuper.qtstyleplugin-kvantum.overrideAttrs kvantumOverride;
   });
 }
