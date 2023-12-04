@@ -11,7 +11,7 @@ in
     # https://github.com/tsujan/Kvantum/tree/master/Kvantum/themes/kvthemes
     xdg.configFile."Kvantum/kvantum.kvconfig".text = ''
       [General]
-      theme=Otto
+      theme=SummaculateDark
     '';
   };
 }
