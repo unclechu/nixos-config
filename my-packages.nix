@@ -95,7 +95,7 @@ in
 
     environment.systemPackages = [
       # shell stuff
-      pkgs.wget pkgs.curl pkgs.jq pkgs.ripgrep pkgs.dash pkgs.newt
+      pkgs.wget pkgs.curl pkgs.ripgrep pkgs.dash pkgs.newt
       pkgs.killall pkgs.lsof pkgs.inetutils pkgs.acl
       pkgs.inotify-tools
       pkgs.bindfs
@@ -112,6 +112,11 @@ in
       pkgs.socat
       pkgs.pandoc
       tmux-config.tmuxsh
+
+      # dealing with json from shell
+      pkgs.jq
+      pkgs.jo # json creator. see https://github.com/jpmens/jo
+      pkgs.gron # json to greppable format converter. see https://github.com/tomnomnom/gron
 
       # nix stuff
       pkgs.nix-index
