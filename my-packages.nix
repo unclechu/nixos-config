@@ -45,6 +45,8 @@ let
     src = sources.MIDI-Trigger;
   };
 
+  pspg = pkgs.callPackage apps/pspg.nix {};
+
   # *** scripts ***
 
   autolock = pkgs.callPackage scripts/autolock.nix {};
@@ -112,6 +114,7 @@ in
       pkgs.socat
       pkgs.pandoc
       tmux-config.tmuxsh
+      pspg
 
       # dealing with json from shell
       pkgs.jq
