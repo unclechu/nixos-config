@@ -22,9 +22,14 @@
   };
 
   zramSwap = {
-    enable = true;
+    enable = false; # I have enough RAM, turned off
     memoryPercent = 100 / 8;
   };
+
+  swapDevices = [
+    # Not used in favor of ZRAM swap
+    # { device = "/dev/mapper/swap"; }
+  ];
 
   fileSystems = {
     "/" = {
@@ -44,11 +49,6 @@
       fsType = "tmpfs";
     };
   };
-
-  swapDevices = [
-    # Not used in favor of ZRAM swap
-    # { device = "/dev/mapper/swap"; }
-  ];
 
   networking.hostName = "rw-wenzel-nixos-laptop";
 
