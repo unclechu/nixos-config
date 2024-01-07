@@ -167,6 +167,7 @@ in
       pkgs.jack_capture
       pkgs.qjackctl
       pkgs.patchage
+      pkgs.patchance
       pkgs.audacious
       pkgs.audacity
       pkgs.ardour_7 # TODO: Try Ardour 8
