@@ -41,6 +41,10 @@
 --       that workspace it opens on a screen where it was on last time.
 --       The key bindings for moving current workspace between screens
 --       can work as a way to bind a workspace to another screen.
+--
+-- TODO: Compe up with a way to restart/reload XMonad but without running “autostart-setup”
+--       (as an optional feature). Sometimes I just want to reload the “config” (new Xmonad build)
+--       without running everything that “autostart-setup” involves.
 
 {-# OPTIONS_GHC -Wall -Wno-partial-type-signatures #-}
 
