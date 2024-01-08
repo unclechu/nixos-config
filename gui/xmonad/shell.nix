@@ -16,6 +16,7 @@ let
   inherit (xmonadConfig.services.xserver.windowManager) xmonad;
   hsPkgsFn = xmonad.extraPackages;
 
+  # Haskell compiler
   ghc = haskellPackages.ghcWithPackages (
     p: [
       p.xmonad
@@ -25,21 +26,25 @@ let
     ] ++ hsPkgsFn p
   );
 
+  # LSP for Haskell
+  hls = (pkgs.haskell-language-server.override {
+    inherit haskellPackages;
+
+    supportedGhcVersions = [
+      (builtins.replaceStrings ["."] [""] ghc.version)
+    ];
+  });
+
   shell = pkgs.mkShell {
     buildInputs = [
-      (pkgs.haskell-language-server.override {
-        inherit haskellPackages;
-
-        supportedGhcVersions = [
-          (builtins.replaceStrings ["."] [""] ghc.version)
-        ];
-      })
-
+      hls
       ghc
     ];
   };
 in
 
-(if inNixShell then shell else {}) // {
+(if inNixShell then shell else {}) //
+# Exported attributes
+{
   inherit ghc hsPkgsFn;
 }
