@@ -87,6 +87,7 @@ import qualified XMonad.Actions.CycleWS as CycleWS
 import Data.List (partition)
 import Data.Maybe (listToMaybe)
 import XMonad.Hooks.TaffybarPagerHints (pagerHints)
+import qualified Data.List.NonEmpty as NE
 
 main ∷ IO ()
 main = XMonad.xmonad . configCustomizations $ XMonad.def
@@ -329,7 +330,7 @@ displayKeys = [XMonad.xK_u, XMonad.xK_i, XMonad.xK_o, XMonad.xK_p]
 --       depending on window position.
 windowFocusKeys ∷ XMonad.KeyMask → Keys
 windowFocusKeys m = Map.fromList go where
-  operations = [W.focusMaster, W.focusDown, W.focusUp]
+  operations = [W.focusMaster, W.focusDown, W.focusUp, focusLast]
   go =
     [ ((m, key), XMonad.windows operation)
     | keys ← [hjklKeys, arrowKeys]
@@ -1010,3 +1011,12 @@ toggleFloatingTiledFocus =
     let (currentFloating, currentTiled) = partition (`elem` allFloatingWindows) allCurrentWindows
     let current = if isFloating then currentTiled else currentFloating
     maybe (pure ()) XMonad.focus (listToMaybe current)
+
+-- | Focus last window in the stack
+--
+-- Kind of the opposite of "W.focusMaster".
+focusLast ∷ W.StackSet i l XMonad.Window s sd -> W.StackSet i l XMonad.Window s sd
+focusLast = W.modify' $ \c → case c of
+  W.Stack t ls (NE.nonEmpty → fmap NE.reverse → Just (lastWindow NE.:| rs)) →
+    W.Stack lastWindow (rs <> (t : ls)) []
+  _ → c
