@@ -1,20 +1,21 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{ pkgs
-, lib
-
-# For patching XMonad core itself you can clone https://github.com/xmonad/xmonad repo locally
-# (see “localXmonadPath”) and set this flag to “true”.
-, useLocalXmonad ? false
-
-, localXmonadPath ? ./xmonad-src
-
-, ...
-}:
+args@{ pkgs, lib, ... }:
 
 let
   inherit (pkgs.haskell.lib) dontCheck;
+
+  # Extra customizable arguments with default values (below).
+  #
+  # Can’t embed them into the destructuring of the arguments because it’s a NixOS module,
+  # it makes NixOS rebuild fail because of unrecognized attribute.
+
+  # For patching XMonad core itself you can clone https://github.com/xmonad/xmonad repo locally
+  # (see “localXmonadPath”) and set this flag to “true”.
+  useLocalXmonad = args.useLocalXmonad or false;
+
+  localXmonadPath = args.localXmonadPath or ./xmonad-src;
 in
 
 {
