@@ -342,7 +342,7 @@ windowFocusKeys m = Map.fromList go where
 -- | Focused window movement keys
 windowMoveKeys ∷ XMonad.KeyMask → Keys
 windowMoveKeys m = Map.fromList go where
-  operationsShift = [W.shiftMaster, W.swapDown, W.swapUp]
+  operationsShift = [W.shiftMaster, W.swapDown, W.swapUp, shiftLast]
   -- Alternative operations with Shift key pressed.
   -- Swap with currently focused window instead of shifting (just moving) current window.
   operationsSwap = [W.swapMaster, W.swapDown, W.swapUp]
@@ -1026,3 +1026,9 @@ focusLast = W.modify' $ \c → case c of
   W.Stack t ls (NE.nonEmpty → fmap NE.reverse → Just (lastWindow NE.:| rs)) →
     W.Stack lastWindow (rs <> (t : ls)) []
   _ → c
+
+-- | Move focused window to the end (to become the last one)
+shiftLast ∷ W.StackSet i l a s sd -> W.StackSet i l a s sd
+shiftLast = W.modify' $ \c → case c of
+  W.Stack _ _ [] → c -- Already last
+  W.Stack t ls rs → W.Stack t (reverse rs <> ls) []
