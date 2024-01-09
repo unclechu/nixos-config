@@ -42,9 +42,11 @@
 --       The key bindings for moving current workspace between screens
 --       can work as a way to bind a workspace to another screen.
 --
--- TODO: Compe up with a way to restart/reload XMonad but without running “autostart-setup”
+-- TODO: Come up with a way to restart/reload XMonad but without running “autostart-setup”
 --       (as an optional feature). Sometimes I just want to reload the “config” (new Xmonad build)
 --       without running everything that “autostart-setup” involves.
+--       Can try to use an environment variable for example (e.g. “env FOO=N xmonad --replace”)
+--       that will be reset back to nothing in “main” right at the beginning.
 
 {-# OPTIONS_GHC -Wall -Wno-partial-type-signatures #-}
 
@@ -340,9 +342,13 @@ windowFocusKeys m = Map.fromList go where
 -- | Focused window movement keys
 windowMoveKeys ∷ XMonad.KeyMask → Keys
 windowMoveKeys m = Map.fromList go where
-  operations = [W.swapMaster, W.swapDown, W.swapUp]
-  go =
-    [ ((m, key), XMonad.windows operation)
+  operationsShift = [W.shiftMaster, W.swapDown, W.swapUp]
+  -- Alternative operations with Shift key pressed.
+  -- Swap with currently focused window instead of shifting (just moving) current window.
+  operationsSwap = [W.swapMaster, W.swapDown, W.swapUp]
+  go = mkOperationKeys a operationsShift <> mkOperationKeys s operationsSwap
+  mkOperationKeys mod' operations =
+    [ ((m .|. mod', key), XMonad.windows operation)
     | keys ← [hjklKeys, arrowKeys]
     , (key, operation) ← zip keys operations
     ]
@@ -408,7 +414,7 @@ defaultModeKeys
     , XMonad.layoutHook = layout
     } =
   windowFocusKeys m
-  <> windowMoveKeys (m .|. a)
+  <> windowMoveKeys m
   <> floatingWindowsKeys m
   <> navigationBetweenWorkspacesKeys ws (m, m .|. a)
   <> navigationBetweenDisplaysKeys (m, m .|. a, m .|. s)
