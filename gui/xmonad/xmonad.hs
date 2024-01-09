@@ -345,7 +345,7 @@ windowMoveKeys m = Map.fromList go where
   operationsShift = [W.shiftMaster, W.swapDown, W.swapUp, shiftLast]
   -- Alternative operations with Shift key pressed.
   -- Swap with currently focused window instead of shifting (just moving) current window.
-  operationsSwap = [W.swapMaster, W.swapDown, W.swapUp]
+  operationsSwap = [W.swapMaster, W.swapDown, W.swapUp, swapLast]
   go = mkOperationKeys a operationsShift <> mkOperationKeys s operationsSwap
   mkOperationKeys mod' operations =
     [ ((m .|. mod', key), XMonad.windows operation)
@@ -1021,14 +1021,25 @@ toggleFloatingTiledFocus =
 -- | Focus last window in the stack
 --
 -- Kind of the opposite of "W.focusMaster".
-focusLast ∷ W.StackSet i l XMonad.Window s sd -> W.StackSet i l XMonad.Window s sd
+focusLast ∷ W.StackSet i l XMonad.Window s sd → W.StackSet i l XMonad.Window s sd
 focusLast = W.modify' $ \c → case c of
   W.Stack t ls (NE.nonEmpty → fmap NE.reverse → Just (lastWindow NE.:| rs)) →
     W.Stack lastWindow (rs <> (t : ls)) []
-  _ → c
+  _ → c -- Already last
 
 -- | Move focused window to the end (to become the last one)
-shiftLast ∷ W.StackSet i l a s sd -> W.StackSet i l a s sd
+--
+-- Kind of the opposite of "W.shiftMaster".
+shiftLast ∷ W.StackSet i l a s sd → W.StackSet i l a s sd
 shiftLast = W.modify' $ \c → case c of
   W.Stack _ _ [] → c -- Already last
   W.Stack t ls rs → W.Stack t (reverse rs <> ls) []
+
+-- | Swap focused and the last window’s positions
+--
+-- Kind of the opposite of "W.swapMaster".
+swapLast ∷  W.StackSet i l a s sd → W.StackSet i l a s sd
+swapLast = W.modify' $ \c → case c of
+  W.Stack t ls (NE.nonEmpty → fmap NE.reverse → Just (lastWindow NE.:| rs)) →
+    W.Stack t (rs <> (lastWindow : ls)) []
+  _ → c -- Already last
