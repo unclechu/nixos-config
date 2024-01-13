@@ -13,9 +13,6 @@ use v6.d;
 use fatal; # Prevent masking failures by “fail” call
 use nqp; # Solely for nqp::readlink
 
-use variables :D;
-# use parameters :D; # Not implemented in Rakudo yet
-
 # Change working directory to the directory of the script
 $*PROGRAM.dirname.&*chdir;
 
