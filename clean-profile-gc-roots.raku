@@ -542,7 +542,7 @@ package Cleanup {
             .map("\t"~*)
         ).flat.map("\t"~*);
 
-        if nixosVersionMapping !~~ Nil {
+        if nixosVersionMapping !~~ None {
           @lines.append: (
             'Keeping one latest generation of each NixOS version:',
 
