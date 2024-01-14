@@ -1,6 +1,8 @@
 #! /usr/bin/env nix-shell
 #! nix-shell --pure -i raku -E
-#! nix-shell "let d=[p.rakudo p.coreutils p.gnupg p.diffutils];s=fetchTarball{url=\"https://releases.nixos.org/nixos/23.11/nixos-23.11.2774.3dc440faeee9/nixexprs.tar.xz\";sha256=\"1cr3m0pxxmmxw7nkvabpwkp90qv5qblj85nw6hbdjb4zjf8hqnz7\";};p=import s {};in p.mkShell{buildInputs=d;}"
+#! nix-shell "let d=[p.rakudo p.coreutils p.gnupg p.diffutils];p=import(import channels/nixos-pin.nix){};in p.mkShell{buildInputs=d;}"
+
+# WARNING! Run from the project root (from where “channels/nixos-pin.nix” can be found).
 
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE

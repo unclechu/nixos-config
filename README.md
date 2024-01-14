@@ -78,7 +78,7 @@ channels/manage.raku override
 1. After booting to the installed NixOS override channels for it:
 
    ``` sh
-   /etc/nixos/channels/manage.raku override
+   (cd /etc/nixos && channels/manage.raku override)
    ```
 
 ## Building “audio” system profile

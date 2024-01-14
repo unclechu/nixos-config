@@ -1,6 +1,8 @@
 #! /usr/bin/env nix-shell
 #! nix-shell --pure -i raku -E
-#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];s=fetchTarball{url=\"https://releases.nixos.org/nixos/23.11/nixos-23.11.2774.3dc440faeee9/nixexprs.tar.xz\";sha256=\"1cr3m0pxxmmxw7nkvabpwkp90qv5qblj85nw6hbdjb4zjf8hqnz7\";};p=import s {};in p.mkShell{buildInputs=d;}"
+#! nix-shell "let d=[p.rakudo p.coreutils p.curl p.cacert p.libxml2 p.nix];p=import(import channels/nixos-pin.nix){};in p.mkShell{buildInputs=d;}"
+
+# WARNING! Run from the project root (from where “channels/nixos-pin.nix” can be found).
 
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
@@ -168,27 +170,6 @@ sub prefetch-nixpkgs-checksum(
   checksum-from-local-file
 }
 
-sub patch-nix-shell-script(IO::Path:D \script-path, Str:D \url, Str:D \hash) {
-  say
-    "Patching “{script-path.absolute}” script file " ~
-    "(updating “nixpkgs” pin to “{url}” URL and “{hash}” SHA-256 hash)…";
-
-  given script-path.absolute {
-    my Seq:D \lines = .IO.slurp.lines(:chomp(False)).map({
-      if / ^\#\! \s nix\-shell .+ fetch .+ url \s* \= .+ sha256 \s* \= / {
-        my Str:D $str = $_;
-        $str ~~ s/(url    \s* \= \s* \\\") \S+? (\\\")/{$0}{url }{$1}/;
-        $str ~~ s/(sha256 \s* \= \s* \\\") \S+? (\\\")/{$0}{hash}{$1}/;
-        $str
-      } else {
-        $_
-      }
-    });
-
-    spurt $_, lines.join: ''
-  }
-}
-
 sub update-channels(*@channel-names) {
   return unless @channel-names.elems > 0; # nothing to do
 
@@ -328,12 +309,7 @@ multi sub MAIN('upgrade', Bool:D :f(:$force) = False, *@channel-names) {
     }
 
     verify-nixexprs-file-matches-checksum channel-name;
-    my Str:D \unpacked-checksum = prefetch-nixpkgs-checksum channel-name, release-link;
-
-    if channel-name eq 'nixos' {
-      patch-nix-shell-script $_, "{release-link}/{nixexprs-file-name}", unpacked-checksum
-        for (channels-manage-script-path, tell-a-secret-script-path)
-    }
+    prefetch-nixpkgs-checksum channel-name, release-link;
 
     "Adding channel “{channel-name}” to the list of channels to update…".say;
     @channel-names-to-update.push: channel-name;
