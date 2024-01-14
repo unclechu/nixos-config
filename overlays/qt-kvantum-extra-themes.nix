@@ -23,10 +23,8 @@ let
       (builtins.concatStringsSep "\n")
     ];
 
-  kvantumOverride = old: {
-    postPatch = ''
-      ${old.postPatch}
-
+  kvantumOverride = old: let
+    patch = ''
       # KvLibadwaita
       ${addThemesPatch {
         pkg = super.fetchFromGitHub {
@@ -136,7 +134,8 @@ let
           hash = "sha256-TMu+T0G2p8JsRmFrsMuLYc5jrCxxh0fP9Z1riCLUND8=";
         };
         themes = {
-          KDE-Story-Blue-Dark-Kvantum = "KDE-Story-Blue Kvantum Themes/KDE-Story-Blue-Dark-Kvantum";
+          KDE-Story-Blue-Dark-Kvantum =
+            "KDE-Story-Blue Kvantum Themes/KDE-Story-Blue-Dark-Kvantum";
         };
       }}
 
@@ -158,6 +157,21 @@ let
           SummaculateDark = "kvantum/Summaculate";
         };
       }}
+
+      # For some reason only for “audio” system profile this patch is applied twice.
+      # Basically “old.postPatch” somehow already contains the patch.
+      # This is a hacky marker to prevent the issue from breaking the patch phase.
+      #
+      # QT_KVANTUM_EXTRA_THEMES_PATCHED
+    '';
+  in {
+    postPatch = ''
+      ${old.postPatch}
+      ${
+        if isNull (builtins.match ".*QT_KVANTUM_EXTRA_THEMES_PATCHED.*" old.postPatch)
+          then patch
+          else ""
+      }
     '';
   };
 in
