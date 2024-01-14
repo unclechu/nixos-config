@@ -931,6 +931,8 @@ myManageHook = XMonad.composeAll
   , XMonad.className =? "thunderbird" --> moveTo imWsLabel
   , XMonad.className =? "nheko" --> moveTo imWsLabel
   , XMonad.className =? "Psi+" --> moveTo imWsLabel
+  , XMonad.className =? "dino" --> moveTo imWsLabel
+  , XMonad.className =? "Hexchat" --> moveTo imWsLabel
 
   , isAbove --> XMonad.doFloat
   , isStickyWindow --> XMonad.doF copyToAll
