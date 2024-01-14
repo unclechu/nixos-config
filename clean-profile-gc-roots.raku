@@ -19,8 +19,14 @@ $*PROGRAM.dirname.&*chdir;
 # The main directory of Nix profiles where to find profile symlinks recursively in
 my IO::Path:D \nixProfilesRootDir = '/nix/var/nix/profiles'.IO;
 
-subset NonEmptyStr of Str where *.trim !~~ '';
-subset NonEmptyArr of Array where *.elems > 0;
+subset NonEmptyStr of Str where .trim !~~ '';
+subset NonEmptyArr of Array where .elems > 0;
+
+# Explicit Nil-like value for optional values.
+#
+# When you assign Nil to a container it changes to Any that does not match with explicit Nil.
+# This is kind of like universal Nil that is not prone to this issue.
+subset None where !.defined;
 
 package Util {
   # Get symlink’s target (shallowly, without following symlinks).
@@ -50,20 +56,32 @@ package Util {
 
   # Pretty-print kind of serialization
   package Show {
+    # A regular hash
+    our subset ShowableHash of Hash where .values.all ~~ ::('Showable');
+
     # A list of pairs
     our subset ShowableHashIsh where
-      .elems > 0 && .all ~~ Pair:D && .Hash.values.all ~~ ::('Showable');
+      .elems > 0 # Constraining to non-zero elements to distinguish it from a simple list
+      && .all ~~ Pair:D
+      && .map(*.key).all ~~ ::('Showable')
+      && .map(*.value).all ~~ ::('Showable')
+      ;
 
     our subset ShowableArray of Array where .all ~~ ::('Showable');
     our subset ShowableList of List where .all ~~ ::('Showable');
 
+    our subset ShowCallable of Callable where .returns ~~ NonEmptyStr;
+    our subset ShowableSmth where .^find_method('show') ~~ ShowCallable:D;
+
     # A sum type of supported types for being “show”ed
     our subset Showable where
-      ($_ ~~ Int:D | Str:D | IO::Path:D | ShowableHashIsh:D | ShowableArray:D | ShowableList:D)
-      || !.defined;
+      None | Int:D | Str:D | IO::Path:D |
+      ShowableHash:D | ShowableHashIsh:D | ShowableArray:D | ShowableList:D |
+      ShowableSmth:D # Anything else that implements “show(--> NonEmptyStr:D)” method
+      ;
 
     # Basic types
-    our sub nil(\x where !x.defined --> NonEmptyStr:D) { 'Nil' }
+    our sub nil(None \x --> NonEmptyStr:D) { 'Nil' }
     our sub int(Int:D \x --> NonEmptyStr:D) { x.raku }
     our sub str(Str:D \x --> NonEmptyStr:D) { x.raku }
     our sub path(IO::Path:D \x --> NonEmptyStr:D) { x.absolute.raku }
@@ -84,31 +102,45 @@ package Util {
       .join(.elems > 2 ?? "\n" !! '') # Do not multiline empty array
     }
 
-    # Hash printer
-    our sub hash(ShowableHashIsh:D \x --> NonEmptyStr:D) {
+    # A key-value kind of list (a list of “Pair”s)
+    our sub pairs(Pair:D @kv --> NonEmptyStr:D) {
+      return '{}' if @kv.elems < 1;
       my Str:D @lines;
-      for x.Hash.pairs.sort(*.key) -> Pair:D \pair {
-        my Str:D \k = pair.key;
+      for @kv.sort(*.key) -> Pair:D \pair {
+        my Showable \k = pair.key;
         my Showable \v = pair.value;
         my NonEmptyArr:D \showLines = show(v).split("\n").Array;
         @lines[@lines.elems-1] ~= ',' if @lines.elems > 0; # Add commas between entries
-        showLines[0] = "{k.raku} => {showLines[0]}";
+        showLines[0] = "{show(k)} => {showLines[0]}";
         @lines.append: showLines
       }
       @lines.map("\t"~*).Array.unshift('{').push('}').join("\n")
+    }
+
+    # Hash printer
+    our sub hash(ShowableHash:D \x --> NonEmptyStr:D) {
+      my Pair:D @pairs = x.pairs.Array;
+      pairs @pairs
+    }
+    # Hash-ish (a list of pairs) printer
+    our sub hashIsh(ShowableHashIsh:D \x --> NonEmptyStr:D) {
+      my Pair:D @pairs = x.Array;
+      pairs @pairs
     }
 
     # Generic printer for all supported types
     our sub show(Showable \x --> NonEmptyStr:D) {
       my Str:D @lines;
       given x {
-        when !.defined { @lines.push: Show::nil $_ }
+        when None { @lines.push: Show::nil $_ }
         when Int:D { @lines.push: Show::int $_ }
         when Str:D { @lines.push: Show::str $_ }
         when IO::Path:D { @lines.push: Show::path $_ }
-        when ShowableHashIsh:D { @lines.append: Show::hash($_).split("\n").Array }
+        when ShowableHash:D { @lines.append: Show::hash($_).split("\n").Array }
+        when ShowableHashIsh:D { @lines.append: Show::hashIsh($_).split("\n").Array }
         when ShowableArray:D { @lines.append: Show::array($_).split("\n").Array }
         when ShowableList:D { @lines.append: Show::list($_).split("\n").Array }
+        when ShowableSmth:D { @lines.append: .show.split("\n").Array }
         default { fail "Unexpected value of type {.WHAT.raku}: {.raku}" }
       }
       @lines.join: "\n"
@@ -120,7 +152,7 @@ package Util {
 package ProfileSymlink {
   package Types {
     # A profile symlink file.
-    subset SymlinkFile where * ~~ (
+    subset SymlinkFile where (
       # File path to a profile symlink file (“/nix/var/…/system…”)
       :profileSymlink(IO::Path:D)
       # Resolve path where the profile symlink points to (“/nix/store/…”)
@@ -133,7 +165,7 @@ package ProfileSymlink {
     # Currently selected profile generation.
     #
     # A symlink file with extra parsed data (profile name).
-    subset CurrentProfile where * ~~ (
+    subset CurrentProfile where (
       :profileName(NonEmptyStr:D) # For example “system”
       :profileSymlink(IO::Path:D) # File path to a profile symlink
       :pointsTo(IO::Path:D) # Profile symlink target path
@@ -144,12 +176,14 @@ package ProfileSymlink {
     # A profile generation.
     #
     # A symlink file with extra parsed data (profile name, generation number).
-    subset Generation where * ~~ (
+    subset Generation where (
       :profileName(NonEmptyStr:D) # For example “system”
       :generationNum(UInt:D) # For example “123”
       :profileSymlink(IO::Path:D) # File path to a profile symlink
       :pointsTo(IO::Path:D) # Profile symlink target path
-      :systemProfileVersion(NixosVersion:D | Nil) # Nil for non-system profiles
+      :systemProfileVersion(None | NixosVersion:D) # Nil for non-system profiles
+      # Full NixOS version (including patch and commit hash suffix, e.g. “23.11.2774.3dc440faeee9”)
+      :systemProfilePreciseVersion(None | NonEmptyStr:D)
     ).sort;
 
     # Plural form of “Generation”.
@@ -158,7 +192,7 @@ package ProfileSymlink {
     subset Generations where .all ~~ Generation:D;
 
     # All data about single profile (about its symlinks).
-    subset Profile where * ~~ (
+    subset Profile where (
       :profile(CurrentProfile:D) # Current profile symlink
       :generations(Generations:D) # All profile generations symlink of this profile
     ).sort;
@@ -261,21 +295,30 @@ package ProfileSymlink {
       for @symlinks -> \symlink {
         $_ = ProfileSymlink::Parse::GenerationFileName.parse(symlink.Hash<profileSymlink>.basename);
         next unless .defined;
+
+        my Types::NixosVersion $systemProfileVersion = Nil;
+        my Str $systemProfilePreciseVersion = Nil;
+
+        # For a system profile also parse NixOS version from symlink target.
+        # This is required for preserving at least one latest generation of each NixOS release.
+        if $subDirPrefix.match(&SystemProfileDetector)
+        || .<profileName>.match(&SystemProfileDetector) {
+          temp $_ = ProfileSymlink::Parse::SystemProfileTarget.parse(symlink.Hash<pointsTo>);
+          $systemProfileVersion = (.<nixosVersion><first>.UInt, .<nixosVersion><second>.UInt).list;
+          $systemProfilePreciseVersion
+            = .<nixosVersion><first>.Str ~ '.'
+            ~ .<nixosVersion><second>.Str ~ '.'
+            ~ .<nixosVersion><third>.Str
+            ~ do { $_ = .<nixosVersion><extra>; .defined ?? '.' ~ .Str !! '' }
+            ;
+        }
+
         @acc.push: (
           symlink.Hash:p.grep({ .key ~~ 'profileSymlink' | 'pointsTo' }),
           profileName => .<profileName>.Str,
           generationNum => .<generationNum>.UInt,
-          systemProfileVersion => do {
-            # For a system profile also parse NixOS version from symlink target.
-            # This is required for preserving at least one latest generation of each NixOS release.
-            if $subDirPrefix.match(&SystemProfileDetector)
-            || .<profileName>.match(&SystemProfileDetector) {
-              $_ = ProfileSymlink::Parse::SystemProfileTarget.parse(symlink.Hash<pointsTo>);
-              (.<nixosVersion><first>.UInt, .<nixosVersion><second>.UInt).list
-            } else {
-              Nil # The value is not defined for non-system profiles
-            }
-          },
+          systemProfileVersion => $systemProfileVersion,
+          systemProfilePreciseVersion => $systemProfilePreciseVersion,
         ).flat.sort.List
       }
       @acc
@@ -335,21 +378,34 @@ package ProfileSymlink {
 
 package Cleanup {
   package Types {
+    # A derivative of “ProfileSymlink::Types::SymlinkFiles” with optional NixOS version.
+    subset GenerationSymlink where (
+      # File path to a profile symlink file (“/nix/var/…/system…”)
+      :profileSymlink(IO::Path:D)
+      # Resolve path where the profile symlink points to (“/nix/store/…”)
+      :pointsTo(IO::Path:D)
+      # Optional full NixOS version string (e.g. “23.11.2774.3dc440faeee9”)
+      :systemProfilePreciseVersion(None | NonEmptyStr:D)
+    ).sort;
+
+    # A plural form of Nix generation profile symlink.
+    subset GenerationSymlinks where .all ~~ GenerationSymlink:D;
+
     # A mapping between NixOS version (as a list pair of major and minor parts) and a list of
     # generation symlinks that are builds of the NixOS of that version.
     #
     # N.B. When passing the key make sure you wrap it into a scalar container (e.g.
     # “foo{$(23,11)}”). Otherwise “foo{(23,11)}” will be interpreted as “(foo{23},foo{11})”.
     # Depending on the context you may need a scalar wrapper for the value too.
-    class NixosVersionMap does Associative[
+    our class NixosVersionMap does Associative[
       # N.B. Both types are based on lists. Make sure you remember to add scalar wrappers like
       # “$(…)” to make sure it’s passed as a single value and not expanded into multiple.
-      ProfileSymlink::Types::SymlinkFiles:D, # Value
+      GenerationSymlinks:D, # Value
       ProfileSymlink::Types::NixosVersion:D, # Key
     ] {
       subset Key where NixosVersionMap.keyof; subset Keys where .all ~~ Key;
       subset Value where NixosVersionMap.of; subset Values where .all ~~ Value;
-      subset ValueItem where ProfileSymlink::Types::SymlinkFile:D;
+      subset ValueItem where GenerationSymlink:D;
 
       # The key is internally serialized into a string for the implementation simplicity. Hashes are
       # using “.WHICH” (by using “===”) for key equality checks, for simple values it works just
@@ -389,17 +445,28 @@ package Cleanup {
         }
         Nil
       }
+
+      # “Util::Show::Showable” implementation
+      method show(--> NonEmptyStr:D) {
+        my Pair:D @pairs = %!data.pairs.map({
+          Pair.new(
+            my Key $ = Types::Parse::parseNixosVersionKey(.key),
+            my Value $ = .value,
+          )
+        }).Array;
+        Util::Show::pairs @pairs
+      }
     }
 
     # A plan for a single profile generation symlinks cleanup
-    subset ProfileCleanupPlan where * ~~ (
+    subset ProfileCleanupPlan where (
       :profileName(NonEmptyStr:D)
       :currentProfile(ProfileSymlink::Types::CurrentProfile:D)
-      :generationsToKeep(ProfileSymlink::Types::SymlinkFiles:D)
-      :generationsToNuke(ProfileSymlink::Types::SymlinkFiles:D)
+      :generationsToKeep(GenerationSymlinks:D)
+      :generationsToNuke(GenerationSymlinks:D)
 
       # Nil for non-system Nix profiles
-      :systemNixosVersions(NixosVersionMap | Nil)
+      :systemNixosVersions(None | NixosVersionMap:D)
     ).sort;
 
     # A mapping between profile prefixed name (key) and cleanup plan for the profile (value).
@@ -429,8 +496,8 @@ package Cleanup {
 
   # Log messages generation for the cleanup plan
   package Log {
-    my subset OptionalNixosVersionMap where * ~~ Nil | Types::NixosVersionMap:D;
-    my subset OptionalNixosVersion where * ~~ Nil | ProfileSymlink::Types::NixosVersion:D;
+    my subset OptionalNixosVersionMap where None | Types::NixosVersionMap:D;
+    my subset NixosVersionMarker of NonEmptyStr where 'full' | 'unprefixed';
 
     our sub renderPlan(Types::ProfilesCleanupPlanMap:D \planMap --> NonEmptyStr:D) {
       my Str:D @lines;
@@ -444,28 +511,23 @@ package Cleanup {
         # Current profile generation symlink path
         my NonEmptyStr:D \currentGenPath = plan.Hash<currentProfile>.Hash<pointsTo>.absolute;
 
-        # For some reason it resolves to “Any” and not “Nil” without “// Nil”
-        my OptionalNixosVersionMap \nixosVersionMapping = plan.Hash<systemNixosVersions> // Nil;
+        my OptionalNixosVersionMap \nixosVersionMapping = plan.Hash<systemNixosVersions>;
 
         @lines.push: "\tCurrent profile: {Util::Log::info currentGenPath}";
 
         sub addMarkers(
-          ProfileSymlink::Types::SymlinkFile:D \gen,
-          Bool:D :$withNixosVersion = True
+          Types::GenerationSymlink:D \gen,
+          NixosVersionMarker:D :$withNixosVersion = 'full'
           --> Str:D
         ) {
           my Bool:D \isCurrentGen = gen.Hash<profileSymlink>.absolute eq currentGenPath;
 
-          my OptionalNixosVersion \nixosVersion =
-            nixosVersionMapping.defined
-              ?? nixosVersionMapping.findKeyBySymlink(gen)
-              !! Nil;
-
           my Str:D @markers = (
             isCurrentGen ?? 'current' !! Nil,
-            $withNixosVersion && nixosVersion.defined
-              ?? "NixOS release {ProfileSymlink::Types::Show::nixosVersion nixosVersion}"
-              !! Nil,
+            !gen.Hash<systemProfilePreciseVersion>.defined ?? Nil !! (
+              ($withNixosVersion eq 'unprefixed' ?? '' !! 'NixOS release ')
+              ~ gen.Hash<systemProfilePreciseVersion>
+            ),
           ).grep(*.defined);
 
           @markers.elems <= 0 ?? '' !! ' ' ~ Util::Log::info "({@markers.join: ', '})"
@@ -489,14 +551,14 @@ package Cleanup {
               .sort # Order by NixOS version
               .reverse # Latest NixOS version is on the top
               .map({
-                my ProfileSymlink::Types::SymlinkFile:D \latest =
+                my Types::GenerationSymlink:D \latest =
                   nixosVersionMapping{$($_)}.values.first({
                     plan.Hash<generationsToKeep>.first(* eqv $_)
                   });
 
                 "NixOS {Util::Log::warning ProfileSymlink::Types::Show::nixosVersion($_)}"
                   ~ ": {Util::Log::success latest.Hash<profileSymlink>.absolute}"
-                  ~ addMarkers(latest, :!withNixosVersion)
+                  ~ addMarkers(latest, :withNixosVersion('unprefixed'))
               })
               .map("\t"~*)
           ).flat.map("\t"~*);
@@ -605,17 +667,14 @@ package Cleanup {
     my Types::ProfilesCleanupPlanMap:D \plan = %();
 
     # Generation symlinks cleanup plan mapping (symlink -> to nuke or to keep).
-    my subset GenPlan where * ~~ (
-      ProfileSymlink::Types::SymlinkFile:D, # Key-ish
+    my subset GenPlan where (
+      Types::GenerationSymlink:D, # Key-ish
       Bool:D, # Value-ish (the Bool answers: are we keeping it?)
     );
 
     # Numerically sort a list of generation symlinks by generation number extracted from the
     # symlink’s file name. Descending order.
-    my sub sortGens(
-      ProfileSymlink::Types::SymlinkFiles:D \gens
-      --> ProfileSymlink::Types::SymlinkFiles:D
-    ) {
+    my sub sortGens(Types::GenerationSymlinks:D \gens --> Types::GenerationSymlinks:D) {
       gens.sort({
         ProfileSymlink::Parse::GenerationFileName.parse(
           $_.Hash<profileSymlink>.basename
@@ -629,8 +688,10 @@ package Cleanup {
       my GenPlan:D @gensPlan; # See the comment for the “GenPlan” type
 
       for profile.Hash<generations>.List -> ProfileSymlink::Types::Generation:D \gen {
-        my ProfileSymlink::Types::SymlinkFile:D \genSymlink =
-          gen.Hash:p.grep({ .key ~~ 'profileSymlink' | 'pointsTo' }).sort.List;
+        my Types::GenerationSymlink:D \genSymlink =
+          gen.Hash:p.grep({
+            .key ~~ 'profileSymlink' | 'pointsTo' | 'systemProfilePreciseVersion'
+          }).sort.List;
 
         my Bool:D \isKept =
           gen.Hash<profileSymlink>.absolute eq profile.Hash<profile>.Hash<pointsTo>.absolute;
@@ -650,8 +711,8 @@ package Cleanup {
       # Keep one latest generation of each NixOS version.
       for nixosVersions.kv
       -> ProfileSymlink::Types::NixosVersion:D \k
-      , ProfileSymlink::Types::SymlinkFiles:D \v {
-        my ProfileSymlink::Types::SymlinkFile:D \latest = v.&sortGens[0];
+      , Types::GenerationSymlinks:D \v {
+        my Types::GenerationSymlink:D \latest = v.&sortGens[0];
         for 0..(@gensPlan.elems-1) -> UInt:D \i {
           my GenPlan:D \x = @gensPlan[i];
           @gensPlan[i] = (x[0], True) if x[0] eqv latest
@@ -671,10 +732,7 @@ package Cleanup {
   }
 
   # Collect all symlinks to delete from all profiles
-  our sub symlinksToDelete(
-    Types::ProfilesCleanupPlanMap:D \plan
-    --> ProfileSymlink::Types::SymlinkFiles:D
-  ) {
+  our sub symlinksToDelete(Types::ProfilesCleanupPlanMap:D \plan --> Types::GenerationSymlinks:D) {
     # Preserve order like it’s shown in the cleanup plan (order by profile key first, the symlinks
     # are already sorted by generation number in descending order).
     plan.keys.sort.map({plan{$($_)}}).map(*.Hash<generationsToNuke>.map({ $($_) })).flat.List
@@ -682,7 +740,7 @@ package Cleanup {
 }
 
 sub MAIN() {
-  my ProfileSymlink::Types::Profile %profiles =
+  my ProfileSymlink::Types::Profile:D %profiles =
     ProfileSymlink::getDirectoryProfiles nixProfilesRootDir;
 
   my Cleanup::Types::ProfilesCleanupPlanMap:D \cleanupPlan = Cleanup::makePlan %profiles;
