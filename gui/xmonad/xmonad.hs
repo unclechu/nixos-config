@@ -53,7 +53,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
-import XMonad (XConfig (..), X, (.|.), (|||), (-->), (=?))
+import XMonad (XConfig (..), X, (.|.), (|||), (-->), (=?), (<&&>))
 import qualified XMonad
 import qualified XMonad.Hooks.Modal as HModal
 import qualified XMonad.Hooks.EwmhDesktops as EwmhDesktops
@@ -231,11 +231,7 @@ myConfig opts x = x
         Shallow → pure ()
 
   , layoutHook = myLayout
-
-  , manageHook =
-      -- Make new windows appear after the window under focus (not at the place of focused window).
-      InsertPosition.insertPosition InsertPosition.Below InsertPosition.Newer
-      <> myManageHook
+  , manageHook = myManageHook
   }
 
 tabsLayoutName, fullscreenLayoutName ∷ String
@@ -966,6 +962,13 @@ myManageHook = XMonad.composeAll
 
   , isAbove --> XMonad.doFloat
   , isStickyWindow --> XMonad.doF copyToAll
+
+  -- Condition only to non-floating window.
+  -- Without the condition a call for “place-cursor-at” for example will switch to a next window.
+  -- For some reason GPaste GUI does not show up as floating one, though it definitely is.
+  , fmap not XMonad.willFloat <&&> fmap (/= "Gpaste-gui") XMonad.className -->
+      -- Make new windows appear after the window under focus (not at the place of focused window).
+      InsertPosition.insertPosition InsertPosition.Below InsertPosition.Newer
   ]
   where
     moveTo = XMonad.doF . W.shift
@@ -1006,7 +1009,7 @@ rofiCmd mode theme = unwords [ "rofi -show", rofiModeForCmd mode, "-theme", rofi
 data XMonadStartMode
   = Full -- ^ Regular full (re)start of XMonad ((re)load fresh config)
   | Shallow -- ^ Skip autostart script on (re)start
-  deriving (Show, Read, Enum, Bounded)
+  deriving (Show, Read, Eq, Enum, Bounded)
 
 instance XMonad.Default XMonadStartMode where def = Full
 
