@@ -41,14 +41,9 @@
 --       that workspace it opens on a screen where it was on last time.
 --       The key bindings for moving current workspace between screens
 --       can work as a way to bind a workspace to another screen.
---
--- TODO: Come up with a way to restart/reload XMonad but without running “autostart-setup”
---       (as an optional feature). Sometimes I just want to reload the “config” (new Xmonad build)
---       without running everything that “autostart-setup” involves.
---       Can try to use an environment variable for example (e.g. “env FOO=N xmonad --replace”)
---       that will be reset back to nothing in “main” right at the beginning.
 
-{-# OPTIONS_GHC -Wall -Wno-partial-type-signatures #-}
+{-# OPTIONS_GHC -Wall -Wno-partial-type-signatures -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use newtype instead of data" #-}
 
 {-# LANGUAGE UnicodeSyntax #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -67,7 +62,7 @@ import Text.InterpolatedString.QM (qms, qns)
 import qualified Graphics.X11.ExtraTypes.XF86 as XF86
 import qualified XMonad.StackSet as W
 import qualified XMonad.Hooks.Modal as Modal
-import Control.Monad (replicateM_)
+import Control.Monad (replicateM_, when)
 import qualified XMonad.Layout.ResizableTile as ResizableTile
 import Data.Foldable (traverse_)
 import qualified XMonad.Layout.Tabbed as Tabbed
@@ -87,12 +82,36 @@ import qualified XMonad.Actions.FloatKeys as FloatKeys
 import qualified XMonad.Actions.FlexibleResize as FlexibleResize
 import qualified XMonad.Actions.CycleWS as CycleWS
 import Data.List (partition)
-import Data.Maybe (listToMaybe)
+import Data.Maybe (listToMaybe, fromMaybe)
 import XMonad.Hooks.TaffybarPagerHints (pagerHints)
 import qualified Data.List.NonEmpty as NE
+import System.Posix.Process (executeFile)
+import System.Environment (getEnvironment, lookupEnv, unsetEnv)
+import Text.Read (readMaybe)
 
 main ∷ IO ()
-main = XMonad.xmonad . configCustomizations $ XMonad.def
+main = do
+  opts ← mkOptions
+  XMonad.xmonad . configCustomizations opts $ XMonad.def
+
+data Options = Options
+  { options_startMode ∷ XMonadStartMode
+  }
+
+mkOptions ∷ IO Options
+mkOptions = Options <$> getRestartMode
+
+getRestartMode ∷ IO XMonadStartMode
+getRestartMode = do
+  -- Try to look if there’s restart mode value passed by an environment variable
+  raw ← lookupEnv startModeMarkerEnvName
+
+  -- We don’t need it to keep forwarding for the next restart.
+  -- Just removing the value in case it was set.
+  maybe (pure ()) (const $ unsetEnv startModeMarkerEnvName) raw
+
+  -- Parse the restart mode (or just use default mode value if parsing fails)
+  pure $ fromMaybe XMonad.def $ readMaybe @XMonadStartMode =<< raw
 
 -- * Commands
 
@@ -173,8 +192,8 @@ displayNToNum = \case D1 → 1 ; D2 → 2 ; D3 → 3 ; D4 → 4
 -- * XMonad configuration
 
 -- | All the configuration customizations together
-configCustomizations ∷ XConfig _layoutA → XConfig _layoutB
-configCustomizations
+configCustomizations ∷ Options → XConfig _layoutA → XConfig _layoutB
+configCustomizations opts
   -- Real fullscreen instead of bounding the fullscreen to the window dimentions.
   -- But I personally prefer to keep windows inside their tiles even when they are fullscreened.
   -- N.B. Note that this one must come above “ewmh”.
@@ -184,10 +203,10 @@ configCustomizations
   . EwmhDesktops.ewmh
   . pagerHints
   . withKeysModes
-  . myConfig
+  . myConfig opts
 
-myConfig ∷ XConfig _layoutA → XConfig _layoutB
-myConfig x = x
+myConfig ∷ Options → XConfig _layoutA → XConfig _layoutB
+myConfig opts x = x
   { modMask = XMonad.mod4Mask -- Super/Meta/Windows key
   , workspaces = show <$> [1 .. 10 ∷ Word]
 
@@ -205,7 +224,10 @@ myConfig x = x
   -- Hooks:
 
   -- This startup script is provided by my NixOS configuration
-  , startupHook = XMonad.spawn "sleep 1s ; autostart-setup"
+  , startupHook =
+      case options_startMode opts of
+        Full → XMonad.spawn "sleep 1s ; autostart-setup"
+        Shallow → pure ()
 
   , layoutHook = myLayout
   , manageHook = myManageHook
@@ -755,7 +777,10 @@ doKeysMode ∷ Modal.Mode
 
     -- Restart XMonad applying the new configuration.
     -- Mnemonic: ‘r’ is for ‘Restart’.
-    , ((m, XMonad.xK_r), XMonad.restart "xmonad" True >> Modal.exitMode)
+    , ((m, XMonad.xK_r), Modal.exitMode >> restartXMonad Full True)
+    -- “Shallow” mode restart (skipping the autostart script)
+    -- Mnemonic: ‘t’ is for ‘restarT’.
+    , ((m, XMonad.xK_t), Modal.exitMode >> restartXMonad Shallow True)
     -- Exit XMonad. Log out from the X session.
     -- Mnemonic: ‘e’ is for ‘Exit’.
     -- TODO: Come up with a solution to trigger “io exitSuccess” instead when YES is pressed.
@@ -972,6 +997,32 @@ rofiThemeForCmd = \case RofiThemeDark → "gruvbox-dark" ; RofiThemeLight → "g
 
 rofiCmd ∷ RofiMode → RofiTheme → String
 rofiCmd mode theme = unwords [ "rofi -show", rofiModeForCmd mode, "-theme", rofiThemeForCmd theme ]
+
+data XMonadStartMode
+  = Full -- ^ Regular full (re)start of XMonad ((re)load fresh config)
+  | Shallow -- ^ Skip autostart script on (re)start
+  deriving (Show, Read, Enum, Bounded)
+
+instance XMonad.Default XMonadStartMode where def = Full
+
+-- | Customized "XMonad.Operations.restart" that also passes “start mode” environment variable
+--
+-- See "startModeMarkerEnvName" for environment variable name.
+-- See "XMonadStartMode" for possible environment variable values (it’s just “show”n).
+restartXMonad ∷ XMonadStartMode → Bool → X ()
+restartXMonad mode resume = do
+  XMonad.broadcastMessage XMonad.ReleaseResources
+  XMonad.io . XMonad.flush =<< XMonad.asks XMonad.display
+  when resume XMonad.writeStateToFile
+  XMonad.catchIO $ do
+    env ← (<> [startModeMarker]) . filter ((/= startModeMarkerEnvName) . fst) <$> getEnvironment
+    executeFile "xmonad" True [] (Just env)
+  where
+    startModeMarker = (startModeMarkerEnvName, show mode)
+
+-- | Environment variable name
+startModeMarkerEnvName ∷ String
+startModeMarkerEnvName = "WENZELS_XMONAD_START_MODE"
 
 -- ** Keys
 
