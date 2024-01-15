@@ -81,6 +81,7 @@ import qualified XMonad.Actions.TagWindows as TagWindows
 import qualified XMonad.Actions.FloatKeys as FloatKeys
 import qualified XMonad.Actions.FlexibleResize as FlexibleResize
 import qualified XMonad.Actions.CycleWS as CycleWS
+import qualified XMonad.Hooks.InsertPosition as InsertPosition
 import Data.List (partition)
 import Data.Maybe (listToMaybe, fromMaybe)
 import XMonad.Hooks.TaffybarPagerHints (pagerHints)
@@ -230,7 +231,11 @@ myConfig opts x = x
         Shallow → pure ()
 
   , layoutHook = myLayout
-  , manageHook = myManageHook
+
+  , manageHook =
+      -- Make new windows appear after the window under focus (not at the place of focused window).
+      InsertPosition.insertPosition InsertPosition.Below InsertPosition.Newer
+      <> myManageHook
   }
 
 tabsLayoutName, fullscreenLayoutName ∷ String
