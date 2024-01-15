@@ -103,16 +103,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovide": {
-        "branch": "0.12.0",
-        "comment": "This is a WIP branch of #1899 pull request that fixes some key mapping issues",
+        "branch": "0.12.1",
         "description": "No Nonsense Neovim Client in Rust",
         "homepage": "",
         "owner": "neovide",
         "repo": "neovide",
-        "rev": "af9869bd6d8d3434b187e29f85032ee74e40b536",
-        "sha256": "1ji2dh4fvwc3q7kww13vf8vc75wv6nrqfzf6srisynx4v76msxlv",
+        "rev": "a29c6f6f223802d9ce45ee00a07594f04d240e50",
+        "sha256": "0w38lgv0a8y6a44hp27c1s8baqg3d9l9psyia2llgj3135656s4n",
         "type": "tarball",
-        "url": "https://github.com/neovide/neovide/archive/af9869bd6d8d3434b187e29f85032ee74e40b536.tar.gz",
+        "url": "https://github.com/neovide/neovide/archive/a29c6f6f223802d9ce45ee00a07594f04d240e50.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {
