@@ -21,9 +21,12 @@
 let
   esc = lib.escapeShellArg;
 
-  # Mapping between executable file name and a package that provides it
+  # Mapping between executable file name and a package that provides it.
   dependencies = {
     bash = bash;
+
+    # Keep below dependencies up to date with “Guard dependencies” section in the script.
+
     polybar = polybar;
     polybar-msg = polybar;
     inotifywait = inotify-tools;
