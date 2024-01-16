@@ -36,7 +36,7 @@ for monitor in "${MONITORS[@]}"; do
 	# Adjust the value to always fit everything including “Caps Lock” indicator.
 	# Width divided by approximate char width minus max amount of chars for the other modules.
 	# N.B. This is a dirty hack to overcome years old Polybar’s limitations.
-	MONITORS_MAP["$name"]=$(( (width / 8) - 112 ))
+	MONITORS_MAP["$name"]=$(( (width / 8) - 107 ))
 done
 
 POLYBAR_CMD=(polybar --config="$POLYBAR_CONFIG_FILE")
