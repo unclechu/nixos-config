@@ -89,11 +89,12 @@ import qualified Data.List.NonEmpty as NE
 import System.Posix.Process (executeFile)
 import System.Environment (getEnvironment, lookupEnv, unsetEnv)
 import Text.Read (readMaybe)
+import qualified System.Process.Typed as Proc
 
 main ∷ IO ()
 main = do
   opts ← mkOptions
-  XMonad.xmonad . configCustomizations opts $ XMonad.def
+  withPolybar $ XMonad.xmonad . configCustomizations opts $ XMonad.def
 
 data Options = Options
   { options_startMode ∷ XMonadStartMode
@@ -113,6 +114,9 @@ getRestartMode = do
 
   -- Parse the restart mode (or just use default mode value if parsing fails)
   pure $ fromMaybe XMonad.def $ readMaybe @XMonadStartMode =<< raw
+
+withPolybar ∷ IO () -> IO ()
+withPolybar m = Proc.withProcessWait (Proc.proc "run-polybar" []) (const m)
 
 -- * Commands
 

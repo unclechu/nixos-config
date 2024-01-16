@@ -38,6 +38,7 @@ in
       [
         newHsPkgs.aeson
         newHsPkgs.qm-interpolated-string
+        newHsPkgs.typed-process
         newHsPkgs.xmonad
         newHsPkgs.xmonad-contrib
       ];
