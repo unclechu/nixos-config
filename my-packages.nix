@@ -47,6 +47,8 @@ let
 
   pspg = pkgs.callPackage apps/pspg.nix {};
 
+  polybar = pkgs.callPackage apps/polybar.nix {};
+
   # *** scripts ***
 
   autolock = pkgs.callPackage scripts/autolock.nix {};
@@ -241,6 +243,7 @@ in
       pkgs.kitty # TODO: configure
       pkgs.piper # GUI for “ratbagd” service
       pkgs.libnotify
+      polybar
 
       # camera
       pkgs.v4l-utils
