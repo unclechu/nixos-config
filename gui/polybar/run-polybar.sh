@@ -19,13 +19,13 @@ set -o pipefail
 SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}")
 cd -- "$SCRIPT_DIR" # Change working directory to the directory of this script
 
-CONFIG_FILE=$PWD/config.ini
+: ${POLYBAR_CONFIG_FILE:=$PWD/config.ini}
 
 MONITOR_PRIMARY=$(polybar --list-monitors | grep -F '(primary)' | cut -d ':' -f 1)
 MONITORS_STR=$(polybar --list-monitors | cut -d ':' -f 1)
 readarray -t MONITORS <<< "$MONITORS_STR"
 
-POLYBAR_CMD=(polybar --config="$CONFIG_FILE")
+POLYBAR_CMD=(polybar --config="$POLYBAR_CONFIG_FILE")
 
 watch-reload() (
 	set -o errexit || exit
@@ -34,7 +34,7 @@ watch-reload() (
 
 	>&2 printf \
 		'Running Polybar in auto-reload mode and watching for changes in the %s config file…\n' \
-		"${CONFIG_FILE@Q}"
+		"${POLYBAR_CONFIG_FILE@Q}"
 
 	pids=()
 
@@ -54,7 +54,7 @@ watch-reload() (
 		done
 
 		# Listen for any event but OPEN (Polybar triggers it when starting)
-		while inotifywait -- "$CONFIG_FILE" | grep OPEN; do :; done
+		while inotifywait -- "$POLYBAR_CONFIG_FILE" | grep OPEN; do :; done
 
 		kill -- "${pids[@]}" || true
 		wait -- "${pids[@]}"

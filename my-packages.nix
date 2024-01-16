@@ -48,6 +48,7 @@ let
   pspg = pkgs.callPackage apps/pspg.nix {};
 
   polybar = pkgs.callPackage apps/polybar.nix {};
+  run-polybar = pkgs.callPackage gui/polybar/run-polybar.nix { inherit polybar; };
 
   # *** scripts ***
 
@@ -244,6 +245,7 @@ in
       pkgs.piper # GUI for “ratbagd” service
       pkgs.libnotify
       polybar
+      run-polybar
 
       # camera
       pkgs.v4l-utils
