@@ -47,7 +47,7 @@ let
 
   pspg = pkgs.callPackage apps/pspg.nix {};
 
-  polybar = pkgs.callPackage apps/polybar.nix {};
+  polybar = pkgs.callPackage gui/polybar/polybar.nix {};
   run-polybar = pkgs.callPackage gui/polybar/run-polybar.nix { inherit polybar; };
 
   # *** scripts ***

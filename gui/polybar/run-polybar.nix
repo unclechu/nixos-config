@@ -12,7 +12,7 @@
 , writeTextFile
 , writeText
 , bash
-, polybar # Intended to be provided by “apps/polybar.nix”
+, polybar # Intended to be provided by “./polybar.nix”
 , gnugrep
 , coreutils
 , inotify-tools
