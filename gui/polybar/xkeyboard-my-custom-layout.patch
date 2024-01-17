@@ -1,0 +1,34 @@
+--- a/src/modules/xkeyboard.cpp
++++ b/src/modules/xkeyboard.cpp
+@@ -122,6 +122,31 @@ namespace modules {
+       m_layout->replace_token("%icon%", icon->get());
+       m_layout->replace_token("%layout%", current_layout);
+       m_layout->replace_token("%number%", to_string(m_keyboard->current()));
++
++      // A hack to use custom labels and colors for each layout individually
++      {
++        const string label_cfg = "label-layout-" + current_layout;
++        const string label_bg_cfg = "label-layout-" + current_layout + "-background";
++        const string label_fg_cfg = "label-layout-" + current_layout + "-foreground";
++
++        const string label
++          = m_conf.has(name(), label_cfg)
++          ? m_conf.get(name(), label_cfg)
++          : current_layout;
++
++        const pair<string, string> bg
++          = m_conf.has(name(), label_bg_cfg)
++          ? make_pair("%{B" + m_conf.get(name(), label_bg_cfg) + "}", "%{B-}")
++          : make_pair("", "");
++
++        const pair<string, string> fg
++          = m_conf.has(name(), label_fg_cfg)
++          ? make_pair("%{F" + m_conf.get(name(), label_fg_cfg) + "}", "%{F-}")
++          : make_pair("", "");
++
++        const string custom_label = bg.first + fg.first + label + fg.second + bg.second;
++        m_layout->replace_token("%my-custom-layout%", custom_label);
++      }
+     }
+ 
+     if (m_formatter->has(TAG_LABEL_INDICATOR)) {

@@ -22,7 +22,16 @@ let
     nlSupport = true;
     i3Support = true;
   };
-  
+
+  addPatches =
+    if useLocalSources then lib.id else
+    x: x.overrideAttrs (old: {
+      patches = old.patches ++ [
+        ./xkeyboard-my-custom-layout.patch
+      ];
+    })
+    ;
+
   overrideSources =
     if ! useLocalSources then lib.id else
     x: x.overrideAttrs (old: {
@@ -32,4 +41,7 @@ let
     ;
 in
 
-overrideSources polybar
+lib.pipe polybar [
+  overrideSources
+  addPatches
+]
