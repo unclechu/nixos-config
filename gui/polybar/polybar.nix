@@ -1,15 +1,35 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{ polybarFull }:
+{ polybarFull
 
-polybarFull.override {
-  alsaSupport = false;
-  githubSupport = false;
-  mpdSupport = false;
+, lib
 
-  pulseSupport = true;
-  iwSupport = true;
-  nlSupport = true;
-  i3Support = true;
-}
+# Pick sources from the Polybar locally cloned repo.
+, useLocalSources ? false
+
+, localSources ? lib.cleanSource ./polybar-src
+}:
+
+let
+  polybar = polybarFull.override {
+    alsaSupport = false;
+    githubSupport = false;
+    mpdSupport = false;
+
+    pulseSupport = true;
+    iwSupport = true;
+    nlSupport = true;
+    i3Support = true;
+  };
+  
+  overrideSources =
+    if ! useLocalSources then lib.id else
+    x: x.overrideAttrs (old: {
+      version = "local-git";
+      src = localSources;
+    })
+    ;
+in
+
+overrideSources polybar
