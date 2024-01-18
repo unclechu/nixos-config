@@ -44,7 +44,7 @@
   swapDevices = [ ];
 
   zramSwap = {
-    enable = true;
+    enable = false; # I have enough RAM, turned off
     memoryPercent = 100 / 5;
   };
 
