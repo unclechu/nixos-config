@@ -15,6 +15,7 @@ set -o pipefail
 >/dev/null type inotifywait
 >/dev/null type grep
 >/dev/null type cut
+>/dev/null type diff
 
 SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}")
 cd -- "$SCRIPT_DIR" # Change working directory to the directory of this script
@@ -41,18 +42,47 @@ done
 
 POLYBAR_CMD=(polybar --config="$POLYBAR_CONFIG_FILE")
 
+# A hacky detector if backlight is available on this hardware.
+#
+# Checks if there are backlight controlling files and the builtin display is actually turned on
+# (actual_brightness ≠ brightness). When the display is turned off “actual_brightness” is 0.
+backlight-module() {
+	local BACKLIGHT_DIR=/sys/class/backlight/intel_backlight
+	local BRIGHTNESS_FILE=$BACKLIGHT_DIR/brightness
+	local ACTUAL_BRIGHTNESS_FILE=$BACKLIGHT_DIR/actual_brightness
+	[[ -r $BRIGHTNESS_FILE && -r $ACTUAL_BRIGHTNESS_FILE ]] \
+		&& (>/dev/null diff -- "$BRIGHTNESS_FILE" "$ACTUAL_BRIGHTNESS_FILE")
+}
+
+# Detect if this hardware has a battery.
+battery-module() {
+	[[ -e /sys/class/power_supply/BAT0 ]]
+}
+
+terminate-old-polybars() {
+	# Terminate previous Polybar processes (if there are any)
+	(set -o xtrace; polybar-msg cmd quit || true)
+}
+
 # Run Polybar on each display and store each Polybar’s PID into “pids” list.
 #
 # Note that “pids" list is modified outside of scope of this function.
 run-per-monitor-polybars() {
+	local bar barsub monitor
+
 	# A bar on each display
 	for monitor in "${!MONITORS_MAP[@]}"; do
 		bar=main
+		barsub=
 		if [[ $monitor != "$MONITOR_PRIMARY" ]]; then bar=secondary; fi
+		if backlight-module; then barsub=${barsub}bl; fi
+		if battery-module; then barsub=${barsub}bt; fi
+		
 		MONITOR="$monitor" \
 			WINDOW_TITLE_MAX_LEN="${MONITORS_MAP["$monitor"]}" \
 			"${POLYBAR_CMD[@]}" \
-			"$bar" &
+			"${bar}${barsub:+-}${barsub}" &
+			
 		pids+=($!)
 	done
 }
@@ -78,6 +108,7 @@ watch-reload() {
 	set -o xtrace
 	while true; do
 		pids=()
+		terminate-old-polybars
 		run-per-monitor-polybars
 
 		# Listen for any event but OPEN (Polybar triggers it when starting)
@@ -86,11 +117,6 @@ watch-reload() {
 		kill -- "${pids[@]}" || true
 		wait -- "${pids[@]}"
 	done
-}
-
-terminate-old-polybars() {
-	# Terminate previous Polybar processes (if there are any)
-	(set -o xtrace; polybar-msg cmd quit || true)
 }
 
 # Arguments parsing

@@ -16,6 +16,7 @@
 , gnugrep
 , coreutils
 , inotify-tools
+, diffutils
 }:
 
 let
@@ -32,6 +33,7 @@ let
     inotifywait = inotify-tools;
     grep = gnugrep;
     cut = coreutils;
+    diff = diffutils;
   };
 
   # Take dependency executable path
