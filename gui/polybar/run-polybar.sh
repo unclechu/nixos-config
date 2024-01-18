@@ -59,7 +59,12 @@ run-per-monitor-polybars() {
 
 cleanup-hook() {
 	# Terminate Polybar when the script is interrupted
-	trap 'if (( ${#pids[@]} > 0 )); then kill -- "${pids[@]}" || true; wait -- "${pids[@]}"; fi' EXIT
+	trap '
+		if (( ${#pids[@]} > 0 )); then
+			kill -- "${pids[@]}" || true
+			wait -- "${pids[@]}"
+		fi
+	' EXIT
 }
 
 watch-reload() {
