@@ -170,10 +170,10 @@ cmdSelectWindowDark = rofiCmd RofiModeWindow RofiThemeDark
 cmdSelectWindowLight = rofiCmd RofiModeWindow RofiThemeLight
 
 cmdCursorToDisplay ∷ DisplayN → String
-cmdCursorToDisplay dn = [qms| cursor-to-display -d {displayNToNum dn ∷ Word} |]
+cmdCursorToDisplay dn = [qms| place-cursor-at rb {displayNToNum dn ∷ Word} |]
 
 cmdCursorToDisplayAndPlaceAt ∷ DisplayN → String
-cmdCursorToDisplayAndPlaceAt dn = [qms| {cmdCursorToDisplay dn} && sleep .1 && place-cursor-at |]
+cmdCursorToDisplayAndPlaceAt dn = [qms| {cmdCursorToDisplay dn} && place-cursor-at |]
 
 data DisplayN = D1 | D2 | D3 | D4 deriving (Eq, Show, Enum, Bounded, Ord)
 displayNToNum ∷ Num a ⇒ DisplayN → a
@@ -742,8 +742,10 @@ doKeysMode ∷ Modal.Mode
       leaveMode = (>> Modal.exitMode)
 
       cursorToDisplayKeys = Map.fromList
-        [ ((mask, key), wrap $ XMonad.spawn [qms| cursor-to-display -d {n} |])
-        | (n, key) ← zip [1 ∷ Word ..] [XMonad.xK_z, XMonad.xK_x, XMonad.xK_c, XMonad.xK_v]
+        [ ((mask, key), wrap . XMonad.spawn . cmdCursorToDisplay $ n)
+        | (n, key) ← zip
+            [minBound .. maxBound ∷ DisplayN]
+            [XMonad.xK_z, XMonad.xK_x, XMonad.xK_c, XMonad.xK_v]
         , (mask, wrap) ← [(m, (>> Modal.exitMode)), (0, id)]
         ]
 
