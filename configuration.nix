@@ -3,11 +3,18 @@
 args@{ config, options, pkgs, lib, ... }:
 let
   inherit (import ./constants.nix)
-    wenzelUserName systemProfile
-    rawdevinputGroupName backlightcontrolGroupName jackaudioGroupName audioGroupName;
+    wenzelUserName
+    systemProfile
+    rawdevinputGroupName
+    backlightcontrolGroupName
+    cpumodecontrolGroupName
+    jackaudioGroupName
+    audioGroupName
+    ;
 
   grant-access-to-input-devices = pkgs.callPackage utils/grant-access-to-input-devices {};
-  laptop-backlight              = pkgs.callPackage utils/laptop-backlight              {};
+  laptop-backlight = pkgs.callPackage utils/laptop-backlight {};
+  cpu-mode-switch = pkgs.callPackage utils/cpu-mode-switch {};
 
   my-packages = import ./my-packages.nix args;
 in
@@ -143,8 +150,12 @@ in
           };
         };
       in
-        rootSuidGroup grant-access-to-input-devices rawdevinputGroupName //
-        rootSuidGroup laptop-backlight backlightcontrolGroupName;
+        rootSuidGroup grant-access-to-input-devices rawdevinputGroupName
+        //
+        rootSuidGroup laptop-backlight backlightcontrolGroupName
+        //
+        rootSuidGroup cpu-mode-switch cpumodecontrolGroupName
+        ;
 
     pam.loginLimits = [
       { domain = "@${audioGroupName}"; item = "memlock"; type = "-";    value = "unlimited"; }

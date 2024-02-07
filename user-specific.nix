@@ -6,7 +6,12 @@ let
 
   inherit (import ./constants.nix)
     wenzelUserName
-    rawdevinputGroupName backlightcontrolGroupName jackaudioGroupName audioGroupName;
+    rawdevinputGroupName
+    backlightcontrolGroupName
+    cpumodecontrolGroupName
+    jackaudioGroupName
+    audioGroupName
+    ;
 
   inherit ((import ./my-packages.nix args).my-apps) wenzels-bash;
 in
@@ -32,6 +37,7 @@ in
         "networkmanager"
         rawdevinputGroupName
         backlightcontrolGroupName
+        cpumodecontrolGroupName
         "docker"
         "vboxusers"
         jackaudioGroupName
@@ -43,6 +49,7 @@ in
       ${wenzelUserName}.gid = 1989;
       ${rawdevinputGroupName}.gid = 500;
       ${backlightcontrolGroupName}.gid = 501;
+      ${cpumodecontrolGroupName}.gid = 502;
     };
   };
 

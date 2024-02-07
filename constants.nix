@@ -2,8 +2,10 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 {
   wenzelUserName            = "wenzel";
+
   rawdevinputGroupName      = "rawdevinput";
   backlightcontrolGroupName = "backlightcontrol";
+  cpumodecontrolGroupName   = "cpumodecontrol";
   jackaudioGroupName        = "jackaudio";
   audioGroupName            = "audio";
 
