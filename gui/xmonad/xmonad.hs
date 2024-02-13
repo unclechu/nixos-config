@@ -969,12 +969,7 @@ myManageHook = XMonad.composeAll
   , isAbove --> XMonad.doFloat
   , isStickyWindow --> XMonad.doF copyToAll
 
-  -- Condition only to non-floating window.
-  -- Without the condition a call for “place-cursor-at” for example will switch to a next window.
-  -- For some reason GPaste GUI does not show up as floating one, though it definitely is.
-  , fmap not XMonad.willFloat <&&> fmap (/= "Gpaste-gui") XMonad.className -->
-      -- Make new windows appear after the window under focus (not at the place of focused window).
-      InsertPosition.insertPosition InsertPosition.Below InsertPosition.Newer
+  , alterInsertPosition
   ]
   where
     moveTo = XMonad.doF . W.shift
@@ -998,6 +993,19 @@ myManageHook = XMonad.composeAll
 
     isStickyWindow ∷ XMonad.Query Bool
     isStickyWindow = XMonad.liftX . hasNetWMState "_NET_WM_STATE_STICKY" =<< XMonad.ask
+
+    alterInsertPosition =
+      -- Condition only to non-floating window.
+      -- Without the condition a call for “place-cursor-at” for example will switch to a next window.
+      -- For some reason GPaste GUI does not show up as floating one, though it definitely is.
+      conditionMonad -->
+        -- Make new windows appear after the window under focus (not at the place of focused window).
+        InsertPosition.insertPosition InsertPosition.Below InsertPosition.Newer
+      where
+        conditionMonad =
+          fmap not XMonad.willFloat
+          <&&> fmap (/= "Gpaste-gui") XMonad.className
+          <&&> fmap (/= "gnome-calculator") XMonad.className
 
 -- * Helpers
 
