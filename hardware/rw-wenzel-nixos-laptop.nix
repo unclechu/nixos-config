@@ -53,7 +53,7 @@
   networking.hostName = "rw-wenzel-nixos-laptop";
 
   services.xserver = {
-    videoDrivers = [ "intel" ]; # "modesetting"
+    videoDrivers = [ "modesetting" ]; # "intel"
 
     deviceSection = ''
       Option "TearFree" "true"
