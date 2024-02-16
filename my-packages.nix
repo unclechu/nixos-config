@@ -199,6 +199,7 @@ in
       pkgs.x42-plugins
       pkgs.zam-plugins
       midi-trigger
+      pkgs.CHOWTapeModel
 
       # graphics
       pkgs.glxinfo
