@@ -958,6 +958,7 @@ myManageHook = XMonad.composeAll
   , XMonad.className =? "gnome-calculator" --> doCenterFloat
 
   , XMonad.className =? "calfjackhost" --> doTile
+  , XMonad.className =? "Jalv.gtk" --> doTile
 
   -- Moving to last workspace
   , XMonad.className =? "thunderbird" --> moveTo imWsLabel
