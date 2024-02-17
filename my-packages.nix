@@ -200,6 +200,8 @@ in
       pkgs.zam-plugins
       midi-trigger
       pkgs.CHOWTapeModel
+      pkgs.lilv # Provides useful tools like “lv2ls”
+      pkgs.jalv
 
       # graphics
       pkgs.glxinfo
