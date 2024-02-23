@@ -219,7 +219,7 @@ in
       pkgs.vlc
       pkgs.smplayer
       pkgs.mplayer
-      pkgs.mpv
+      (pkgs.wrapMpv (pkgs.mpv-unwrapped.override { jackaudioSupport = true; }) {})
       pkgs.mpvc
       pkgs.ffmpeg-full
       pkgs.youtube-dl
