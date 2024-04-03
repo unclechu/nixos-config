@@ -96,10 +96,10 @@
         "homepage": "",
         "owner": "musnix",
         "repo": "musnix",
-        "rev": "cf93a72da8ad677864045e9a5dd32170378d9a62",
-        "sha256": "1lnlxxa2h85bz2yfw26kf50lxlfpj5kkyc72wqnqwdc8r69w4y4s",
+        "rev": "f494efdeff77c20c02d5c9d78039cea7c04ce8bf",
+        "sha256": "044k159r8kz7is414s6vab7w9j4y3781k1rpgmn6i2zfqma3ls9j",
         "type": "tarball",
-        "url": "https://github.com/musnix/musnix/archive/cf93a72da8ad677864045e9a5dd32170378d9a62.tar.gz",
+        "url": "https://github.com/musnix/musnix/archive/f494efdeff77c20c02d5c9d78039cea7c04ce8bf.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovide": {
