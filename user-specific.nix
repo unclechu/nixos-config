@@ -65,6 +65,15 @@ in
         signByDefault = true;
         key = null;
       };
+
+      extraConfig = {
+        # Enable support for git-subtrac kind of techniques for managing Git
+        # Submodules. When submodule path is set to the same repo (e.g. “.”)
+        # Git fails to do git-submodule-update with an error like this:
+        # “fatal: transport 'file' not allowed”. This fixes this problem.
+        # See also https://github.com/apenwarr/git-subtrac
+        protocol.file.allow = "always";
+      };
     };
 
     home.file.".bashrc".text = ''
