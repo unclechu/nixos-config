@@ -64,4 +64,6 @@
 
   nix.settings.max-jobs = 8;
   powerManagement.cpuFreqGovernor = "powersave";
+
+  services.thermald.enable = true;
 }
