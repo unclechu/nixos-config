@@ -1,0 +1,10 @@
+[window]
+dynamic_padding = true
+
+[cursor]
+style = { blinking = "Off" }
+blink_interval = 500
+
+[font]
+size = 9
+normal = { family = "Hack" }

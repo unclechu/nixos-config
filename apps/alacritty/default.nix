@@ -3,42 +3,40 @@
 let sources = import ../../nix/sources.nix; in
 { callPackage
 , writeTextFile
+, runCommand
 , lib
 
 , bash
 , alacritty
-, yaml2json
-, json2yaml
-, jq
+, remarshal # Converting TOML to JSON and back to be able to use “jq” against the Alacritty config
+, jq # Merging multiple Alacritty config pieces and doing some replacements
 
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
 
 # Build options
-, __configSrc            ? ./alacritty.yml    # A derivation or a path
-, __darkColorsConfigSrc  ? ./colors-dark.yml  # A derivation or a path
-, __lightColorsConfigSrc ? ./colors-light.yml # A derivation or a path
+# Main configuration of Alacritty
+, __configSrc            ? ./alacritty.toml    # A derivation or a path
+# Colors configuration for the “dark” color scheme
+, __darkColorsConfigSrc  ? ./colors-dark.toml  # A derivation or a path
+# Colors configuration for the “ligth” color scheme
+, __lightColorsConfigSrc ? ./colors-light.toml # A derivation or a path
 }:
 let
   inherit (__nix-utils) shellCheckers;
   esc = lib.escapeShellArg;
   name = "alacritty";
 
+  # Executable dependencies mapping (name → full executable path)
   e = {
     bash = "${bash}/bin/bash";
     alacritty = "${alacritty}/bin/alacritty";
-    yaml2json = "${yaml2json}/bin/yaml2json";
-    json2yaml = "${json2yaml}/bin/json2yaml";
+    remarshal = "${remarshal}/bin/remarshal";
     jq = "${jq}/bin/jq";
   };
 
+  # Executables mapping with string shell-escaping for the executable paths
   es = builtins.mapAttrs (lib.const lib.escapeShellArg) e;
-
-  overridableConfig = ''
-    ${es.yaml2json} \
-      | ${es.jq} -s --argjson x "$local_cfg" --argjson y "$local_color_cfg" '.[0] * $x * $y' \
-      | ${es.json2yaml}
-  '';
 
   basicCheckPhase = ''
     ${builtins.concatStringsSep "\n" (map shellCheckers.fileIsExecutable (builtins.attrValues e))}
@@ -47,114 +45,179 @@ let
     ${shellCheckers.fileIsReadable "${__lightColorsConfigSrc}"}
   '';
 
-  buildExecutable = name: color: config: writeTextFile {
+  colorAssertion = color: builtins.elem color [ "dark" "light" ];
+
+  # File name template for local configuration customization.
+  #
+  # The wrapper produced by “buildExecutable” looks for this file in your HOME directory.
+  # If the file exists it will be appended to the main configuration.
+  #
+  # This local config can be useful for example to customize font size when switching to a different
+  # display with different DPI, and re-adjusted font size does not work for you.
+  #
+  # Arguments:
+  # - color (null or string) — “dark” or “light” (see the corresponding colors config TOML files).
+  #   Set to null for “main” customization (will be applied for default configuration and all color
+  #   configurations too, regardless of presence of per-color local customization configuration
+  #   file). Think of “color=null” as of extension for “__configSrc” and when it is not null as of
+  #   extension to either “__darkColorsConfigSrc” or “__lightColorsConfigSrc” based on the “color”.
+  #
+  # Returns a string with the file name (just file name).
+  localConfigFileName = color:
+    assert ! isNull color -> colorAssertion color;
+    ".wenzels-alacritty${if isNull color then "" else "-${color}"}-local-config.toml";
+
+  # Build Alacritty executable wrapper with attached config file via command-line arguments.
+  #
+  # Take configuration file and build Alacritty executable wrapper with that config file attached
+  # with an ability to extend it with a local custom configuration during runtime (see
+  # “localConfigFileName”).
+  #
+  # Arguments:
+  # - name (string) — Name of the new executable/wrapper (e.g. “alacritty-dark-colors”)
+  # - color (string) — “dark” or “light” (see the corresponding colors config TOML files).
+  #   This value only matters here for the local customization config file lookup (see
+  #   “localConfigFileName"). You call “buildExecutable” with already patched “config” argument for
+  #   one color scheme or another, and only make here using this argument to lookup for local
+  #   customization per-color config, so that you can have different local configuration
+  #   customization for each color scheme.
+  # - jsonConfig (derivation) — New JSON (not TOML) config file derivation
+  #   (created by “buildConfig” function)
+  #
+  # Returns a derivation of the Alacritty executable wrapper with attached configuration file.
+  buildExecutable = name: color: jsonConfig: writeTextFile {
     name = assert builtins.isString name; name;
     executable = true;
     destination = "/bin/${name}";
+    # jq -s '.[0] * .[1]' <(remarshal -if toml -of json < /etc/nixos/apps/alacritty/alacritty.toml) <(remarshal -if toml -of json < ~/.wenzels-alacritty-local-config.toml) | remarshal -if json -of toml
 
-    text = assert builtins.elem color [ "dark" "light" ]; ''
+    text = assert colorAssertion color; let
+      # Dynamic generation of the TOML configuration deep-merging it with the main configuration
+      tomlConfigMergedWithLocalConfigs = ''
+        ${es.jq} -n \
+        --argjson mainConfig "$MAIN_CFG_JSON" \
+        --argjson localMainExtraConfig "$LOCAL_CFG_JSON" \
+        --argjson localColorsExtraConfig "$LOCAL_COLORS_CFG_JSON" \
+        '$mainConfig * $localMainExtraConfig * $localColorsExtraConfig' \
+        | ${es.remarshal} -if json -of toml
+      '';
+    in ''
       #! ${e.bash}
       set -o errexit || exit
       set -o nounset
       set -o pipefail
 
-      LOCAL_CFG_FILE=$HOME/.wenzels-alacritty-local-config.yml
-      LOCAL_COLOR_CFG_FILE=$HOME/.wenzels-alacritty-${esc color}-local-config.yml
+      MAIN_CFG_JSON=$(<${esc jsonConfig})
 
-      local_cfg='{}' # JSON
-      local_color_cfg='{}' # JSON
-      if [[ -f $LOCAL_CFG_FILE ]]; then
-        local_cfg=$(${es.yaml2json} < "$LOCAL_CFG_FILE")
+      LOCAL_CFG_TOML_FILE=$HOME/${esc (localConfigFileName null)}
+      LOCAL_COLORS_CFG_TOML_FILE=$HOME/${esc (localConfigFileName color)}
+
+      LOCAL_CFG_JSON='{}' # File contents (JSON object)
+      LOCAL_COLORS_CFG_JSON='{}' # File contents (JSON object)
+      if [[ -f $LOCAL_CFG_TOML_FILE ]]; then
+        LOCAL_CFG_JSON=$(<"$LOCAL_CFG_TOML_FILE" ${es.remarshal} -if toml -of json)
       fi
-      if [[ -f $LOCAL_COLOR_CFG_FILE ]]; then
-        local_color_cfg=$(${es.yaml2json} < "$LOCAL_COLOR_CFG_FILE")
+      if [[ -f $LOCAL_COLORS_CFG_TOML_FILE ]]; then
+        LOCAL_COLORS_CFG_JSON=$(<"$LOCAL_COLORS_CFG_TOML_FILE" ${es.remarshal} -if toml -of json)
       fi
 
-      exec ${es.alacritty} --config-file=<((${overridableConfig}) < ${esc config}) "$@"
+      exec ${es.alacritty} --config-file=<(${tomlConfigMergedWithLocalConfigs}) "$@"
     '';
 
     checkPhase = ''
       ${basicCheckPhase}
-      ${shellCheckers.fileIsReadable config}
-      (
-        set -o nounset
-        set -o pipefail
-        local_cfg='{"foo":{"abc":10}}'
-        local_color_cfg='{"foo":{"def":20}}'
-        x=$((${overridableConfig}) <<< $'foo:\n bar:\n  baz: 123' | ${es.yaml2json} | ${es.jq} -cS)
-        f () { [[ $x == '{"foo":{"abc":10,"bar":{"baz":123},"def":20}}' ]]; }
-        f || (set -o xtrace; f)
-      )
+      ${shellCheckers.fileIsReadable jsonConfig}
     '';
-  } // { inherit config; };
+  } // { inherit jsonConfig; };
 
-  buildConfig = name: colorsConfigFile: optionalFullConfig: font:
+  # Build Alacritty configuration JSON file (not TOML) derivation.
+  #
+  # Arguments:
+  # - name (string) — The base name of the executable (e.g. “alacritty-dark”, which will result into
+  #   “alacritty-dark-config.toml” for the produced derivation).
+  # - colorsConfigFile (readable file as a Nix path or derivation) — Colors configuration file
+  #   (to extend “__configSrc” with)
+  # - fontFamily (null or a string) — Font name to set in the config
+  #   (e.g. "IosevkaTerm Nerd Font Mono"), set to null to keep the default font family
+  #   (set in “__configSrc”)
+  #
+  # Returns Alacritty configuration file (derivation) in JSON format.
+  # When running Alacritty configured wrapper the file is read and merged with optionally present
+  # local customization configuration file. It has to be read as JSON so that it can be deep-merged
+  # with the local customization file using “jq”. So there is no point to converting it to TOML
+  # (which Alacritty takes) yet here, otherwise there would be a need for extra redundant conversion
+  # each run.
+  buildConfig = name: colorsConfigFile: fontFamily:
     assert builtins.isString name;
-    assert ! isNull font -> builtins.isString font;
-    if ! isNull optionalFullConfig && ! builtins.isString optionalFullConfig
-    then
-      optionalFullConfig
-    else
-      writeTextFile {
-        name = "${name}-config.yml";
+    assert ! isNull fontFamily -> builtins.isString fontFamily;
+    let
+      mainConfig = builtins.readFile "${__configSrc}";
+      colorsConfig = builtins.readFile "${colorsConfigFile}";
+    in
+    runCommand "${name}-config.json" {
+      # If set to null will result into variable being undefined
+      customFontFamily = fontFamily;
+    } ''
+      set -o nounset
+      set -o pipefail
 
-        text =
-          let
-            text =
-              if ! isNull optionalFullConfig && ! builtins.isString optionalFullConfig
-              then builtins.readFile "${optionalFullConfig}"
-              else
+      # Convert the configs first from TOML to JSON for “jq” use
+      MAIN_CONFIG_JSON=$(${es.remarshal} -if toml -of json <<< ${esc mainConfig})
+      COLORS_CONFIG_JSON=$(${es.remarshal} -if toml -of json <<< ${esc colorsConfig})
 
-              if ! isNull optionalFullConfig && builtins.isString optionalFullConfig
-              then optionalFullConfig
-              else ''
-                ${builtins.readFile "${__configSrc}"}
-                ${builtins.readFile "${colorsConfigFile}"}
-              '';
+      # Merge main config with color scheme-related config
+      MERGE_CONFIGS_CMD=(
+        ${es.jq} -n
+        --argjson mainConfig "$MAIN_CONFIG_JSON"
+        --argjson colorsConfig "$COLORS_CONFIG_JSON"
+        '$mainConfig * $colorsConfig'
+      )
+      MERGED_CONFIG_JSON=$("''${MERGE_CONFIGS_CMD[@]}")
 
-            replaceFont =
-              if isNull font
-              then lib.id
-              else builtins.replaceStrings ["Hack"] ["\"${font}\""];
-          in
-            replaceFont text;
+      if [[ -v customFontFamily ]]; then
+        PRODUCED_CONFIG=$(
+          <<< "$MERGED_CONFIG_JSON" \
+          ${es.jq} \
+          --arg fontFamily "$customFontFamily" \
+          '.font.normal.family = $fontFamily'
+        )
+      else
+        PRODUCED_CONFIG=$MERGED_CONFIG_JSON
+      fi
 
-        checkPhase = ''
-          set -Eeuo pipefail || exit
-          ${shellCheckers.fileIsReadable "${__configSrc}"}
-          ${shellCheckers.fileIsReadable "${colorsConfigFile}"}
-        '';
-      };
+      printf '%s\n' "$PRODUCED_CONFIG" > "$out"
+    '';
 
+  # An interface to produce Alacritty wrappers with attached customized configuration files.
+  #
+  # For the input arguments see the single arguemnt attribute set destructurization below.
+  #
+  # Returns a derivation with “default” wrapper (“default” configuration is one or the other color
+  # scheme picked as “default”). This derivation is extended with “dark” and “light” attributes that
+  # are set to wrappers with attached corresponding color scheme configurations.
   customize =
-    { defaultName ? name
-    , darkName    ? "${defaultName}-dark"
-    , lightName   ? "${defaultName}-light"
+    {
+    # Name for the “default” color scheme executable
+    defaultName ? name
+    # Name for the “dark” color scheme executable
+    , darkName ? "${defaultName}-dark"
+    # Name for the “light” color scheme executable
+    , lightName ? "${defaultName}-light"
 
-    , font ? null # “Hack” by default
-
-    , defaultConfig ? null # Optional derivation or a string
-    , darkConfig    ? null # Optional derivation or a string
-    , lightConfig   ? null # Optional derivation or a string
+    # “font.nomral.family” set in “__configSrc” by default.
+    # Example value: "IosevkaTerm Nerd Font Mono"
+    , font ? null
     }:
     assert builtins.isString defaultName;
     assert builtins.isString darkName;
     assert builtins.isString lightName;
     assert ! isNull font -> builtins.isString font;
     let
-      default =
-        buildExecutable name "dark"
-          (buildConfig darkName __darkColorsConfigSrc defaultConfig font);
+      default = dark;
+      dark = buildExecutable darkName "dark" (buildConfig darkName __darkColorsConfigSrc font);
+      light = buildExecutable lightName "light" (buildConfig lightName __lightColorsConfigSrc font);
     in
-    default // {
-      inherit default;
-      dark =
-        buildExecutable darkName "dark"
-          (buildConfig darkName __darkColorsConfigSrc darkConfig font);
-      light =
-        buildExecutable lightName "light"
-          (buildConfig lightName __lightColorsConfigSrc lightConfig font);
-    };
+    default // { inherit default dark light; };
 in
 customize {} // {
   inherit customize;

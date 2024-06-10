@@ -48,7 +48,7 @@ main = do
         "[OK] All CPUs are already in " <> (show . serializeCpuMode) switchToMode <> " mode"
     else do
       forM_ cpuModes $ \(fst → file) → do
-        fd ← PosixIO.openFd file PosixIO.WriteOnly Nothing PosixIO.defaultFileFlags
+        fd ← PosixIO.openFd file PosixIO.WriteOnly PosixIO.defaultFileFlags
         bytesCount ← PosixIO.fdWrite fd (serializeCpuMode switchToMode)
 
         when (bytesCount /= (fromIntegral . length . serializeCpuMode) switchToMode) $

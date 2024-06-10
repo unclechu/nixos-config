@@ -11,7 +11,7 @@ use v6.d;
 $*PROGRAM.dirname.&*chdir;
 
 constant %channels =
-  'nixos'          => 'nixos-23.11',
+  'nixos'          => 'nixos-24.05',
   'nixos-unstable' => 'nixos-unstable';
 
 my Str:D \channel-path-prefix = "file://$*CWD/";

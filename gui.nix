@@ -54,8 +54,7 @@ in
   # X11
   services.xserver = {
     enable = true;
-    layout = xkb.layout;
-    xkbOptions = xkb.options;
+    inherit xkb;
 
     desktopManager = {
       # default = "none";
@@ -63,8 +62,6 @@ in
     };
 
     displayManager = {
-      defaultSession = "none+xmonad";
-
       lightdm = {
         enable = true;
 
@@ -79,9 +76,11 @@ in
         ${esc pkgs.xorg.xset}/bin/xset r rate ${esc keyRepeat.delay} ${esc keyRepeat.interval}
       '';
     };
-
-    libinput.enable = true; # touchpad
   };
+
+  services.displayManager.defaultSession = "none+xmonad";
+
+  services.libinput.enable = true; # touchpad
 
   services.unclutter = {
     enable = false;

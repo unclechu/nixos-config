@@ -91,7 +91,7 @@ multi sub MAIN('decrypt', *@files) {
 
   for @files-to-decrypt {
     $*ERR.say: debug "\nHandling ‘$_’ file…";
-    sub decrypt(Str:D \f) of Proc:D { run «"{gpg}" --decrypt --output "{f}" -- "{f}.asc"» }
+    sub decrypt(Str:D \f) of Proc:D { run(«"{gpg}" --decrypt --output "{f}" -- "{f}.asc"»).sink }
     unless $_.IO ~~ :f { decrypt $_; next }
 
     my Str:D \encrypted-hash = do {
@@ -126,11 +126,11 @@ multi sub MAIN('decrypt', *@files) {
   unless machine-specific-secret-symlink.IO ~~ :f {
     $*ERR.say: info "‘{machine-specific-secret-symlink}’ symlink does not exists, creating it…";
 
-    run «
+    run(«
       "{ln}" -s --
       "{hardware-dir}/{hostname}{decrypted-secret-postfix}"
       "{machine-specific-secret-symlink}"
-    »;
+    »).sink;
   }
 }
 
@@ -141,6 +141,7 @@ multi sub MAIN('encrypt', Bool:D :f(:$force) = False, *@files) {
 
   my Array:D \recipients =
     keys-file.IO.slurp(:close).lines
+      .grep(* !~~ /^\#/) # Remove commented lines
       .Array
       .prepend($[False, []])
       .reduce(sub (Array:D \acc, Str:D \x --> Array:D) {
@@ -218,7 +219,7 @@ multi sub MAIN('encrypt', Bool:D :f(:$force) = False, *@files) {
     $*ERR.say: debug
       @args.map({ /^<[a..zA..Z0..9.\-_]>+$/ ?? $_ !! "'$_'" }).Array.prepend('+').join(' ');
 
-    run @args
+    run(@args).sink
   }
 }
 
@@ -227,7 +228,7 @@ multi sub MAIN('import') {
   die error "‘{keys-file}’ does not exists. Did you run ‘decrypt’ command first?"
     unless keys-file.IO ~~ :f;
 
-  run «"{gpg}" --import -- "{keys-file}"»
+  run(«"{gpg}" --import -- "{keys-file}"»).sink
 }
 
 #| Show the difference between encrypted and unencrypted files.
