@@ -1,7 +1,7 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 { pkgs
-, neovide-pkgs ? pkgs
+, neovide-pkgs ? import <nixos-unstable> {}
 , lib
 
 # Option for “neovimrc” config
@@ -32,10 +32,10 @@ let
     };
 
     neovim-qt = pkgs.neovim-qt.override { neovim = r.neovim; };
-    inherit (pkgs) neovide;
+    inherit neovide;
   });
 
-  neovide = neovide-pkgs.callPackage apps/neovide.nix {};
+  neovide = neovide-pkgs.neovide;
 
   wenzels-neovim = pkgs.callPackage apps/wenzels-neovim.nix {
     inherit (pkgs) neovim;

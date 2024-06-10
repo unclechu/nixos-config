@@ -60,10 +60,10 @@
         "homepage": "https://nix-community.github.io/home-manager/",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "86853e31dc1b62c6eeed11c667e8cdd0285d4411",
-        "sha256": "1hw53llinnqj61138bh0iwv31b73h9h6lvzrphq3prgxkg8anzay",
+        "rev": "095ef64aa3b2ab4a4f1bf07f29997e21e3a5576a",
+        "sha256": "0jcwajzk7kvwb7crns5pw720hqp2y93fxd8ha533rygbqkgxxha9",
         "type": "tarball",
-        "url": "https://github.com/nix-community/home-manager/archive/86853e31dc1b62c6eeed11c667e8cdd0285d4411.tar.gz",
+        "url": "https://github.com/nix-community/home-manager/archive/095ef64aa3b2ab4a4f1bf07f29997e21e3a5576a.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "i3rc": {
@@ -96,22 +96,10 @@
         "homepage": "",
         "owner": "musnix",
         "repo": "musnix",
-        "rev": "96c29e950761fd0ae346a4cf8327f1e433dbd7aa",
-        "sha256": "1bv87cpgrksqyn1w048kzibv1casjiismzn9ra8sv1pjfyllvsi9",
+        "rev": "d5bf04a634422284b8484e7e87d1584662dc597b",
+        "sha256": "0dr5f48q63cdcrx61z01iq7plq5kh472p3w1h0fwk72jm388dfbv",
         "type": "tarball",
-        "url": "https://github.com/musnix/musnix/archive/96c29e950761fd0ae346a4cf8327f1e433dbd7aa.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "neovide": {
-        "branch": "0.12.1",
-        "description": "No Nonsense Neovim Client in Rust",
-        "homepage": "",
-        "owner": "neovide",
-        "repo": "neovide",
-        "rev": "a29c6f6f223802d9ce45ee00a07594f04d240e50",
-        "sha256": "0w38lgv0a8y6a44hp27c1s8baqg3d9l9psyia2llgj3135656s4n",
-        "type": "tarball",
-        "url": "https://github.com/neovide/neovide/archive/a29c6f6f223802d9ce45ee00a07594f04d240e50.tar.gz",
+        "url": "https://github.com/musnix/musnix/archive/d5bf04a634422284b8484e7e87d1584662dc597b.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {
