@@ -8,8 +8,8 @@ let sources = import ../../nix/sources.nix; in
 
 , bash
 , alacritty
-, remarshal # Converting TOML to JSON and back to be able to use “jq” against the Alacritty config
 , jq # Merging multiple Alacritty config pieces and doing some replacements
+, clunky-toml-json-converter ? callPackage ../clunky-toml-json-converter {}
 
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
@@ -31,7 +31,8 @@ let
   e = {
     bash = "${bash}/bin/bash";
     alacritty = "${alacritty}/bin/alacritty";
-    remarshal = "${remarshal}/bin/remarshal";
+    clunky-toml-json-converter =
+      "${clunky-toml-json-converter}/bin/clunky-toml-json-converter";
     jq = "${jq}/bin/jq";
   };
 
@@ -89,7 +90,6 @@ let
     name = assert builtins.isString name; name;
     executable = true;
     destination = "/bin/${name}";
-    # jq -s '.[0] * .[1]' <(remarshal -if toml -of json < /etc/nixos/apps/alacritty/alacritty.toml) <(remarshal -if toml -of json < ~/.wenzels-alacritty-local-config.toml) | remarshal -if json -of toml
 
     text = assert colorAssertion color; let
       # Dynamic generation of the TOML configuration deep-merging it with the main configuration
@@ -99,7 +99,7 @@ let
         --argjson localMainExtraConfig "$LOCAL_CFG_JSON" \
         --argjson localColorsExtraConfig "$LOCAL_COLORS_CFG_JSON" \
         '$mainConfig * $localMainExtraConfig * $localColorsExtraConfig' \
-        | ${es.remarshal} -if json -of toml
+        | ${es.clunky-toml-json-converter} json2toml
       '';
     in ''
       #! ${e.bash}
@@ -115,10 +115,14 @@ let
       LOCAL_CFG_JSON='{}' # File contents (JSON object)
       LOCAL_COLORS_CFG_JSON='{}' # File contents (JSON object)
       if [[ -f $LOCAL_CFG_TOML_FILE ]]; then
-        LOCAL_CFG_JSON=$(<"$LOCAL_CFG_TOML_FILE" ${es.remarshal} -if toml -of json)
+        LOCAL_CFG_JSON=$(
+          <"$LOCAL_CFG_TOML_FILE" ${es.clunky-toml-json-converter} toml2json
+        )
       fi
       if [[ -f $LOCAL_COLORS_CFG_TOML_FILE ]]; then
-        LOCAL_COLORS_CFG_JSON=$(<"$LOCAL_COLORS_CFG_TOML_FILE" ${es.remarshal} -if toml -of json)
+        LOCAL_COLORS_CFG_JSON=$(
+          <"$LOCAL_COLORS_CFG_TOML_FILE" ${es.clunky-toml-json-converter} toml2json
+        )
       fi
 
       exec ${es.alacritty} --config-file=<(${tomlConfigMergedWithLocalConfigs}) "$@"
@@ -162,8 +166,8 @@ let
       set -o pipefail
 
       # Convert the configs first from TOML to JSON for “jq” use
-      MAIN_CONFIG_JSON=$(${es.remarshal} -if toml -of json <<< ${esc mainConfig})
-      COLORS_CONFIG_JSON=$(${es.remarshal} -if toml -of json <<< ${esc colorsConfig})
+      MAIN_CONFIG_JSON=$(${es.clunky-toml-json-converter} toml2json <<< ${esc mainConfig})
+      COLORS_CONFIG_JSON=$(${es.clunky-toml-json-converter} toml2json <<< ${esc colorsConfig})
 
       # Merge main config with color scheme-related config
       MERGE_CONFIGS_CMD=(

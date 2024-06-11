@@ -75,6 +75,8 @@ let
   pulseaudio-share-server = pkgs.callPackage scripts/pulseaudio-share-server.nix {};
   rt-audio = pkgs.callPackage scripts/rt-audio {};
   screen-saver = pkgs.callPackage scripts/screen-saver {};
+
+  clunky-toml-json-converter = pkgs.callPackage apps/clunky-toml-json-converter {};
 in
 {
   my-apps = {
@@ -124,6 +126,7 @@ in
       pkgs.jo # json creator. see https://github.com/jpmens/jo
       pkgs.gron # json to greppable format converter. see https://github.com/tomnomnom/gron
       pkgs.remarshal # Convert between TOML, YAML and JSON
+      clunky-toml-json-converter # Convert between TOML and JSON
 
       # nix stuff
       pkgs.nix-index
