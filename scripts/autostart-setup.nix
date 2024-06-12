@@ -48,6 +48,7 @@ let
 
   hostName = systemConfig.networking.hostName or null;
   rw-wenzel-nixos-laptop = callPackage ../hardware/rw-wenzel-nixos-laptop.nix {};
+  wenzel-silver-laptop = callPackage ../hardware/wenzel-silver-laptop.nix {};
 in
 writeCheckedExecutable name checkPhase ''
   #! ${executables.bash}
@@ -62,7 +63,9 @@ writeCheckedExecutable name checkPhase ''
     if "$SCREENLAYOUT"; then sleep 1s; fi
   fi
   ${
+    # Disable autostart of Picom on some of the machines
     if hostName != rw-wenzel-nixos-laptop.networking.hostName
+    && hostName != wenzel-silver-laptop.networking.hostName
     then esc executables.${__picom.name}
     else ""
   }
