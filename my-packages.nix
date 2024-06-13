@@ -170,7 +170,18 @@ in
       pkgs.pavucontrol
       pkgs.pulsemixer
       pkgs.jack2
-      pkgs.jack-example-tools
+      (pkgs.jack-example-tools.overrideAttrs (old: {
+        patches = (old.patches or []) ++ [
+          # Big fix for “jack_lsp” “--server” argument buffer overflow.
+          # Track the bug fixing progress here:
+          # https://github.com/jackaudio/jack-example-tools/issues/88
+          (pkgs.fetchpatch {
+            name = "jack_lsp-fix-jack-server-argument-buffer-overflow.patch";
+            url = "https://github.com/jackaudio/jack-example-tools/pull/89/commits/62aeea4c432c8f91b14888c4dc4c310ef762a865.patch";
+            hash = "sha256-TbgJdwsxo9K6wTQ46yHLYDbIJkINNARlb332qC8TWlM=";
+          })
+        ];
+      }))
       pkgs.jack_capture
       pkgs.qjackctl
       pkgs.patchage
