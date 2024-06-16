@@ -173,6 +173,9 @@ package ProfileSymlink {
 
     subset NixosVersion of List where .elems == 2 && .all ~~ UInt:D;
 
+    # 0 or more elements
+    subset NixosVersionList where .all ~~ NixosVersion:D;
+
     # A profile generation.
     #
     # A symlink file with extra parsed data (profile name, generation number).
@@ -244,6 +247,23 @@ package ProfileSymlink {
       token second { \d**2 }
       token third { \d+ }
       token extra { \S+ }
+    }
+
+    # Smaller variant of “NixosVersion” grammer with only two numbers (e.g. “23.05”).
+    grammar NixosRelease {
+      token TOP { \s* <major> '.' <minor> \s* }
+      token major { \d ** 1..2 }
+      token minor { \d ** 1..2 }
+    }
+
+    # Grammar “actions” for “NixosRelease" parser
+    class NixosReleaseActions {
+      # Convert it back to original list pair of the “Types::NixosVersion”
+      method TOP ($/) { make ($<major>.UInt, $<minor>.UInt) }
+    }
+
+    our sub parseNixosRelease(NonEmptyStr:D \x --> Types::NixosVersion:D) {
+      NixosRelease.parse(x, :actions(NixosReleaseActions.new)).made
     }
 
     # System profile extra info obtained from symlink target (like NixOS release version)
@@ -551,14 +571,20 @@ package Cleanup {
               .sort # Order by NixOS version
               .reverse # Latest NixOS version is on the top
               .map({
-                my Types::GenerationSymlink:D \latest =
+                # A pair of NixOS release version and last preserved per-release generation
+                Pair.new(
+                  $_,
+                  # Can be Nil if NixOS release was nuked (no preserved generations)
                   nixosVersionMapping{$($_)}.values.first({
                     plan.Hash<generationsToKeep>.first(* eqv $_)
-                  });
-
-                "NixOS {Util::Log::warning ProfileSymlink::Types::Show::nixosVersion($_)}"
-                  ~ ": {Util::Log::success latest.Hash<profileSymlink>.absolute}"
-                  ~ addMarkers(latest, :withNixosVersion('unprefixed'))
+                  })
+                )
+              })
+              .grep(*.value !~~ Nil) # Filter out nuked NixOS releases
+              .map({
+                "NixOS {Util::Log::warning ProfileSymlink::Types::Show::nixosVersion(.key)}"
+                  ~ ": {Util::Log::success .value.Hash<profileSymlink>.absolute}"
+                  ~ addMarkers(.value, :withNixosVersion('unprefixed'))
               })
               .map("\t"~*)
           ).flat.map("\t"~*);
@@ -660,8 +686,13 @@ package Cleanup {
   }
 
   # Make cleanup plan for cleaning the profile generations symlinks.
+  #
+  # “nixosReleasesNotToPreserve” allows to you clean up older NixOS releases.
+  # By default the plan preserves at least latest build of each NixOS release,
+  # only cleaning up older per-release generations.
   our sub makePlan(
-    Hash[ProfileSymlink::Types::Profile:D] \profiles
+    Hash[ProfileSymlink::Types::Profile:D] \profiles,
+    ProfileSymlink::Types::NixosVersionList:D \nixosReleasesNotToPreserve = []
     --> Types::ProfilesCleanupPlanMap:D
   ) {
     my Types::ProfilesCleanupPlanMap:D \plan = %();
@@ -693,8 +724,7 @@ package Cleanup {
             .key ~~ 'profileSymlink' | 'pointsTo' | 'systemProfilePreciseVersion'
           }).sort.List;
 
-        my Bool:D \isKept =
-          gen.Hash<profileSymlink>.absolute eq profile.Hash<profile>.Hash<pointsTo>.absolute;
+        my Bool:D \isKept = gen.Hash<profileSymlink>.absolute eq currentGeneration.absolute;
 
         # Add generation to the plan branching (to keep or to nuke). There are all generations of
         # this profile here paired with a Bool that decides whether to keep it or to nuke it.
@@ -712,6 +742,7 @@ package Cleanup {
       for nixosVersions.kv
       -> ProfileSymlink::Types::NixosVersion:D \k
       , Types::GenerationSymlinks:D \v {
+        next if nixosReleasesNotToPreserve.grep(*~~k).elems > 0;
         my Types::GenerationSymlink:D \latest = v.&sortGens[0];
         for 0..(@gensPlan.elems-1) -> UInt:D \i {
           my GenPlan:D \x = @gensPlan[i];
@@ -739,11 +770,27 @@ package Cleanup {
   }
 }
 
-sub MAIN() {
+# NixOS releases to nuke value coming from command-line arguments.
+subset NukeReleasesStr where Nil | NonEmptyStr:D;
+
+# Convert command-line arguments value to “ProfileSymlink::Types::NixosVersionList:D”.
+sub getNixReleasesToNuke(NukeReleasesStr \releasesStr --> ProfileSymlink::Types::NixosVersionList:D) {
+  return [] if releasesStr ~~ Nil;
+  releasesStr.split(/\s*','\s*/).map({ ProfileSymlink::Parse::parseNixosRelease $_ }).Array
+}
+
+#| `--nuke-releases` accepts one or more NixOS release versions separated by
+#| comma (e.g. `23.05,23.11`). Note that if you add a release that matches
+#| current profile it won’t be nuked.
+sub MAIN(NukeReleasesStr :$nuke-releases = Nil) {
+  my ProfileSymlink::Types::NixosVersionList:D \nixReleasesToNuke =
+    getNixReleasesToNuke $nuke-releases;
+
   my ProfileSymlink::Types::Profile:D %profiles =
     ProfileSymlink::getDirectoryProfiles nixProfilesRootDir;
 
-  my Cleanup::Types::ProfilesCleanupPlanMap:D \cleanupPlan = Cleanup::makePlan %profiles;
+  my Cleanup::Types::ProfilesCleanupPlanMap:D \cleanupPlan =
+    Cleanup::makePlan %profiles, nixReleasesToNuke;
 
   Cleanup::Log::renderPlan(cleanupPlan).say;
 
