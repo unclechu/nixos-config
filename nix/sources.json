@@ -17,10 +17,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "bashrc",
-        "rev": "7a5ca28661d61b6ec2b2bfcb68a9f7f9489327f0",
-        "sha256": "0v64fhc0lflabx7k5x90mrydv5sd8i25yax1a7p0x8jwk1sy6rak",
+        "rev": "753370e782fe20c09a565b363ec65511f5b25d1f",
+        "sha256": "0li83cnpjm99fq9ydacwsynz423bn0w100v56m34md8grabgzl5s",
         "type": "tarball",
-        "url": "https://github.com/unclechu/bashrc/archive/7a5ca28661d61b6ec2b2bfcb68a9f7f9489327f0.tar.gz",
+        "url": "https://github.com/unclechu/bashrc/archive/753370e782fe20c09a565b363ec65511f5b25d1f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "coeurl": {
