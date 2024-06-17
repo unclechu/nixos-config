@@ -957,8 +957,12 @@ myManageHook = XMonad.composeAll
   [ XMonad.className =? "Gpaste-gui" --> doCenterFloat
   , XMonad.className =? "gnome-calculator" --> doCenterFloat
 
+  -- Audio apps
   , XMonad.className =? "calfjackhost" --> doTile
   , XMonad.className =? "Jalv.gtk" --> doTile
+  -- This tuner app does not render properly when
+  -- window is resized to anything non-standard
+  , XMonad.title =? "x42 Instrument Tuner" --> doCenterFloat
 
   -- Moving to last workspace
   , XMonad.className =? "thunderbird" --> moveTo imWsLabel
