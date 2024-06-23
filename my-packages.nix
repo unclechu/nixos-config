@@ -219,16 +219,17 @@ in
       pkgs.jalv
 
       # graphics
-      pkgs.glxinfo
+      pkgs.glxinfo # debugging opengl system setup
       pkgs.libva-utils
-      pkgs.picom
-      pkgs.arandr
-      pkgs.autorandr
-      pkgs.feh
-      pkgs.gimp
-      pkgs.inkscape
-      pkgs.optipng
-      pkgs.graphviz
+      pkgs.picom # x11/xorg compositing manager
+      pkgs.arandr # simple gui for display/xinerama configuration
+      pkgs.autorandr # automatic display configuration based on connected devices
+      pkgs.feh # image viewer (for setting desktop background)
+      pkgs.gimp # raster graphics editor
+      pkgs.inkscape # vector graphics editor
+      pkgs.optipng # optimize/compress *.png files
+      pkgs.graphviz # draw block-schemes from *.dot files
+      pkgs.imagemagick # “convert" for image processing from command-line
 
       # video
       pkgs.vlc
