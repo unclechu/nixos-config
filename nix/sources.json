@@ -23,13 +23,6 @@
         "url": "https://github.com/unclechu/bashrc/archive/753370e782fe20c09a565b363ec65511f5b25d1f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "coeurl": {
-        "sha256": "1b435c2szwibm4i4r7mh22klyv9ncdkwkiy95p4xjfalsx4ripxh",
-        "type": "tarball",
-        "url": "https://nheko.im/nheko-reborn/coeurl/-/archive/v0.3.0/coeurl-v0.3.0.tar.gz",
-        "url_template": "https://nheko.im/nheko-reborn/coeurl/-/archive/<version>/coeurl-<version>.tar.gz",
-        "version": "v0.3.0"
-    },
     "dino": {
         "branch": "v0.4.3",
         "description": "Modern XMPP (\"Jabber\") Chat Client using GTK+/Vala",
@@ -60,10 +53,10 @@
         "homepage": "https://nix-community.github.io/home-manager/",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "a1fddf0967c33754271761d91a3d921772b30d0e",
-        "sha256": "1vvrrk14vrhb6drj3fy8snly0sf24x3402ykb9q5j1gy99vvqqq6",
+        "rev": "e1391fb22e18a36f57e6999c7a9f966dc80ac073",
+        "sha256": "0c83di08nhkzq0cwc3v7aax3x8y5m7qahyzxppinzwxi3r8fnjq3",
         "type": "tarball",
-        "url": "https://github.com/nix-community/home-manager/archive/a1fddf0967c33754271761d91a3d921772b30d0e.tar.gz",
+        "url": "https://github.com/nix-community/home-manager/archive/e1391fb22e18a36f57e6999c7a9f966dc80ac073.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "i3rc": {
@@ -78,28 +71,16 @@
         "url": "https://github.com/unclechu/i3rc/archive/77c7efe14c5000135acd7c36a74d8804e5457377.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "mtxclient": {
-        "branch": "v0.9.2",
-        "description": "Client API library for Matrix, built on top of libcurl",
-        "homepage": "",
-        "owner": "Nheko-Reborn",
-        "repo": "mtxclient",
-        "rev": "a9a6087ae820c8fb9332422b094cab8e2301db25",
-        "sha256": "151ck1bpb330yx195s9ykibzn9zv1h5igdw6flj0rp3ypvcc7rmg",
-        "type": "tarball",
-        "url": "https://github.com/Nheko-Reborn/mtxclient/archive/a9a6087ae820c8fb9332422b094cab8e2301db25.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "musnix": {
         "branch": "master",
         "description": "Real-time audio in NixOS",
         "homepage": "",
         "owner": "musnix",
         "repo": "musnix",
-        "rev": "cf456e0ae1548eb16c485ca7157d9dd5b8525dd5",
-        "sha256": "064sgkvgyhlc1pcf7dlgapf7m27agy1md2y2blvppvjc7qaw3rwl",
+        "rev": "f376a8f0b180d203b3598079f64445b809d7cd18",
+        "sha256": "0c6rp2l9z806xg1nw80a4v3g1zaa005mmxly0x3m41vzjb7xdly0",
         "type": "tarball",
-        "url": "https://github.com/musnix/musnix/archive/cf456e0ae1548eb16c485ca7157d9dd5b8525dd5.tar.gz",
+        "url": "https://github.com/musnix/musnix/archive/f376a8f0b180d203b3598079f64445b809d7cd18.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {
@@ -124,18 +105,6 @@
         "sha256": "09c3gvhh3y3m88mz7lqjn260myh9z5hy6wq4ch4gaf0s03j74l4c",
         "type": "tarball",
         "url": "https://github.com/unclechu/neovimrc/archive/246bce165bb6e5cf095f17bd60aff08ef0b3a52f.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "nheko": {
-        "branch": "v0.11.3",
-        "description": "Desktop client for Matrix using Qt and C++17.",
-        "homepage": "https://nheko-reborn.github.io/",
-        "owner": "Nheko-Reborn",
-        "repo": "nheko",
-        "rev": "d27e42dec6b6255246bd488e12ea2662018f12ab",
-        "sha256": "0yjbxyba87nkpjmql7s6nv2r2i9s956zgwlfhdi4jjg96v2rgmnr",
-        "type": "tarball",
-        "url": "https://github.com/Nheko-Reborn/nheko/archive/d27e42dec6b6255246bd488e12ea2662018f12ab.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-utils": {
@@ -175,15 +144,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "psi-plus": {
-        "branch": "1.5.1653",
+        "branch": "1.5.2035",
         "description": "Codebase snapshots for Psi+ project",
         "homepage": "https://psi-plus.com/",
         "owner": "psi-plus",
         "repo": "psi-plus-snapshots",
-        "rev": "5a8da10b9cb782eeaf7d0efdb4004118d54fb893",
-        "sha256": "1idn742s491r99pjjgvb4z621gyk05jrabs0l33wl8k0lr5zcr7m",
+        "rev": "787e78eb7ee4a7aa3fdb728ddf7a11a9edb1ac65",
+        "sha256": "0s46mxvk7lq2v577wqg4c7npknjgxbhcyqsda5hyf7vlcsjnmq4w",
         "type": "tarball",
-        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/5a8da10b9cb782eeaf7d0efdb4004118d54fb893.tar.gz",
+        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/787e78eb7ee4a7aa3fdb728ddf7a11a9edb1ac65.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "qt-jdenticon": {
