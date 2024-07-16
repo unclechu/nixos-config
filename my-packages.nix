@@ -37,7 +37,7 @@ let
 
   firefox = pkgs.callPackage apps/firefox.nix {};
 
-  nheko = pkgs.callPackage apps/nheko.nix {};
+  nheko = pkgs.callPackage apps/nheko {};
 
   hell = pkgs.callPackage apps/hell.nix {};
 
