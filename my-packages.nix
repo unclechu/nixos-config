@@ -238,7 +238,6 @@ in
       (pkgs.wrapMpv (pkgs.mpv-unwrapped.override { jackaudioSupport = true; }) {})
       pkgs.mpvc
       pkgs.ffmpeg-full
-      pkgs.youtube-dl
       unstable.yt-dlp
 
       # desktop environment
