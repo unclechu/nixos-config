@@ -217,6 +217,7 @@ in
       pkgs.CHOWTapeModel
       pkgs.lilv # Provides useful tools like “lv2ls”
       pkgs.jalv
+      pkgs.lsp-plugins
 
       # graphics
       pkgs.glxinfo # debugging opengl system setup
