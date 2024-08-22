@@ -120,6 +120,12 @@ in
       pkgs.pandoc
       tmux-config.tmuxsh
       pspg
+      # Fix file names extracted from a Windows ZIP archive with cyrillic chars:
+      #   unzip archive.zip
+      #   convmv --notest -f iso8859-1 -t cp850 *
+      #   convmv --notest -f cp866 -t utf8 *
+      # TODO: Maybe make a more universal script out of this.
+      pkgs.convmv
 
       # dealing with json/yaml/toml from shell
       pkgs.jq
