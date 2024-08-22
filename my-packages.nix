@@ -194,6 +194,9 @@ in
       pkgs.sonic-visualiser
       pkgs.zita-njbridge # JACK in/out bridge over UDP
       pkgs.espeak
+      pkgs.flac # FLAC compression/decompression utility
+      pkgs.ffmpeg-normalize # audio normalization utility built on top of FFMPEG
+      pkgs.lame # MP3 encoder utility
 
       # lv2 plugins
       pkgs.calf
