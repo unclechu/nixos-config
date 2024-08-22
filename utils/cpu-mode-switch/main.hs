@@ -22,12 +22,19 @@ import qualified System.Posix.IO as PosixIO
 
 main ∷ IO ()
 main = do
+  cpuModeControlFiles ← getCpuModeControlFiles
+
   switchToMode ←
     getArgs >>= \case
       [parseCpuMode → Just mode] → pure mode
 
       [x] | x == "-h" || x == "--help" → do
         putStrLn usageInfo
+        exitSuccess
+
+      -- Just print the current CPU mode for each CPU when no arguments passed
+      [] → do
+        getCpuModes cpuModeControlFiles >>= printModes
         exitSuccess
 
       args →
@@ -38,7 +45,6 @@ main = do
           ]
 
   hPutStrLn stderr $ "Switching CPUs to " <> (show . serializeCpuMode) switchToMode <> " mode…"
-  cpuModeControlFiles ← getCpuModeControlFiles
   cpuModes ← getCpuModes cpuModeControlFiles
   printModes cpuModes
 
