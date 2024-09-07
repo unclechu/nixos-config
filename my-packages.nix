@@ -133,6 +133,7 @@ in
       pkgs.gron # json to greppable format converter. see https://github.com/tomnomnom/gron
       pkgs.remarshal # Convert between TOML, YAML and JSON
       clunky-toml-json-converter # Convert between TOML and JSON
+      pkgs.pv # monitoring progress of data transfer through a pipeline
 
       # nix stuff
       pkgs.nix-index
