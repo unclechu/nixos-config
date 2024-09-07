@@ -53,10 +53,10 @@
         "homepage": "https://nix-community.github.io/home-manager/",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "e1391fb22e18a36f57e6999c7a9f966dc80ac073",
-        "sha256": "0c83di08nhkzq0cwc3v7aax3x8y5m7qahyzxppinzwxi3r8fnjq3",
+        "rev": "208df2e558b73b6a1f0faec98493cb59a25f62ba",
+        "sha256": "13jlfifjw6pirk700p61anijv8q66mn0f356fw3ssb16vzhhqf5l",
         "type": "tarball",
-        "url": "https://github.com/nix-community/home-manager/archive/e1391fb22e18a36f57e6999c7a9f966dc80ac073.tar.gz",
+        "url": "https://github.com/nix-community/home-manager/archive/208df2e558b73b6a1f0faec98493cb59a25f62ba.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "i3rc": {
@@ -77,10 +77,10 @@
         "homepage": "",
         "owner": "musnix",
         "repo": "musnix",
-        "rev": "b40964921d0f804f80480d050115bc089fe51128",
-        "sha256": "00kw65215y34ngdyk0psljp6flf1fwipd4h2qparip7hzipsrn9i",
+        "rev": "b5f3a47fd74193cb98c85cfeb6a25358150bdd90",
+        "sha256": "0gjgwvkca8akzbg3nfqgmlkj21l3bypdjblv26ac0ygy1sc77siw",
         "type": "tarball",
-        "url": "https://github.com/musnix/musnix/archive/b40964921d0f804f80480d050115bc089fe51128.tar.gz",
+        "url": "https://github.com/musnix/musnix/archive/b5f3a47fd74193cb98c85cfeb6a25358150bdd90.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {

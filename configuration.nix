@@ -59,6 +59,9 @@ in
       # Or maybe some NixOS module causes this dependency to appear in there.
       # TODO: Try to figure out what depends on Python 2.
       "python-2.7.18.6"
+
+      # Temporary exception for some of the Matrix clients.
+      "olm-3.2.16"
     ];
 
     overlays = (import ./overlays) ++ [
