@@ -2,10 +2,34 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-_LOGFILE=$HOME/.xlib-keys-hack-fails
+# A list of available modes (for arguments validation)
+declare -A MODES && MODES=([gaming]=1 [no-numbers-shift]=1)
 
-exec 1>>"$_LOGFILE" 2>&1
-printf -- '->> STARTING at %s … <<-\n' "$(date)"
+# Parse command-line arguments
+if (( $# == 0 )); then
+	MODE=
+
+	# By default redirect the logs with potential
+	# failures to the file for later analysis.
+	_LOGFILE=$HOME/.xlib-keys-hack-fails
+	exec 1>>"$_LOGFILE" 2>&1
+	printf -- '->> STARTING at %s … <<-\n' "$(date)"
+
+elif (( $# == 1 )) && [[ $1 == debug ]]; then
+	MODE=
+
+	# Print the logs to the stdout & stderr instead of
+	# redirecting everything to the log file.
+
+elif (( $# == 1 )) && [[ -n ${MODES[$1]:-} ]]; then
+	MODE=$1
+
+else
+	>&2 echo -n 'Arguments are incorrect:'
+	>&2 printf ' "%s"' "${@//\"}"
+	>&2 echo
+	exit 1
+fi
 
 grant-access-to-input-devices
 
@@ -132,21 +156,6 @@ for x in "${MOONLANDER[@]}"; do
 		break
 	fi
 done
-
-# A list of available modes (for arguments validation)
-declare -A MODES && MODES=([gaming]=1 [no-numbers-shift]=1)
-
-# Parse command-line arguments
-if (( $# == 0 )); then
-	MODE=
-elif (( $# == 1 )) && [[ -n ${MODES[$1]:-} ]]; then
-	MODE=$1
-else
-	>&2 echo 'Arguments are incorrect:'
-	>&2 printf ' "%s"' "${@//\"}"
-	>&2 echo
-	exit 1
-fi
 
 # When gaming mode is on “additional controls” feature should be disabled so those keys will be
 # triggered immediately when they are just pressed.
