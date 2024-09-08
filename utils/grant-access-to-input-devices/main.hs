@@ -2,7 +2,8 @@
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
 {-# LANGUAGE UnicodeSyntax, BangPatterns #-}
-{-# OPTIONS_GHC -Wno-missing-signatures #-}
+{-# OPTIONS_GHC -Wno-missing-signatures -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Monad law, left identity" #-}
 
 module Main (main) where
 
@@ -32,7 +33,12 @@ main = do
 
         runProcess_ $ proc "setfacl" ["-m", "u:" ⋄ show user ⋄ ":r", "--", f]
 
-  traverse (\dir → fmap (dir </>) <$> listDirectory dir) dirs
+  pure dirs
+    -- On one of the machines “by-id” directory was not present.
+    -- This script was failing with “no such file or directoy” error.
+    -- Make sure the directory exists first.
+    >>= filterM fileExist
+    >>= traverse (\dir → fmap (dir </>) <$> listDirectory dir)
     >>= filterM fileExist ∘ join
     >>= filterM (fmap (not ∘ isDirectory) ∘ getFileStatus)
     >>= mapM_ grantAccess
