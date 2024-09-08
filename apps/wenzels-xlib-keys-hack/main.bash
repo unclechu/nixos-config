@@ -31,10 +31,29 @@ CORSAIR=(
 	'/dev/input/by-id/usb-Corsair_Corsair_Gaming_K63_Keyboard_0B008012AF0C1D2558ED9875F5001945-if01-event-kbd'
 )
 
-# Embedded laptop keyboard
+# Embedded laptop keyboard.
 EMBEDDED=(
 	'--disable-xinput-device-name=AT Translated Set 2 keyboard'
-	# See below for devices list
+)
+# Conditionally added list of embedded device file descriptors.
+#
+# Embedded keyboard is disabled (this devices list is not added) in presence of
+# external one. Because of two reasons:
+#
+#   1. The configuration can be pretty different and thus imcompatible between
+#      “conventional” QWERTY keyboard layout and something like ortholinear
+#      ErgoDox.
+#   2. A better keyboard can be placed on top of the laptop, thus randomly
+#      pushing keys of the embedded keyboard.
+EMBEDDED_DEVICES=(
+	'/dev/input/by-path/platform-i8042-serio-0-event-kbd'
+	# I don’t know why I added this before, for my another laptop.
+	# But when I tried it on another much older laptop I was getting
+	# “unknown event” fatal failure from the “linux-evdev” library
+	# as soon as I try to move the cursor using the touchpad.
+	# As the name of the file says you these are clearly mouse events files.
+	# '/dev/input/by-path/platform-i8042-serio-1-event-mouse'
+	# '/dev/input/by-path/platform-i8042-serio-1-mouse'
 )
 
 JETACCESS_SLIM_LINE_K9_WIRELESS=(
@@ -154,11 +173,7 @@ fi
 
 # Turn off embedded keyboard if there's external one
 if (( HAS_DUCKY == 0 && HAS_ERGODOX_EZ == 0 && HAS_MOONLANDER == 0 && HAS_PLANCK_EZ == 0 )); then
-	EMBEDDED+=(
-		'/dev/input/by-path/platform-i8042-serio-0-event-kbd'
-		'/dev/input/by-path/platform-i8042-serio-1-event-mouse'
-		'/dev/input/by-path/platform-i8042-serio-1-mouse'
-	)
+	EMBEDDED+=("${EMBEDDED_DEVICES[@]}")
 fi
 
 # If it’t a regular qwerty keyboard (including Ducky).
