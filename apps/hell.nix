@@ -25,6 +25,8 @@ let
     p.directory
     p.filepath
     p.unix
+    p.typed-process
+    p.process
 
     p.containers
     p.mtl
@@ -34,6 +36,7 @@ let
     p.aeson-pretty
   ]);
 
+  # -XTypeInType is deprecated: use -XDataKinds and -XPolyKinds instead
   ghciScript = ''
     :set -XNoMonomorphismRestriction
     :set -XOverloadedStrings
@@ -81,7 +84,6 @@ let
     :set -XScopedTypeVariables
     :set -XRankNTypes
     :set -XPolyKinds
-    :set -XTypeInType
     :set -XNoStarIsType
     :set -XFlexibleContexts
     :set -XFlexibleInstances
