@@ -39,6 +39,7 @@ in
         newHsPkgs.aeson
         newHsPkgs.qm-interpolated-string
         newHsPkgs.typed-process
+        newHsPkgs.hostname
         newHsPkgs.xmonad
         newHsPkgs.xmonad-contrib
       ];

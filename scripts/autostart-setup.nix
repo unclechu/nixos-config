@@ -14,6 +14,7 @@ let sources = import ../nix/sources.nix; in
 , __input-setup ? callPackage ./input-setup.nix { inherit __nix-utils; }
 , __autolock ? callPackage ./autolock.nix { inherit __nix-utils; }
 , __picom ? (callPackage ./picom.nix { inherit __nix-utils; }).run-picom
+, __screen-saver ? callPackage ./screen-saver {}
 
 # Build options
 , # System config (e.g. self-reference) to extract machine host name.
@@ -38,6 +39,7 @@ let
     ${__input-setup.name} = __input-setup;
     ${__autolock.name} = __autolock;
     ${__picom.name} = __picom;
+    ${__screen-saver.name} = __screen-saver;
   };
 
   executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
@@ -49,6 +51,7 @@ let
   hostName = systemConfig.networking.hostName or null;
   rw-wenzel-nixos-laptop = callPackage ../hardware/rw-wenzel-nixos-laptop.nix {};
   wenzel-silver-laptop = callPackage ../hardware/wenzel-silver-laptop.nix {};
+  wenzel-rusty-chunk = callPackage ../hardware/wenzel-rusty-chunk.nix {};
 in
 writeCheckedExecutable name checkPhase ''
   #! ${executables.bash}
@@ -66,13 +69,30 @@ writeCheckedExecutable name checkPhase ''
     # Disable autostart of Picom on some of the machines
     if hostName != rw-wenzel-nixos-laptop.networking.hostName
     && hostName != wenzel-silver-laptop.networking.hostName
+    && hostName != wenzel-rusty-chunk.networking.hostName
     then esc executables.${__picom.name}
     else ""
   }
   if [[ -f ~/.fehbg ]]; then . ~/.fehbg & fi
 
+  ${
+    # This machine is not intended to be “secure”.
+    # So this is only would be an annoyance.
+    if hostName != wenzel-rusty-chunk.networking.hostName
+    then esc executables.${__autolock.name}
+    else ""
+  }
+
+  ${
+    # This machine is very old. And its battary drained its capacity to 0 years
+    # and years ago. And its turned off when unattended. So there is no point
+    # in having a screensaver.
+    if hostName == wenzel-rusty-chunk.networking.hostName
+    then esc executables.${__screen-saver.name} + " off"
+    else ""
+  }
+
   ${esc executables.${__input-setup.name}}
-  ${esc executables.${__autolock.name}}
   ${esc executables.gpaste-client} & # starting local gpaste daemon
   ${esc executables.nm-applet} & # starting system tray network manager applet
 

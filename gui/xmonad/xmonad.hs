@@ -44,6 +44,7 @@
 
 {-# OPTIONS_GHC -Wall -Wno-partial-type-signatures -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
+{-# HLINT ignore "Use <&>" #-}
 
 {-# LANGUAGE UnicodeSyntax #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -90,6 +91,8 @@ import System.Posix.Process (executeFile)
 import System.Environment (getEnvironment, lookupEnv, unsetEnv)
 import Text.Read (readMaybe)
 import qualified System.Process.Typed as Proc
+import Network.HostName (getHostName)
+import Data.Functor ((<&>))
 
 main ∷ IO ()
 main = do
@@ -98,10 +101,12 @@ main = do
 
 data Options = Options
   { options_startMode ∷ XMonadStartMode
+  , options_saveMoreSpace ∷ Bool
   }
 
 mkOptions ∷ IO Options
-mkOptions = Options <$> getRestartMode
+mkOptions =
+  Options <$> getRestartMode <*> isSavingMoreSpaceNeeded
 
 getRestartMode ∷ IO XMonadStartMode
 getRestartMode = do
@@ -114,6 +119,15 @@ getRestartMode = do
 
   -- Parse the restart mode (or just use default mode value if parsing fails)
   pure $ fromMaybe XMonad.def $ readMaybe @XMonadStartMode =<< raw
+
+-- | Check if saving more usable screen space is needed (e.g. turn off spacing).
+isSavingMoreSpaceNeeded ∷ IO Bool
+isSavingMoreSpaceNeeded =
+  getHostName <&> \case
+    -- This machine is very old, the screen DPI is low,
+    -- need as much usable space as I can get.
+    "wenzel-rusty-chunk" → True
+    _ → False
 
 withPolybar ∷ IO () -> IO ()
 withPolybar m = Proc.withProcessWait (Proc.proc "run-polybar" []) (const m)
@@ -211,7 +225,7 @@ configCustomizations opts
   . myConfig opts
 
 myConfig ∷ Options → XConfig _layoutA → XConfig _layoutB
-myConfig opts x = x
+myConfig opts config = config
   { modMask = XMonad.mod4Mask -- Super/Meta/Windows key
   , workspaces = show <$> [1 .. 10 ∷ Word]
 
@@ -234,7 +248,7 @@ myConfig opts x = x
         Full → XMonad.spawn "sleep 1s ; autostart-setup"
         Shallow → pure ()
 
-  , layoutHook = myLayout
+  , layoutHook = myLayout opts
   , manageHook = myManageHook
   }
 
@@ -242,11 +256,11 @@ tabsLayoutName, fullscreenLayoutName ∷ String
 tabsLayoutName = "Tabs"
 fullscreenLayoutName = "Fullscreen"
 
-myLayout ∷ _layout
-myLayout = go where
+myLayout ∷ Options → _layout
+myLayout opts = go where
   go =
     -- “avoidStruts” to avoid overlapping with the bars
-    ManageDocks.avoidStruts (layoutSpacing tiles ||| tabbed ||| full)
+    ManageDocks.avoidStruts (layoutSpacing opts tiles ||| tabbed ||| full)
     ||| fullscreen
 
   -- | Fullscreen-ish layout (no borders, no bars, just one window)
@@ -297,12 +311,13 @@ myLayout = go where
 
 -- | Add some space gap to a given layout
 layoutSpacing
-  ∷ layout a
+  ∷ Options
+  → layout a
   → ModifiedLayout Renamed.Rename (ModifiedLayout Spacing.Spacing layout) a
-layoutSpacing
+layoutSpacing opts
   = Renamed.renamed [Renamed.CutWordsLeft 1] -- Remove “Spacing” prefix
   . Spacing.spacingRaw False (Spacing.Border 0 size 0 size) True (Spacing.Border size 0 size 0) True
-  where size = 10
+  where size = if options_saveMoreSpace opts then 0 else 10
 
 -- ** Mouse bindings
 

@@ -228,3 +228,13 @@ makePointer {
     with-prop 'libinput Scroll Method Enabled', { set-prop $_<name>, qw<{0 0 1}> }
   '';
 }
+//
+makePointer {
+  pointerName = "rusty-chunk-touchpad";
+  deviceName = "SynPS/2 Synaptics TouchPad";
+  rakuCommands = ''
+    with-prop 'libinput Natural Scrolling Enabled', { set-prop $_<name>, '1' }
+    with-prop 'libinput Left Handed Enabled', { set-prop $_<name>, '1' }
+    with-prop 'libinput Tapping Enabled', { set-prop $_<name>, '1' }
+  '';
+}
