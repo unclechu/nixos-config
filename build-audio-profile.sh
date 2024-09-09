@@ -1,8 +1,21 @@
 #! /usr/bin/env bash
-set -Eeuo pipefail || exit
+set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+
+# Build “audio” system profile helper script.
+#
+# Do not forget to run “sudo nixos-rebuild boot” after you rebuild and apply
+# “audio” profile. Because the default profile would be one that is built last.
+# For example:
+#
+#   sudo ./build-audio-profile.sh boot
+#   sudo nixos-rebuild boot
+#
 
 PROFILE_NAME=audio
 
+# First argument is action (e.g. “build”, “boot”, “switch”).
+# Not that there is no point to “switch” from “default” profile since the kernel
+# is different. And the main feature of the “audio” profile is realtime kernel.
 if (( $# == 0 )); then
 	action=build
 else
@@ -10,17 +23,11 @@ else
 	shift
 fi
 
-sudo nixos-rebuild \
-	"$action" \
-	-p "$PROFILE_NAME" \
-	-I "nixos-config=/etc/nixos/configuration-${PROFILE_NAME}.nix" \
-	"$@"
-
-if [[ $action == boot || $action == switch ]] && (( $# == 0 )); then
-	>&2 echo Making the default system profile be the default one to boot
-	# This “audio” profile should not be the default one.
-	# So let’s make the “default” profile the default one in GRUB.
-	# I’ve been told in #nix:nixos.org that at the moment it’s impossible to build and make it
-	# bootable without making it a default selected option in GBUB. So this kind of a hack.
-	sudo nixos-rebuild boot
-fi
+CMD=(
+	nixos-rebuild
+	"$action"
+	-p "$PROFILE_NAME"
+	-I "nixos-config=/etc/nixos/configuration-${PROFILE_NAME}.nix"
+)
+set -o xtrace
+"${CMD[@]}" "$@"
