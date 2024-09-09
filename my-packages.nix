@@ -195,7 +195,7 @@ in
       pkgs.patchance
       pkgs.audacious
       pkgs.audacity
-      pkgs.ardour_7 # TODO: Try Ardour 8
+      pkgs.ardour
       pkgs.guitarix
       pkgs.normalize
       pkgs.sonic-visualiser
