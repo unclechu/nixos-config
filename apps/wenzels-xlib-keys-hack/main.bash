@@ -5,33 +5,32 @@
 # A list of available modes (for arguments validation)
 declare -A MODES && MODES=([gaming]=1 [no-numbers-shift]=1)
 
-# Parse command-line arguments
-if (( $# == 0 )); then
-	MODE=
+MODE=
+IS_DEBUG=false
 
+# Parse command-line arguments
+for arg in "$@"; do
+	# Turning on debug mode
+	if [[ $arg == debug ]]; then
+		IS_DEBUG=true
+	# Mode switch
+	elif [[ -n ${MODES[$arg]:-} ]]; then
+		MODE=$1
+	fi
+done
+
+if [[ $IS_DEBUG == true ]]; then
+	# Print the logs to the stdout & stderr instead of
+	# redirecting everything to the log file (default behavior).
+
+	# Debug all commands
+	set -o xtrace
+else
 	# By default redirect the logs with potential
 	# failures to the file for later analysis.
 	_LOGFILE=$HOME/.xlib-keys-hack-fails
 	exec 1>>"$_LOGFILE" 2>&1
 	printf -- '->> STARTING at %s … <<-\n' "$(date)"
-
-elif (( $# == 1 )) && [[ $1 == debug ]]; then
-	MODE=
-
-	# Print the logs to the stdout & stderr instead of
-	# redirecting everything to the log file.
-
-	# Debug all commands
-	set -o xtrace
-
-elif (( $# == 1 )) && [[ -n ${MODES[$1]:-} ]]; then
-	MODE=$1
-
-else
-	>&2 echo -n 'Arguments are incorrect:'
-	>&2 printf ' "%s"' "${@//\"}"
-	>&2 echo
-	exit 1
 fi
 
 grant-access-to-input-devices
