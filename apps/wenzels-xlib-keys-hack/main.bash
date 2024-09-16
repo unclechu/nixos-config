@@ -58,6 +58,20 @@ CORSAIR=(
 	'/dev/input/by-id/usb-Corsair_Corsair_Gaming_K63_Keyboard_0B008012AF0C1D2558ED9875F5001945-if01-event-kbd'
 )
 
+# Oklick 910G mechanical gaming keyboard
+OKLICK=(
+	'--disable-xinput-device-name=HID 04b4:6018'
+	'--disable-xinput-device-name=HID 04b4:6018 System Control'
+	'--disable-xinput-device-name=HID 04b4:6018 Keyboard'
+	'--disable-xinput-device-name=HID 04b4:6018 Consumer Control'
+	'/dev/input/by-id/usb-04b4_6018-event-if01'
+	'/dev/input/by-id/usb-04b4_6018-event-kbd'
+	'--disable-xinput-device-name=HID 04b4:6018 Mouse'
+	'--disable-xinput-device-name=HID 04b4:6018 Consumer Control'
+	# '/dev/input/by-id/usb-04b4_6018-if01-mouse'
+	# '/dev/input/by-id/usb-04b4_6018-if01-event-mouse'
+)
+
 # Embedded laptop keyboard.
 EMBEDDED=(
 	'--disable-xinput-device-name=AT Translated Set 2 keyboard'
@@ -242,6 +256,7 @@ ALL_XKH_ARGS=(
 	"${JETACCESS_SLIM_LINE_K9_WIRELESS[@]}"
 	"${DUCKY[@]}"
 	"${CORSAIR[@]}"
+	"${OKLICK[@]}"
 	"${ERGODOX_EZ[@]}"
 	"${MOONLANDER[@]}"
 	"${PLANCK_EZ[@]}"
