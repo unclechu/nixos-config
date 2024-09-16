@@ -6,20 +6,29 @@
 declare -A MODES && MODES=([gaming]=1 [no-numbers-shift]=1)
 
 MODE=
-IS_DEBUG=false
+IS_DEBUG=0
+IS_REGULAR_KEYBOARD_CONFIG_FORCED=0
 
 # Parse command-line arguments
 for arg in "$@"; do
 	# Turning on debug mode
 	if [[ $arg == debug ]]; then
-		IS_DEBUG=true
+		IS_DEBUG=1
+	# Forcing regular keyboard configuration.
+	# Even in presence of more advanced keyboard like ErgoDox
+	# enforce use of settings for the regular QWERTY keyboard.
+	elif [[ $arg == force-regular ]]; then
+		IS_REGULAR_KEYBOARD_CONFIG_FORCED=1
 	# Mode switch
 	elif [[ -n ${MODES[$arg]:-} ]]; then
 		MODE=$1
+	else
+		>&2 printf 'Incorrect argument: “%s”\n' "$arg"
+		exit 1
 	fi
 done
 
-if [[ $IS_DEBUG == true ]]; then
+if (( IS_DEBUG == 1 )); then
 	# Print the logs to the stdout & stderr instead of
 	# redirecting everything to the log file (default behavior).
 
@@ -173,6 +182,12 @@ for x in "${MOONLANDER[@]}"; do
 	fi
 done
 
+# There is/are only regular QWERTY keyboard(s) present.
+HAVE_ONLY_REGULAR_KEYBOARDS=0
+if (( HAS_ERGODOX_EZ == 0 && HAS_MOONLANDER == 0 && HAS_PLANCK_EZ == 0 )); then
+	HAVE_ONLY_REGULAR_KEYBOARDS=1
+fi
+
 # When gaming mode is on “additional controls” feature should be disabled so those keys will be
 # triggered immediately when they are just pressed.
 # Also on a regular qwerty keyboard it’s more useful to have Caps Lock key instead of remapped
@@ -181,7 +196,7 @@ done
 # instance.
 if [[ $MODE == gaming ]]; then
 	echo '[ GAMING MODE ON ]'
-	if (( HAS_ERGODOX_EZ == 0 && HAS_MOONLANDER == 0 && HAS_PLANCK_EZ == 0 )); then
+	if (( IS_REGULAR_KEYBOARD_CONFIG_FORCED == 1 || HAVE_ONLY_REGULAR_KEYBOARDS == 1 )); then
 		FLAGS+=(
 			--real-capslock
 			--no-additional-controls
@@ -189,14 +204,16 @@ if [[ $MODE == gaming ]]; then
 	fi
 
 # Ergonomic mode for regular qwerty keyboard
-elif (( HAS_ERGODOX_EZ == 0 && HAS_MOONLANDER == 0 && HAS_PLANCK_EZ == 0 )); then
+elif (( IS_REGULAR_KEYBOARD_CONFIG_FORCED == 1 || HAVE_ONLY_REGULAR_KEYBOARDS == 1 )); then
 	FLAGS+=(
 		--hold-alt-for-alternative-mode
 		--ergonomic-mode
 	)
 fi
 
-# Turn off embedded keyboard if there's external one
+# Turn off embedded keyboard if there's external one.
+# External one that is either usually placed on top of a laptop or has incompatible settings with
+# something like ErgoDox.
 if (( HAS_DUCKY == 0 && HAS_ERGODOX_EZ == 0 && HAS_MOONLANDER == 0 && HAS_PLANCK_EZ == 0 )); then
 	EMBEDDED+=("${EMBEDDED_DEVICES[@]}")
 fi
@@ -206,7 +223,7 @@ fi
 # Turn on software debouncer (in order to fix issues with key bouncing on Ducky).
 # Right Control as Super to have simmetrical Supers on my laptop’s embedded keyboard
 # (control keys are provided by “additional controls” feature anyway).
-if (( HAS_ERGODOX_EZ == 0 && HAS_MOONLANDER == 0 && HAS_PLANCK_EZ == 0 )); then
+if (( IS_REGULAR_KEYBOARD_CONFIG_FORCED == 1 || HAVE_ONLY_REGULAR_KEYBOARDS == 1 )); then
 	FLAGS+=(
 		--shift-hjkl
 		'--software-debouncer=90'
@@ -304,8 +321,3 @@ printf -- '->> Ended with exit code: %d (at %s) <<-\n' "$exit_status" "$DATE"
 # --disable-xinput-device-name='2.4G Receiver'
 # '/dev/input/by-id/usb-1d57_2.4G_Receiver-event-kbd'
 # '/dev/input/by-id/usb-1d57_2.4G_Receiver-event-if02'
-
-# --disable-xinput-device-name='HID 04b4:6018'
-# '/dev/input/by-id/usb-04b4_6018-event-kbd'
-# '/dev/input/by-id/usb-04b4_6018-if01-event-mouse'
-# '/dev/input/by-id/usb-04b4_6018-if01-mouse'
