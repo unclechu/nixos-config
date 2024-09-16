@@ -21,6 +21,9 @@ elif (( $# == 1 )) && [[ $1 == debug ]]; then
 	# Print the logs to the stdout & stderr instead of
 	# redirecting everything to the log file.
 
+	# Debug all commands
+	set -o xtrace
+
 elif (( $# == 1 )) && [[ -n ${MODES[$1]:-} ]]; then
 	MODE=$1
 
