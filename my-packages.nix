@@ -256,6 +256,9 @@ in
       # electronics
       pkgs.kicad # schematics designing tool
 
+      # documents
+      pkgs.libreoffice-fresh
+
       # desktop environment
       pkgs.tk
       pkgs.xorg.xev
