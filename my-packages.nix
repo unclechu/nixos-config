@@ -75,6 +75,7 @@ let
   pulseaudio-share-server = pkgs.callPackage scripts/pulseaudio-share-server.nix {};
   rt-audio = pkgs.callPackage scripts/rt-audio {};
   screen-saver = pkgs.callPackage scripts/screen-saver {};
+  render-kicad-schematic-pdf-to-png = pkgs.callPackage scripts/render-kicad-schematic-pdf-to-png {};
 
   clunky-toml-json-converter = pkgs.callPackage apps/clunky-toml-json-converter {};
 in
@@ -241,6 +242,7 @@ in
       pkgs.optipng # optimize/compress *.png files
       pkgs.graphviz # draw block-schemes from *.dot files
       pkgs.imagemagick # “convert" for image processing from command-line
+      pkgs.ghostscript # converting .pdf into .png using ImageMagick
 
       # video
       pkgs.vlc
@@ -250,6 +252,9 @@ in
       pkgs.mpvc
       pkgs.ffmpeg-full
       unstable.yt-dlp
+
+      # electronics
+      pkgs.kicad # schematics designing tool
 
       # desktop environment
       pkgs.tk
@@ -369,6 +374,7 @@ in
       pulseaudio-share-server
       rt-audio
       screen-saver
+      render-kicad-schematic-pdf-to-png
     ] ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
   };
 }
