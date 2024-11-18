@@ -25,7 +25,6 @@ let
 
   vims = import ./vims.nix {
     inherit pkgs lib;
-    neovide-pkgs = import <nixos-unstable> {};
     bashEnvFile = "${wenzels-bash.dir}/.bash_aliases";
   };
 
