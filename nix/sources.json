@@ -77,10 +77,10 @@
         "homepage": "",
         "owner": "musnix",
         "repo": "musnix",
-        "rev": "3feabdc65fb3466f07f306fa5f4e9c43234186e6",
-        "sha256": "1dmahx3dgrmd27bmgqgmhlgjxg2xd073plwp787h7jz3dk66ajn6",
+        "rev": "996b38613a282299c852eca204a10914c6b0074d",
+        "sha256": "1rw1mcdhpfwhza6x6ax0i3aw1xcbf25d157ybh1z7rd9jl4zbhkf",
         "type": "tarball",
-        "url": "https://github.com/musnix/musnix/archive/3feabdc65fb3466f07f306fa5f4e9c43234186e6.tar.gz",
+        "url": "https://github.com/musnix/musnix/archive/996b38613a282299c852eca204a10914c6b0074d.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {
