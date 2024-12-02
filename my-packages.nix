@@ -174,6 +174,7 @@ in
       pkgs.xfce.thunar
 
       # audio
+      pkgs.qastools # GUI tools for ALSA configuration
       pkgs.pavucontrol
       pkgs.pulsemixer
       pkgs.jack2
