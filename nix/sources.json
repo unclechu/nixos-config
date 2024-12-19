@@ -17,10 +17,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "bashrc",
-        "rev": "753370e782fe20c09a565b363ec65511f5b25d1f",
-        "sha256": "0li83cnpjm99fq9ydacwsynz423bn0w100v56m34md8grabgzl5s",
+        "rev": "36fd47867fc60cd355a61ce3f4f45be08e396765",
+        "sha256": "1b15x30bwcra7la7pizs163vl39784n0a06fz73hv0c8mm85338b",
         "type": "tarball",
-        "url": "https://github.com/unclechu/bashrc/archive/753370e782fe20c09a565b363ec65511f5b25d1f.tar.gz",
+        "url": "https://github.com/unclechu/bashrc/archive/36fd47867fc60cd355a61ce3f4f45be08e396765.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "dino": {
@@ -77,10 +77,10 @@
         "homepage": "",
         "owner": "musnix",
         "repo": "musnix",
-        "rev": "996b38613a282299c852eca204a10914c6b0074d",
-        "sha256": "1rw1mcdhpfwhza6x6ax0i3aw1xcbf25d157ybh1z7rd9jl4zbhkf",
+        "rev": "0a2bbd1e2ec78ef268698eb682f39015c1f3ca1d",
+        "sha256": "0ikd6fq709w3fv44iqw8z0jh3p02swdamfb4101kbpywg7vynw3x",
         "type": "tarball",
-        "url": "https://github.com/musnix/musnix/archive/996b38613a282299c852eca204a10914c6b0074d.tar.gz",
+        "url": "https://github.com/musnix/musnix/archive/0a2bbd1e2ec78ef268698eb682f39015c1f3ca1d.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {
@@ -101,10 +101,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "246bce165bb6e5cf095f17bd60aff08ef0b3a52f",
-        "sha256": "09c3gvhh3y3m88mz7lqjn260myh9z5hy6wq4ch4gaf0s03j74l4c",
+        "rev": "349b99ff254ec4160cec72bb2f952dd2c8223327",
+        "sha256": "040h7690j8jjzkpd4r80hsl30c3ldlwaixrihbd7z12adbvsn337",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/246bce165bb6e5cf095f17bd60aff08ef0b3a52f.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/349b99ff254ec4160cec72bb2f952dd2c8223327.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-utils": {

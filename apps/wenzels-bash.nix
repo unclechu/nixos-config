@@ -16,6 +16,7 @@ let
     . "''$${dirEnvVarName}/misc/setups/fuzzy-finder.bash"
     . ${esc __skim-shell-scripts}/completion.bash
     . ${esc __skim-shell-scripts}/key-bindings.bash
+    . "''$${dirEnvVarName}/misc/setups/skim-fix.bash"
     . "''$${dirEnvVarName}/misc/setups/direnv.bash"
   '';
 
