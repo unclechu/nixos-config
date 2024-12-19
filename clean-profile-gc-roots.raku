@@ -19,6 +19,12 @@ $*PROGRAM.dirname.&*chdir;
 # The main directory of Nix profiles where to find profile symlinks recursively in
 my IO::Path:D \nixProfilesRootDir = '/nix/var/nix/profiles'.IO;
 
+# Root directory of current user profiles to find profile symlinks recursively in.
+#
+# For optional “--nuke-user-home-profiles” feature.
+my IO::Path:D \userHomeNixProfilesRootDir =
+  %*ENV<HOME>.IO.add(".local/state/nix/profiles");
+
 subset NonEmptyStr of Str where .trim !~~ '';
 subset NonEmptyArr of Array where .elems > 0;
 
@@ -782,12 +788,19 @@ sub getNixReleasesToNuke(NukeReleasesStr \releasesStr --> ProfileSymlink::Types:
 #| `--nuke-releases` accepts one or more NixOS release versions separated by
 #| comma (e.g. `23.05,23.11`). Note that if you add a release that matches
 #| current profile it won’t be nuked.
-sub MAIN(NukeReleasesStr :$nuke-releases = Nil) {
+#| `--nuke-user-home-profiles` is useful for cleaning up Home Manager profiles.
+sub MAIN(NukeReleasesStr :$nuke-releases = Nil, Bool:D :$nuke-user-home-profiles = False) {
   my ProfileSymlink::Types::NixosVersionList:D \nixReleasesToNuke =
     getNixReleasesToNuke $nuke-releases;
 
   my ProfileSymlink::Types::Profile:D %profiles =
     ProfileSymlink::getDirectoryProfiles nixProfilesRootDir;
+
+  if $nuke-user-home-profiles {
+    my ProfileSymlink::Types::Profile:D %userHomeProfiles =
+      ProfileSymlink::getDirectoryProfiles userHomeNixProfilesRootDir;
+    %profiles.append(%userHomeProfiles);
+  }
 
   my Cleanup::Types::ProfilesCleanupPlanMap:D \cleanupPlan =
     Cleanup::makePlan %profiles, nixReleasesToNuke;
