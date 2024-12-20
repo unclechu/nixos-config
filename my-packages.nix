@@ -18,10 +18,17 @@ let
 
   wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix      {};
   tmux-config        = pkgs.callPackage sources.tmuxrc             {};
-  gpaste-gui         = pkgs.callPackage sources.gpaste-gui         {};
   xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack     {};
   gnome-screenshot   = pkgs.callPackage apps/gnome-screenshot.nix  {};
   unclechu-i3-status = pkgs.callPackage sources.unclechu-i3-status {};
+
+  gpaste-gui = pkgs.callPackage sources.gpaste-gui {
+    # “gpaste-gui” is built against NixOS 24.11 but this NixOS config is made
+    # for NixOS 24.05 (24.11 is broken for me at the moment, can’t update yet).
+    # There were breaking changes, like this “pkgs.gnome3.gpaste” as moved to
+    # top-level “gpaste”, so this fixes this incompatibility.
+    gpaste = pkgs.gnome3.gpaste;
+  };
 
   vims = import ./vims.nix {
     inherit pkgs lib;
