@@ -4,32 +4,19 @@
 let sources = import ../../nix/sources.nix; in
 
 { lib
-, callPackage
 , symlinkJoin
 , makeWrapper
-# , libsForQt5
-, qt6Packages
 , qt6
 , stdenv
+, nheko
 }:
 
 let
-  # callQtPackage = libsForQt5.callPackage; # For Nheko 0.11.*
-  callQtPackage = qt6.callPackage; # For Nheko 0.12.*
-
-  # Nheko 0.12.* configuration from “nixos-unstable”.
-  # In stable nixpkgs it’s still 0.11.*.
-  v0_12 = rec {
-    nheko = qt6Packages.callPackage ./nheko.nix { inherit mtxclient coeurl; };
-    mtxclient = callPackage ./mtxclient.nix { inherit coeurl; };
-    coeurl = callPackage ./coeurl.nix {};
-  };
-
   addIdenticonsSupport = drv: drv.overrideAttrs (srcAttrs: {
     buildInputs = srcAttrs.buildInputs ++ [ qt-jdenticon ];
   });
 
-  qt-jdenticon = callQtPackage (
+  qt-jdenticon = qt6.callPackage (
     # “mkDerivation” does not come with Qt6
     { lib, qmake, qtbase }:
     stdenv.mkDerivation rec {
@@ -70,7 +57,7 @@ let
   };
 in
 
-lib.pipe v0_12.nheko [
+lib.pipe nheko [
   addIdenticonsSupport
   fixMissingKvantum
 ]
