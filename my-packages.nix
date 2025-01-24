@@ -22,13 +22,7 @@ let
   gnome-screenshot   = pkgs.callPackage apps/gnome-screenshot.nix  {};
   unclechu-i3-status = pkgs.callPackage sources.unclechu-i3-status {};
 
-  gpaste-gui = pkgs.callPackage sources.gpaste-gui {
-    # “gpaste-gui” is built against NixOS 24.11 but this NixOS config is made
-    # for NixOS 24.05 (24.11 is broken for me at the moment, can’t update yet).
-    # There were breaking changes, like this “pkgs.gnome3.gpaste” as moved to
-    # top-level “gpaste”, so this fixes this incompatibility.
-    gpaste = pkgs.gnome3.gpaste;
-  };
+  gpaste-gui = pkgs.callPackage sources.gpaste-gui {};
 
   vims = import ./vims.nix {
     inherit pkgs lib;
@@ -84,6 +78,10 @@ let
   render-kicad-schematic-pdf-to-png = pkgs.callPackage scripts/render-kicad-schematic-pdf-to-png {};
 
   clunky-toml-json-converter = pkgs.callPackage apps/clunky-toml-json-converter {};
+
+  mpv =
+    let pkg = pkgs.mpv-unwrapped.override { jackaudioSupport = true; };
+    in pkg.wrapper { mpv = pkg; };
 in
 {
   my-apps = {
@@ -218,7 +216,8 @@ in
       pkgs.artyFX
       pkgs.drumgizmo
       pkgs.eq10q
-      pkgs.fmsynth
+      # FIXME: Currently broken, see: https://github.com/NixOS/nixpkgs/issues/373829
+      # pkgs.fmsynth
       pkgs.fomp
       pkgs.infamousPlugins
       pkgs.mda_lv2
@@ -235,6 +234,12 @@ in
       pkgs.CHOWTapeModel
       pkgs.lilv # Provides useful tools like “lv2ls”
       pkgs.jalv
+      # Restore old `jalv.gtk` executable by symlinking it to the new `jalv.gtk3`
+      (pkgs.symlinkJoin {
+        name = "jalv-old-gtk-executable-alias";
+        paths = [ pkgs.jalv ];
+        postBuild = '' ln -s -- "$out"/bin/jalv.gtk3 "$out"/bin/jalv.gtk '';
+      })
       pkgs.lsp-plugins
 
       # graphics
@@ -255,7 +260,7 @@ in
       pkgs.vlc
       pkgs.smplayer
       pkgs.mplayer
-      (pkgs.wrapMpv (pkgs.mpv-unwrapped.override { jackaudioSupport = true; }) {})
+      mpv
       pkgs.mpvc
       pkgs.ffmpeg-full
       unstable.yt-dlp
@@ -277,12 +282,12 @@ in
       pkgs.xautolock
       pkgs.termite
       pkgs.networkmanagerapplet
-      pkgs.gnome3.gnome-system-monitor
-      pkgs.gnome3.gnome-power-manager
-      pkgs.gnome3.gnome-calendar
-      pkgs.gnome3.gnome-calculator
-      pkgs.gnome3.eog # Image viewer
-      pkgs.gnome3.evince # Document (e.g. PDF) viwer
+      pkgs.gnome-system-monitor
+      pkgs.gnome-power-manager
+      pkgs.gnome-calendar
+      pkgs.gnome-calculator
+      pkgs.eog # Image viewer
+      pkgs.evince # Document (e.g. PDF) viwer
       pkgs.d-spy # DBus inspector GUI (a C rewrite of “dfeet”)
       pkgs.obs-studio
       pkgs.kitty # TODO: configure
@@ -293,18 +298,18 @@ in
 
       # camera
       pkgs.v4l-utils
-      pkgs.gnome3.cheese
+      pkgs.cheese
 
       # instant messaging/communication
       (pkgs.callPackage apps/psi-plus.nix {})
       pkgs.hexchat
       pkgs.weechat
       nheko
-      (pkgs.callPackage apps/dino.nix {})
+      pkgs.dino
       pkgs.thunderbird
 
       # clipboard management
-      pkgs.gnome3.gpaste
+      pkgs.gpaste
       gpaste-gui
       pkgs.clipmenu
 
@@ -321,6 +326,12 @@ in
       # task management
       pkgs.hledger pkgs.hledger-ui pkgs.hledger-web
       # FIXME: In the 23.11 nixpkgs it is marked a broken.
+      #   UPD: The project seems to be abandoned, last commit made 27 October 2021.
+      #        Message from that commit from the author:
+      #        > I'm going to be taking a break from development of Taskell for a while. Trying to
+      #          do it alongside my day job was proving a bit much. Feel free to continue to submit
+      #          issues, but I won't be able to work on any of them immediately. Pull requests also
+      #          welcome. Thanks for understanding 🙂
       # pkgs.taskell # Kanban board TUI written in Haskell
 
       # version control
@@ -357,7 +368,7 @@ in
       pkgs.i3status
       pkgs.i3lock
       unclechu-i3-status
-      pkgs.gnome3.adwaita-icon-theme
+      pkgs.adwaita-icon-theme
     ];
 
     users.users.${wenzelUserName}.packages = [

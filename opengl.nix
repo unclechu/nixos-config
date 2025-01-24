@@ -2,7 +2,7 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 { pkgs, ... }:
 {
-  hardware.opengl =
+  hardware.graphics =
     let
       extras = [
         "mesa"
@@ -14,8 +14,6 @@
     in
       {
         enable = true;
-        driSupport = true;
-        driSupport32Bit = true;
         extraPackages = builtins.map (name: pkgs.${name}) extras;
         extraPackages32 = builtins.map (name: pkgs.pkgsi686Linux.${name}) extras;
       };

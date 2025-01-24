@@ -30,7 +30,9 @@ in
 
     kernelParams = [];
     kernelModules = ["kvm-amd" "fuse"];
-    kernelPackages = pkgs.linuxPackages_latest;
+
+    kernelPackages =
+      (import ../fix-cpupower-build-failure.nix) pkgs pkgs.linuxPackages_latest;
   };
 
   fileSystems = {

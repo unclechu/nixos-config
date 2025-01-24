@@ -6,7 +6,7 @@ let sources = import ../nix/sources.nix; in
 , bash
 , pulseaudio
 , networkmanagerapplet
-, gnome3 # ‘gpaste’
+, gpaste
 , xorg # ‘xsetroot’
 
 # Overridable dependencies
@@ -32,7 +32,7 @@ let
   dependencies = {
     bash = bash;
     pactl = pulseaudio;
-    gpaste-client = gnome3.gpaste;
+    gpaste-client = gpaste;
     nm-applet = networkmanagerapplet;
     xsetroot = xorg.xsetroot;
 

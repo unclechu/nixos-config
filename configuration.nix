@@ -54,12 +54,6 @@ in
 
   nixpkgs = {
     config.permittedInsecurePackages = [
-      # In 23.05 Python 2 marked as end-of-life.
-      # It seems like system-activation scripts depends on Python 2.
-      # Or maybe some NixOS module causes this dependency to appear in there.
-      # TODO: Try to figure out what depends on Python 2.
-      "python-2.7.18.6"
-
       # Temporary exception for some of the Matrix clients.
       "olm-3.2.16"
     ];
@@ -100,7 +94,7 @@ in
     dconf.enable = true;
     gpaste.enable = true;
     file-roller.enable = true;
-    bash.enableCompletion = true;
+    bash.completion.enable = true;
     zsh.enable = true;
     zsh.enableCompletion = true;
 
@@ -113,8 +107,6 @@ in
     # TODO configure, see https://framagit.org/mpo/era-configuration-nix
     # chromium = {};
   };
-
-  sound.enable = true;
 
   hardware = {
     pulseaudio = {
@@ -131,6 +123,13 @@ in
     gvfs.enable = true; # Mount, trash, and other stuff
     tumbler.enable = true; # Thumbnails for images
     ratbagd.enable = true; # Gaming mouse configuration daemon
+
+    # It’s supposed to be `false` by default but somehow it’s not?
+    #
+    # I was getting this error if this is not set here to `false`:
+    # > Using PipeWire as the sound server conflicts with PulseAudio.
+    # > This option requires `hardware.pulseaudio.enable` to be set to false
+    pipewire.enable = false;
 
     # See also https://nixos.wiki/wiki/JACK
     # I’m starting JACK manually via “jack_control start” or QjackCtl

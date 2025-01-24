@@ -19,7 +19,8 @@
       "amdgpu.ppfeaturemask=0xffffffff" # allows to adjust clocks and voltages via sysfs
     ];
 
-    kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages =
+      (import ../fix-cpupower-build-failure.nix) pkgs pkgs.linuxPackages_latest;
   };
 
   fileSystems = {
@@ -54,7 +55,7 @@
   hardware.cpu.intel.updateMicrocode = config.hardware.enableRedistributableFirmware;
 
   services.xserver = {
-    videoDrivers = [ "intel" "amdgpu" ];
+    videoDrivers = [ "modesetting" "amdgpu" ];
 
     deviceSection = ''
       Option "TearFree" "true"

@@ -18,7 +18,9 @@
 
     kernelModules = [ "kvm-intel" "fuse" ];
     kernelParams = [];
-    kernelPackages = pkgs.linuxPackages_latest;
+
+    kernelPackages =
+      (import ../fix-cpupower-build-failure.nix) pkgs pkgs.linuxPackages_latest;
   };
 
   zramSwap = {
@@ -53,7 +55,7 @@
   networking.hostName = "rw-wenzel-nixos-laptop";
 
   services.xserver = {
-    videoDrivers = [ "modesetting" ]; # "intel"
+    videoDrivers = [ "modesetting" ];
 
     deviceSection = ''
       Option "TearFree" "true"

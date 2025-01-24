@@ -23,18 +23,6 @@
         "url": "https://github.com/unclechu/bashrc/archive/e1369b5479b0b53977a39a2898a883cc13d9ad48.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "dino": {
-        "branch": "v0.4.3",
-        "description": "Modern XMPP (\"Jabber\") Chat Client using GTK+/Vala",
-        "homepage": "https://dino.im/",
-        "owner": "dino",
-        "repo": "dino",
-        "rev": "df0013e3f45afa595b1f889e4683f89e9c369f05",
-        "sha256": "0k7ax08xqqrvclgvv103wjl4lhrckq62nig4jas722hkmjvvyv5j",
-        "type": "tarball",
-        "url": "https://github.com/dino/dino/archive/df0013e3f45afa595b1f889e4683f89e9c369f05.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "gpaste-gui": {
         "branch": "master",
         "description": "Simple and handy GUI for managing clipboard history of GPaste daemon",
@@ -48,15 +36,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "home-manager": {
-        "branch": "release-24.05",
+        "branch": "release-24.11",
         "description": "Manage a user environment using Nix  [maintainer=@rycee] ",
         "homepage": "https://nix-community.github.io/home-manager/",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "2f23fa308a7c067e52dfcc30a0758f47043ec176",
-        "sha256": "00wp0s9b5nm5rsbwpc1wzfrkyxxmqjwsc1kcibjdbfkh69arcpsn",
+        "rev": "bd65bc3cde04c16755955630b344bc9e35272c56",
+        "sha256": "15k41il0mvmwyv6jns4z8k6khhmb22jk5gpcqs1paym3l01g6abn",
         "type": "tarball",
-        "url": "https://github.com/nix-community/home-manager/archive/2f23fa308a7c067e52dfcc30a0758f47043ec176.tar.gz",
+        "url": "https://github.com/nix-community/home-manager/archive/bd65bc3cde04c16755955630b344bc9e35272c56.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "i3rc": {
@@ -89,10 +77,10 @@
         "homepage": "https://github.com/equalsraf/neovim-qt/wiki",
         "owner": "equalsraf",
         "repo": "neovim-qt",
-        "rev": "3e4e2b7230aa8251f68e6b9a4c9ed40eae1108b9",
-        "sha256": "0dsxkf0ximl9isigy9yzh1h82a7lzrg325gyxmg2awj63aa0wdyx",
+        "rev": "6c506094f5d0e9663a3a907622d5aef8e19de85f",
+        "sha256": "0i7gr33q85mg1znf2383lqan7cbsb2kh7k9hzzb62yjmgj1yvgmg",
         "type": "tarball",
-        "url": "https://github.com/equalsraf/neovim-qt/archive/3e4e2b7230aa8251f68e6b9a4c9ed40eae1108b9.tar.gz",
+        "url": "https://github.com/equalsraf/neovim-qt/archive/6c506094f5d0e9663a3a907622d5aef8e19de85f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovimrc": {
