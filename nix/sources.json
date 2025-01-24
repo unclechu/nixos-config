@@ -120,15 +120,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "psi-plus": {
-        "branch": "1.5.2035",
+        "branch": "1.5.2070",
         "description": "Codebase snapshots for Psi+ project",
         "homepage": "https://psi-plus.com/",
         "owner": "psi-plus",
         "repo": "psi-plus-snapshots",
-        "rev": "787e78eb7ee4a7aa3fdb728ddf7a11a9edb1ac65",
-        "sha256": "0s46mxvk7lq2v577wqg4c7npknjgxbhcyqsda5hyf7vlcsjnmq4w",
+        "rev": "7f5ff616362c208255f4f9714662f85bad57d059",
+        "sha256": "0lxnavsn17aapg0i07kg01rrsyg2nhcn4kjhayycsm8g7mma5wks",
         "type": "tarball",
-        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/787e78eb7ee4a7aa3fdb728ddf7a11a9edb1ac65.tar.gz",
+        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/7f5ff616362c208255f4f9714662f85bad57d059.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "qt-jdenticon": {
