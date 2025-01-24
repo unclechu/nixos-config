@@ -325,14 +325,6 @@ in
 
       # task management
       pkgs.hledger pkgs.hledger-ui pkgs.hledger-web
-      # FIXME: In the 23.11 nixpkgs it is marked a broken.
-      #   UPD: The project seems to be abandoned, last commit made 27 October 2021.
-      #        Message from that commit from the author:
-      #        > I'm going to be taking a break from development of Taskell for a while. Trying to
-      #          do it alongside my day job was proving a bit much. Feel free to continue to submit
-      #          issues, but I won't be able to work on any of them immediately. Pull requests also
-      #          welcome. Thanks for understanding 🙂
-      # pkgs.taskell # Kanban board TUI written in Haskell
 
       # version control
       pkgs.git
