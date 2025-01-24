@@ -1,73 +1,21 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-{ pkgs, ... }:
+{ bibata-cursors }:
 
-let
-  sources = import ../../nix/sources.nix;
-  pkgs-2211 = import sources."nixpkgs-22.11" {};
+bibata-cursors.overrideAttrs (old:
+  let inherit (old) bitmaps; in {
+    buildPhase = ''
+      runHook preBuild
 
-  # FIXME: Fix the left-handed patching script for the version from 23.05
-  bibata-cursors = pkgs-2211.bibata-cursors;
-in
+      ctgen build.right.toml -p x11 -d $bitmaps/Bibata-Modern-Amber-Right -n 'Bibata-Modern-Amber-Right' -c 'Yellowish and rounded edge bibata left-handed cursors.'
+      ctgen build.right.toml -p x11 -d $bitmaps/Bibata-Modern-Classic-Right -n 'Bibata-Modern-Classic-Right' -c 'Black and rounded edge Bibata left-handed cursors.'
+      ctgen build.right.toml -p x11 -d $bitmaps/Bibata-Modern-Ice-Right -n 'Bibata-Modern-Ice-Right' -c 'White and rounded edge Bibata left-handed cursors.'
 
-bibata-cursors.overrideAttrs (srcAttrs: {
-  nativeBuildInputs = (srcAttrs.nativeBuildInputs or []) ++ [
-    pkgs.findutils
-    pkgs.gnugrep
-    pkgs.perl
-    pkgs.imagemagick
-  ];
+      ctgen build.right.toml -p x11 -d $bitmaps/Bibata-Original-Amber-Right -n 'Bibata-Original-Amber-Right' -c 'Yellowish and sharp edge Bibata left-handed cursors.'
+      ctgen build.right.toml -p x11 -d $bitmaps/Bibata-Original-Classic-Right -n 'Bibata-Original-Classic-Right' -c 'Black and sharp edge Bibata left-handed cursors.'
+      ctgen build.right.toml -p x11 -d $bitmaps/Bibata-Original-Ice-Right -n 'Bibata-Original-Ice-Right' -c 'White and sharp edge Bibata left-handed cursors.'
 
-  patches = [
-    ./flip-x-hot-points-for-left-handed-cursors.patch
-  ];
-
-  buildPhase = ''
-    mkdir bitmaps
-    unzip $bitmaps -d bitmaps
-    rm -rf themes
-
-    (
-      set -uo pipefail || exit
-
-      images_to_flip=$(
-        cat builder/src/constants.py \
-          | perl -nE 'if (/^horizontally_flipped/) {$x=1;next}; print if $x' \
-          | perl -nE '$x=1 if /^]/; print unless $x' \
-          | sed -e 's/#.*//' -e 's/[," ]//g' \
-          | grep -v '^$'
-      )
-
-      static_images_to_flip=$(grep '\.png$' <<< "$images_to_flip")
-      animated_images_to_flip=$(grep -v '\.png$' <<< "$images_to_flip")
-      readarray -t static_images_to_flip <<< "$static_images_to_flip"
-      readarray -t animated_images_to_flip <<< "$animated_images_to_flip"
-
-      cd bitmaps
-      themes=$(ls)
-      readarray -t themes <<< "$themes"
-
-      for theme in "''${themes[@]}"; do
-        (
-          cd -- "$theme"
-
-          >&2 printf 'Horizontally flipping static images for "%s" theme...\n' "$theme"
-          for image in "''${static_images_to_flip[@]}"; do
-            (set -x && convert -flop -- "$image" "$image")
-          done
-
-          >&2 printf 'Horizontally flipping animated frames for "%s" theme...\n' "$theme"
-          for file_prefix in "''${animated_images_to_flip[@]}"; do
-            files=$(find -name "''${file_prefix}*.png")
-            readarray -t files <<< "$files"
-            for image in "''${files[@]}"; do
-              (set -x && convert -flop -- "$image" "$image")
-            done
-          done
-        )
-      done
-    )
-
-    cd builder && make build_unix
-  '';
-})
+      runHook postBuild
+    '';
+  }
+)

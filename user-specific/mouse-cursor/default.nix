@@ -13,7 +13,7 @@ in
         defaultCursor = "left_ptr";
       };
 
-      name = "Bibata-Original-Ice";
+      name = "Bibata-Original-Ice-Right";
       package = left-handed-bibata-cursors;
       size = 24;
     };
