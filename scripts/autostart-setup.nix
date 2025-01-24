@@ -13,7 +13,7 @@ let sources = import ../nix/sources.nix; in
 , __nix-utils ? callPackage sources.nix-utils {}
 , __input-setup ? callPackage ./input-setup.nix { inherit __nix-utils; }
 , __autolock ? callPackage ./autolock.nix { inherit __nix-utils; }
-, __picom ? (callPackage ./picom.nix { inherit __nix-utils; }).run-picom
+, __picom ? (callPackage ./picom.nix { inherit __nix-utils systemConfig; }).run-picom
 , __screen-saver ? callPackage ./screen-saver {}
 
 # Build options
@@ -67,8 +67,7 @@ writeCheckedExecutable name checkPhase ''
   fi
   ${
     # Disable autostart of Picom on some of the machines
-    if hostName != rw-wenzel-nixos-laptop.networking.hostName
-    && hostName != wenzel-silver-laptop.networking.hostName
+    if hostName != wenzel-silver-laptop.networking.hostName
     && hostName != wenzel-rusty-chunk.networking.hostName
     then esc executables.${__picom.name}
     else ""

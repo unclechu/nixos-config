@@ -8,6 +8,11 @@ let sources = import ../nix/sources.nix; in
 
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
+
+# Build options
+, # System config (e.g. self-reference) to extract machine host name.
+  # Set to “null” to use in Nix REPL.
+  systemConfig
 }:
 let
   inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
@@ -32,6 +37,20 @@ let
 
   restartFeh = "if [ -f ~/.fehbg ]; then . ~/.fehbg & fi";
 
+  hostName = systemConfig.networking.hostName or null;
+  rw-wenzel-nixos-laptop = callPackage ../hardware/rw-wenzel-nixos-laptop.nix {};
+
+  optionalVsyncFlag =
+    # Enable “vsync” for machines that use “modesetting” driver.
+    # After “intel” driver was removed in NixOS 24.11 release “modesetting” is
+    # the one that is supposed to be used. But despite
+    # “Option "TearFree" "true"” being set there is still tearing everywhere
+    # with “modesetting”. So using Picom with “--vsync” is the solution to fix
+    # the screen tearing for “modesetting” videodriver.
+    if hostName == rw-wenzel-nixos-laptop.networking.hostName
+    then "--vsync"
+    else "";
+
   run-picom = writeCheckedExecutable "run-${name}" checkPhase ''
     #! ${executables.dash}
     exec <&-
@@ -53,7 +72,7 @@ let
       -o 0.3 \
       -m 0.9 \
       --xinerama-shadow-crop \
-      $blur \
+      ${optionalVsyncFlag} $blur \
       &
 
     ${restartFeh}
