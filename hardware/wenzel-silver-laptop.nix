@@ -65,19 +65,4 @@
       DefaultDepth 24
     '';
   };
-
-  # Use Intel by default.
-  #
-  # In NixOS 24.05 Radeon is the default one (when DRI_PRIME=0 or not set),
-  # and OpenGL is malfunctioning with it. I see only glithces, some lines,
-  # the picture is barely resembling the one I’m supposed to see. Totally
-  # unusable.
-  #
-  #   $ DRI_PRIME=0 glxinfo | rg -i opengl | rg -i renderer
-  #   OpenGL renderer string: AMD Radeon R5 M465 Series (radeonsi, iceland, LLVM 17.0.6, DRM 3.57, 6.9.3)
-  #
-  #   $ DRI_PRIME=1 glxinfo | rg -i opengl | rg -i renderer
-  #   OpenGL renderer string: Mesa Intel(R) UHD Graphics 620 (KBL GT2)
-  #
-  environment.variables.DRI_PRIME = "1";
 }
