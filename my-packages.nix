@@ -69,7 +69,7 @@ let
   pa-add-mono-sink = pkgs.callPackage scripts/pa-add-mono-sink.nix {};
   autostart-setup = pkgs.callPackage scripts/autostart-setup.nix { inherit systemConfig; };
   input-setup = pkgs.callPackage scripts/input-setup.nix {};
-  picom = pkgs.callPackage scripts/picom.nix { inherit systemConfig; };
+  wenzels-picom = pkgs.callPackage scripts/wenzels-picom { inherit systemConfig; };
   genpass = pkgs.callPackage scripts/genpass.nix {};
   pointers = pkgs.callPackage scripts/pointers.nix {};
   pulseaudio-share-server = pkgs.callPackage scripts/pulseaudio-share-server.nix {};
@@ -382,8 +382,7 @@ in
       timer
       genpass
       pa-add-mono-sink
-      picom.run-picom
-      picom.no-picom
+      wenzels-picom
       pulseaudio-share-server
       rt-audio
       screen-saver

@@ -13,7 +13,7 @@ let sources = import ../nix/sources.nix; in
 , __nix-utils ? callPackage sources.nix-utils {}
 , __input-setup ? callPackage ./input-setup.nix { inherit __nix-utils; }
 , __autolock ? callPackage ./autolock.nix { inherit __nix-utils; }
-, __picom ? (callPackage ./picom.nix { inherit __nix-utils systemConfig; }).run-picom
+, __wenzels-picom ? callPackage ./wenzels-picom { inherit __nix-utils systemConfig; }
 , __screen-saver ? callPackage ./screen-saver {}
 
 # Build options
@@ -23,7 +23,7 @@ let sources = import ../nix/sources.nix; in
 }:
 assert lib.isDerivation __input-setup;
 assert lib.isDerivation __autolock;
-assert lib.isDerivation __picom;
+assert lib.isDerivation __wenzels-picom;
 let
   inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
@@ -38,7 +38,7 @@ let
 
     ${__input-setup.name} = __input-setup;
     ${__autolock.name} = __autolock;
-    ${__picom.name} = __picom;
+    run-picom = __wenzels-picom;
     ${__screen-saver.name} = __screen-saver;
   };
 
@@ -69,7 +69,7 @@ writeCheckedExecutable name checkPhase ''
     # Disable autostart of Picom on some of the machines
     if hostName != wenzel-silver-laptop.networking.hostName
     && hostName != wenzel-rusty-chunk.networking.hostName
-    then esc executables.${__picom.name}
+    then esc executables.run-picom
     else ""
   }
   if [[ -f ~/.fehbg ]]; then . ~/.fehbg & fi
