@@ -1,8 +1,6 @@
 #! /usr/bin/env nix-shell
 #! nix-shell --pure -i raku -E
-#! nix-shell "let d=[p.rakudo p.coreutils p.gnupg p.diffutils];p=import(import channels/nixos-pin.nix){};in p.mkShell{buildInputs=d;}"
-
-# WARNING! Run from the project root (from where “channels/nixos-pin.nix” can be found).
+#! nix-shell "let d=[p.rakudo p.coreutils p.gnupg p.diffutils];p=import(import ./channels/nixos-pin.nix){};in p.mkShell{buildInputs=d;}"
 
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
