@@ -158,6 +158,7 @@ in
       pkgs.usbutils
       pkgs.dnsutils
       pkgs.lm_sensors
+      pkgs.dmidecode
 
       # programming languages
       ## haskell
