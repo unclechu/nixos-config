@@ -11,7 +11,7 @@ let
     pkgs-unstable = import <nixos-unstable> {};
   in {
     inherit (pkgs-unstable.python3Packages) yt-dlp;
-    inherit (pkgs-unstable) freetube;
+    inherit (pkgs-unstable) freetube ardour;
   };
 
   # *** apps ***
@@ -203,7 +203,8 @@ in
       pkgs.patchance
       pkgs.audacious
       pkgs.audacity
-      pkgs.ardour
+      # Use newer Ardour 8.11 instead of 8.8 (8.8 is very buggy)
+      unstable.ardour
       pkgs.guitarix
       pkgs.normalize
       pkgs.sonic-visualiser
