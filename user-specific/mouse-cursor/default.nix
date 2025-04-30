@@ -3,7 +3,6 @@
 { pkgs, ... }:
 let
   inherit (import ../../constants.nix) wenzelUserName;
-  left-handed-bibata-cursors = pkgs.callPackage ./left-handed-bibata-cursors.nix {};
 in
 {
   home-manager.users.${wenzelUserName} = {
@@ -14,7 +13,7 @@ in
       };
 
       name = "Bibata-Original-Ice-Right";
-      package = left-handed-bibata-cursors;
+      package = pkgs.bibata-cursors;
       size = 24;
     };
   };
