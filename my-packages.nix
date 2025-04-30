@@ -345,6 +345,7 @@ in
 
       # extra utils
       pkgs.mat2
+      pkgs.tcpdump
     ];
 
     programs.tmux = {
