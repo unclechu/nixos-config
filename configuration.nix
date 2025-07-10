@@ -29,6 +29,9 @@ in
     ./user-specific.nix
     ./machine-specific.nix
     ./qt-apps-crashing-fix.nix
+
+    # Custom options
+    custom-options/unfree-predicates.nix
   ] ++ (
     let path = ./secret.nix; in
     lib.optional (builtins.pathExists path) path
@@ -53,10 +56,15 @@ in
   };
 
   nixpkgs = {
-    config.permittedInsecurePackages = [
-      # Temporary exception for some of the Matrix clients.
-      "olm-3.2.16"
-    ];
+    config = {
+      permittedInsecurePackages = [
+        # Temporary exception for some of the Matrix clients.
+        "olm-3.2.16"
+      ];
+
+      allowUnfreePredicate = pkg:
+        builtins.foldl' (acc: f: f pkg || acc) false config.unfreePredicates;
+    };
 
     overlays = (import ./overlays) ++ [
       # A hack to make system profile name available in all of the modules.
