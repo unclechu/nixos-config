@@ -41,7 +41,11 @@ in
   ];
 
   boot = {
-    kernel.sysctl = { "vm.swappiness" = 10; "fs.inotify.max_user_watches" = 524288; };
+    kernel.sysctl = {
+      "vm.swappiness" = lib.mkForce 10;
+      "fs.inotify.max_user_watches" = lib.mkForce 524288;
+    };
+
     kernelModules = lib.mkForce (boot.kernelModules ++ [ "snd-seq" "snd-rawmidi" ]);
     kernelParams = lib.mkForce (boot.kernelParams ++ [ "threadirq" ]);
     kernelPackages = lib.mkForce pkgs.linuxPackages-rt_latest;
