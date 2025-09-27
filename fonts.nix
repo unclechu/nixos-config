@@ -1,6 +1,6 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 {
   console.font = "Lat2-Terminus16";
 
@@ -14,9 +14,11 @@
       pkgs.fira-code-symbols
       pkgs.iosevka
       pkgs.ibm-plex
-      pkgs.nerdfonts
       pkgs.jetbrains-mono
-    ];
+    ] ++
+      builtins.filter
+        lib.attrsets.isDerivation
+        (builtins.attrValues pkgs.nerd-fonts);
 
     fontconfig = {
       antialias = true;

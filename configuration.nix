@@ -116,15 +116,6 @@ in
     # chromium = {};
   };
 
-  hardware = {
-    pulseaudio = {
-      enable = true;
-      support32Bit = true; # Support 32-bit applications just in case
-      # Usually I’m permanently running JACK daemon forwarding PulseAudio into it
-      package = pkgs.pulseaudio.override { jackaudioSupport = true; };
-    };
-  };
-
   services = {
     printing.enable = false; # CUPS to print documents (have no printer yet)
     upower.enable = true; # Getting info about battery charge via D-Bus
@@ -132,6 +123,12 @@ in
     tumbler.enable = true; # Thumbnails for images
     ratbagd.enable = true; # Gaming mouse configuration daemon
 
+    pulseaudio = {
+      enable = true;
+      support32Bit = true; # Support 32-bit applications just in case
+      # Usually I’m permanently running JACK daemon forwarding PulseAudio into it
+      package = pkgs.pulseaudio.override { jackaudioSupport = true; };
+    };
     # It’s supposed to be `false` by default but somehow it’s not?
     #
     # I was getting this error if this is not set here to `false`:

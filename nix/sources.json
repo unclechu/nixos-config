@@ -17,10 +17,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "bashrc",
-        "rev": "e1369b5479b0b53977a39a2898a883cc13d9ad48",
-        "sha256": "0wi5my9wgh719md06l15zcka2x9anvy8mfa2s7fx61q9n532sc7z",
+        "rev": "38e61bb3aa26de34bdac04ea8931b019bac8b31c",
+        "sha256": "0gji63dfvic33rngxxr0ql1mnhmamjhb302264f8kdm6hg5h28ds",
         "type": "tarball",
-        "url": "https://github.com/unclechu/bashrc/archive/e1369b5479b0b53977a39a2898a883cc13d9ad48.tar.gz",
+        "url": "https://github.com/unclechu/bashrc/archive/38e61bb3aa26de34bdac04ea8931b019bac8b31c.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "gpaste-gui": {
@@ -36,15 +36,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "home-manager": {
-        "branch": "release-24.11",
+        "branch": "release-25.05",
         "description": "Manage a user environment using Nix  [maintainer=@rycee] ",
         "homepage": "https://nix-community.github.io/home-manager/",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "d5f1f641b289553927b3801580598d200a501863",
-        "sha256": "1mwq9mzyw1al03z4q2ifbp6d0f0sx9f128xxazwrm62z0rcgv4na",
+        "rev": "3b955f5f0a942f9f60cdc9cacb7844335d0f21c3",
+        "sha256": "0q3lv288xlzxczh6lc5lcw0zj9qskvjw3pzsrgvdh8rl8ibyq75s",
         "type": "tarball",
-        "url": "https://github.com/nix-community/home-manager/archive/d5f1f641b289553927b3801580598d200a501863.tar.gz",
+        "url": "https://github.com/nix-community/home-manager/archive/3b955f5f0a942f9f60cdc9cacb7844335d0f21c3.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "i3rc": {
@@ -65,10 +65,10 @@
         "homepage": "",
         "owner": "musnix",
         "repo": "musnix",
-        "rev": "d56a15f30329f304151e4e05fa82264d127da934",
-        "sha256": "1q55vg0mcbagn3l4hj3ljzijzvd3id5rjsc2zv577fq1qwlrn4kr",
+        "rev": "7ccc92050e43dc92309396c6f2fe1f542214a242",
+        "sha256": "1wg2iflnr0062c34d0iqk2hyn27jshsz79a1i1qqc7j1hixspxx8",
         "type": "tarball",
-        "url": "https://github.com/musnix/musnix/archive/d56a15f30329f304151e4e05fa82264d127da934.tar.gz",
+        "url": "https://github.com/musnix/musnix/archive/7ccc92050e43dc92309396c6f2fe1f542214a242.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {
@@ -77,10 +77,10 @@
         "homepage": "https://github.com/equalsraf/neovim-qt/wiki",
         "owner": "equalsraf",
         "repo": "neovim-qt",
-        "rev": "6c506094f5d0e9663a3a907622d5aef8e19de85f",
-        "sha256": "0i7gr33q85mg1znf2383lqan7cbsb2kh7k9hzzb62yjmgj1yvgmg",
+        "rev": "9a127715689e6e22b4d3e862626cde83373899ab",
+        "sha256": "13s7bfmrphk0dhgkm19nrs7lb9nmvh26qzwggr78xr0nnmvzxk4d",
         "type": "tarball",
-        "url": "https://github.com/equalsraf/neovim-qt/archive/6c506094f5d0e9663a3a907622d5aef8e19de85f.tar.gz",
+        "url": "https://github.com/equalsraf/neovim-qt/archive/9a127715689e6e22b4d3e862626cde83373899ab.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovimrc": {
@@ -89,10 +89,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "6438675b921230d57bd545f766f24a7bbec82af7",
-        "sha256": "0yl4w49c42d75smfbw0rnps8iwipig19safwg00avjd68l3ryj2h",
+        "rev": "a17117c736737f1c04a597bf41c67b9d51494b7f",
+        "sha256": "1vica4iwc8wk73fdw62sjvwnqbxnzishwqn0lrxc865cbiivvf7s",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/6438675b921230d57bd545f766f24a7bbec82af7.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/a17117c736737f1c04a597bf41c67b9d51494b7f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-utils": {

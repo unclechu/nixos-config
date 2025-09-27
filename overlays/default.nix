@@ -3,4 +3,5 @@
 [
   (import ./neovim-qt.nix)
   (import ./qt-kvantum-extra-themes.nix)
+  (import ./fix-qm-interpolated-string-hs-pkg.nix)
 ]

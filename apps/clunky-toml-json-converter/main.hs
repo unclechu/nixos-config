@@ -47,8 +47,9 @@ import Data.String (fromString)
 import qualified Toml as TOML
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.KeyMap as JSON
+import qualified Data.Aeson.Key as JSON
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import qualified Data.Text as Text
+import qualified Data.Text.IO as Text
 import qualified Data.Vector as Vector
 import qualified Data.Map.Strict as Map
 
@@ -59,7 +60,7 @@ main =
       putStr usageInfo
 
     ["toml2json"] →
-      (readFile "/dev/stdin" <&> TOML.decode @TOML.Value) >>= \case
+      (Text.readFile "/dev/stdin" <&> TOML.decode @TOML.Value) >>= \case
         TOML.Failure e → fail $ "Failed to parse TOML:\n" <> unlines e
         TOML.Success _ x → LBS.putStrLn . JSON.encode . toml2json $ x
 
@@ -88,16 +89,16 @@ usageInfo = unlines
 toml2json ∷ TOML.Value → JSON.Value
 toml2json = \case
   TOML.Integer x → JSON.Number . fromInteger $ x
-  TOML.Float x → JSON.Number . fromRational . toRational $ x
-  TOML.Array x → JSON.Array . Vector.fromList . fmap toml2json $ x
-  TOML.Table x →
+  TOML.Double x → JSON.Number . fromRational . toRational $ x
+  TOML.List x → JSON.Array . Vector.fromList . fmap toml2json $ x
+  TOML.Table (TOML.MkTable x) →
     JSON.Object
     . JSON.fromList
-    . fmap (bimap fromString toml2json)
+    . fmap (bimap JSON.fromText (toml2json . snd))
     . Map.toList
     $ x
   TOML.Bool x → JSON.Bool x
-  TOML.String x → JSON.String . fromString $ x
+  TOML.Text x → JSON.String x
   -- The date-n-time-related types below are just “showed".
   -- This is “clunky” implementation, it’s not intended to be 100% correct.
   -- So this is a compromise I don’t really worry about for my use cases.
@@ -110,16 +111,16 @@ json2toml ∷ JSON.Value → TOML.Value
 json2toml = \case
   JSON.Object x →
     TOML.Table
-    . fmap json2toml
-    . Map.mapKeys Text.unpack
+    . TOML.MkTable
+    . fmap (((),) . json2toml)
     . JSON.toMapText
     $ x
-  JSON.Array x → TOML.Array . fmap json2toml . Vector.toList $ x
-  JSON.String x → TOML.String . Text.unpack $ x
+  JSON.Array x → TOML.List . fmap json2toml . Vector.toList $ x
+  JSON.String x → TOML.Text x
   JSON.Number x →
     case toRational x of
       y@(properFraction → (int, frac))
-        | frac /= 0 → TOML.Float . fromRational $ y
+        | frac /= 0 → TOML.Double . fromRational $ y
         | otherwise → TOML.Integer int
   JSON.Bool x → TOML.Bool x
   -- Note that in the TOML model there is no equivalent to “null”.
@@ -128,4 +129,4 @@ json2toml = \case
   -- But this program is not intended to be a correct/proper implementation,
   -- so for the simplicity of the implementation I just convert null into an
   -- empty string here.
-  JSON.Null → TOML.String mempty
+  JSON.Null → TOML.Text mempty
