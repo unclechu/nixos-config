@@ -11,7 +11,7 @@ let
     pkgs-unstable = import <nixos-unstable> {};
   in {
     inherit (pkgs-unstable.python3Packages) yt-dlp;
-    inherit (pkgs-unstable) freetube ardour;
+    inherit (pkgs-unstable) freetube ardour neovim;
   };
 
   # *** apps ***
@@ -24,10 +24,18 @@ let
 
   gpaste-gui = pkgs.callPackage sources.gpaste-gui {};
 
-  vims = import ./vims.nix {
-    inherit pkgs lib;
-    bashEnvFile = "${wenzels-bash.dir}/.bash_aliases";
-  };
+  vims =
+    let
+      patchedPkgs = pkgs.extend (self: super: {
+        # Wanna latest Neovim
+        neovim = unstable.neovim;
+      });
+    in
+    import ./vims.nix {
+      pkgs = patchedPkgs;
+      lib = patchedPkgs.lib;
+      bashEnvFile = "${wenzels-bash.dir}/.bash_aliases";
+    };
 
   terminal-emulators = import ./terminal-emulators.nix { inherit pkgs lib; };
 
