@@ -4,8 +4,6 @@
 let sources = import ../../nix/sources.nix; in
 
 { lib
-, symlinkJoin
-, makeWrapper
 , qt6
 , stdenv
 , nheko
@@ -44,20 +42,8 @@ let
       };
     }
   ) {};
-
-  # Fix no UI at all in the Nheko window, only background.
-  # Qt6 doesn’t seem to be properly set up for “kvantum” engine.
-  fixMissingKvantum = drv: symlinkJoin {
-    name = "${lib.getName drv}-missing-kvantum-fix";
-    nativeBuildInputs = [ makeWrapper ];
-    paths = [ drv ];
-    postBuild = ''
-      wrapProgram "$out"/bin/${lib.escapeShellArg (lib.getName drv)} --set QT_STYLE_OVERRIDE ""
-    '';
-  };
 in
 
 lib.pipe nheko [
   addIdenticonsSupport
-  fixMissingKvantum
 ]
