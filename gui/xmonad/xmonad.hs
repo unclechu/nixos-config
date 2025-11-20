@@ -135,9 +135,10 @@ withPolybar m = Proc.withProcessWait (Proc.proc "run-polybar" []) (const m)
 -- * Commands
 
 -- Calling terminals
-cmdTerminalDark, cmdTerminalLight ∷ String
-cmdTerminalDark = "alacritty-jetbrains-font-dark"
-cmdTerminalLight = "alacritty-jetbrains-font-light"
+tmuxedTerminalNew, tmuxedTerminalAttach, tmuxedTerminalNuke ∷ String
+tmuxedTerminalNew = "tmuxed-alacritty-jetbrains-font-dark-new"
+tmuxedTerminalAttach = "tmuxed-alacritty-jetbrains-font-dark-attach"
+tmuxedTerminalNuke = "tmuxed-alacritty-jetbrains-font-dark-nuke"
 
 -- Some SIGsomething sending commands
 cmdExterminate, cmdPause, cmdPauseRecursive, cmdResume, cmdResumeRecursive ∷ String
@@ -552,8 +553,9 @@ defaultModeKeys
 
     commandSpawningKeys = Map.fromList
       -- Terminals
-      [ ((m, XMonad.xK_Return), XMonad.spawn cmdTerminalDark)
-      , ((m .|. a, XMonad.xK_Return), XMonad.spawn cmdTerminalLight)
+      [ ((m, XMonad.xK_Return), XMonad.spawn tmuxedTerminalNew)
+      , ((m .|. a, XMonad.xK_Return), XMonad.spawn tmuxedTerminalAttach)
+      , ((m .|. s, XMonad.xK_Return), XMonad.spawn tmuxedTerminalNuke)
 
       -- App/command GUI runners
       , ((m, XMonad.xK_semicolon), XMonad.spawn cmdRunDark)

@@ -7,12 +7,37 @@ let
   termite-config = pkgs.callPackage sources.termiterc {};
   alacritty-config = pkgs.callPackage apps/alacritty {};
 
+  inherit (pkgs.callPackage scripts/tmuxed-alacritty {})
+    tmuxed-alacritty-new
+    tmuxed-alacritty-attach
+    tmuxed-alacritty-nuke
+    ;
+
   mkCustomFontTerminal = terminalConfig: defaultName: font:
-    let extract = lib.attrVals ["default" "dark" "light"]; in
-    extract terminalConfig ++
-    extract (terminalConfig.customize {
-      inherit defaultName font;
-    });
+    let
+      # attrset → [derivation]
+      extract = lib.attrVals ["default" "dark" "light"];
+
+      # [derivation]
+      terminals =
+        extract terminalConfig ++
+        extract (terminalConfig.customize {
+          inherit defaultName font;
+        });
+    in
+      builtins.foldl' (acc: x: acc ++ mkTmuxedAlacritty x) [] terminals ++
+      terminals;
+
+  # derivation → [derivation]
+  # If “alacritty” is not part of the name an empty list is returned.
+  mkTmuxedAlacritty = alacritty:
+    if builtins.match ".*(alacritty).*" (lib.getName alacritty) != ["alacritty"]
+      then []
+      else [
+        (tmuxed-alacritty-new alacritty)
+        (tmuxed-alacritty-attach alacritty)
+        (tmuxed-alacritty-nuke alacritty)
+      ];
 
   mkCustomFontTerminals = commandNameInfix: font:
     mkCustomFontTerminal termite-config "termite-${commandNameInfix}-font" font

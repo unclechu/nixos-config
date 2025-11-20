@@ -132,6 +132,7 @@ in
       pkgs.socat
       pkgs.pandoc
       tmux-config.tmuxsh
+      tmux-config.tmux-report-current-pane-cwd
       pspg
       # Fix file names extracted from a Windows ZIP archive with cyrillic chars:
       #   unzip archive.zip
