@@ -457,6 +457,7 @@ data MusicPlayerControls = MusicPlayerControls
   , mpPrevCmd ∷ String
   , mpNextCmd ∷ String
   , mpStopCmd ∷ String
+  , mpSpawnServer ∷ String
   }
   deriving (Eq, Show)
 
@@ -467,6 +468,7 @@ audaciousMusicPlayerControls = MusicPlayerControls
   , mpPrevCmd = "audacious --rew"
   , mpNextCmd = "audacious --fwd"
   , mpStopCmd = "audacious --stop"
+  , mpSpawnServer = "audacious"
   }
 
 mpvcMusicPlayerControls ∷ MusicPlayerControls
@@ -476,6 +478,7 @@ mpvcMusicPlayerControls = MusicPlayerControls
   , mpPrevCmd = "mpvc prev"
   , mpNextCmd = "mpvc next"
   , mpStopCmd = "mpvc stop"
+  , mpSpawnServer = tmuxedTerminalNew <> " music mpvc-tui -T"
   }
 
 musicPlayerControlsToKeyBindings ∷ XMonad.KeyMask → MusicPlayerControls → Keys
@@ -485,6 +488,7 @@ musicPlayerControlsToKeyBindings m x = Map.fromList
   , ((0, XF86.xF86XK_AudioPrev), XMonad.spawn x.mpPrevCmd)
   , ((0, XF86.xF86XK_AudioNext), XMonad.spawn x.mpNextCmd)
   , ((0, XF86.xF86XK_AudioStop), XMonad.spawn x.mpStopCmd)
+  , ((s, XF86.xF86XK_AudioPlay), XMonad.spawn x.mpSpawnServer)
   ]
 
 defaultModeKeys ∷ XConfig XMonad.Layout → Keys
