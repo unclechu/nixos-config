@@ -46,6 +46,7 @@
 {-# HLINT ignore "Use newtype instead of data" #-}
 {-# HLINT ignore "Use <&>" #-}
 
+{-# LANGUAGE GHC2021 #-}
 {-# LANGUAGE UnicodeSyntax #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -53,6 +54,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 
 import XMonad (XConfig (..), X, (.|.), (|||), (-->), (=?), (<&&>))
 import qualified XMonad
@@ -449,6 +451,42 @@ navigationBetweenDisplaysKeys (jumpMask, jumpMouseCursorMask, moveToMask) = Map.
     forWsOnDisplay ∷ (DisplayN → XMonad.WorkspaceId → X ()) → DisplayN → X ()
     forWsOnDisplay f n = XMonad.screenWorkspace (displayNToScreenIndex n) >>= traverse_ (f n)
 
+data MusicPlayerControls = MusicPlayerControls
+  { mpPlayCmd ∷ String
+  , mpPlayToggleCmd ∷ String
+  , mpPrevCmd ∷ String
+  , mpNextCmd ∷ String
+  , mpStopCmd ∷ String
+  }
+  deriving (Eq, Show)
+
+audaciousMusicPlayerControls ∷ MusicPlayerControls
+audaciousMusicPlayerControls = MusicPlayerControls
+  { mpPlayCmd = "audacious --play"
+  , mpPlayToggleCmd = "audacious --play-pause"
+  , mpPrevCmd = "audacious --rew"
+  , mpNextCmd = "audacious --fwd"
+  , mpStopCmd = "audacious --stop"
+  }
+
+mpvcMusicPlayerControls ∷ MusicPlayerControls
+mpvcMusicPlayerControls = MusicPlayerControls
+  { mpPlayCmd = "mpvc play"
+  , mpPlayToggleCmd = "mpvc toggle"
+  , mpPrevCmd = "mpvc prev"
+  , mpNextCmd = "mpvc next"
+  , mpStopCmd = "mpvc stop"
+  }
+
+musicPlayerControlsToKeyBindings ∷ XMonad.KeyMask → MusicPlayerControls → Keys
+musicPlayerControlsToKeyBindings m x = Map.fromList
+  [ ((m, XF86.xF86XK_AudioPlay), XMonad.spawn x.mpPlayCmd)
+  , ((0, XF86.xF86XK_AudioPlay), XMonad.spawn x.mpPlayToggleCmd)
+  , ((0, XF86.xF86XK_AudioPrev), XMonad.spawn x.mpPrevCmd)
+  , ((0, XF86.xF86XK_AudioNext), XMonad.spawn x.mpNextCmd)
+  , ((0, XF86.xF86XK_AudioStop), XMonad.spawn x.mpStopCmd)
+  ]
+
 defaultModeKeys ∷ XConfig XMonad.Layout → Keys
 defaultModeKeys
   XConfig
@@ -578,38 +616,41 @@ defaultModeKeys
       , ((m, XMonad.xK_m), XMonad.spawn "place-cursor-at")
       ]
 
-    mediaKeys = Map.fromList
-      -- Making screenshots
-      [ ((0, XMonad.xK_Print), XMonad.spawn "gnome-screenshot")
-      , ((m, XMonad.xK_Print), XMonad.spawn "gnome-screenshot -w")
-      -- TODO: Test it ↓ This bind was with “--release” flag in my i3wm config.
-      , ((0, XMonad.xK_Pause), XMonad.spawn "gnome-screenshot -a")
-      , ((m, XMonad.xK_Pause), XMonad.spawn "gnome-screenshot -ia")
-
-      -- Calculator
-      , ((0, XF86.xF86XK_Calculator), XMonad.spawn "gnome-calculator")
-
-      -- Audio player control
-      , ((m, XF86.xF86XK_AudioPlay), XMonad.spawn "audacious --play")
-      , ((0, XF86.xF86XK_AudioPlay), XMonad.spawn "audacious --play-pause")
-      , ((0, XF86.xF86XK_AudioPrev), XMonad.spawn "audacious --rew")
-      , ((0, XF86.xF86XK_AudioNext), XMonad.spawn "audacious --fwd")
-      , ((0, XF86.xF86XK_AudioStop), XMonad.spawn "audacious --stop")
-
-      -- Audio control
-      , ((m, XF86.xF86XK_AudioMute), XMonad.spawn "pamng reset")
-      , ((0, XF86.xF86XK_AudioMute), XMonad.spawn "pamng mute")
-      , ((0, XF86.xF86XK_AudioLowerVolume), XMonad.spawn "pamng dec")
-      , ((s, XF86.xF86XK_AudioLowerVolume), XMonad.spawn "pamng dec '5.0dB'")
-      , ((0, XF86.xF86XK_AudioRaiseVolume), XMonad.spawn "pamng inc")
-      , ((s, XF86.xF86XK_AudioRaiseVolume), XMonad.spawn "pamng inc '5.0dB'")
-
-      -- Adjust screen backlight level
-      , ((0, XF86.xF86XK_MonBrightnessDown), XMonad.spawn "screen-backlight -1%")
-      , ((s, XF86.xF86XK_MonBrightnessDown), XMonad.spawn "screen-backlight -5%")
-      , ((0, XF86.xF86XK_MonBrightnessUp), XMonad.spawn "screen-backlight +1%")
-      , ((s, XF86.xF86XK_MonBrightnessUp), XMonad.spawn "screen-backlight +5%")
+    mediaKeys = mconcat
+      [ makingScreenshots
+      , calculator
+      , musicPlayerControlsToKeyBindings m mpvcMusicPlayerControls
+      , audioControl
+      , screenBacklightControl
       ]
+      where
+        makingScreenshots = Map.fromList
+          [ ((0, XMonad.xK_Print), XMonad.spawn "gnome-screenshot")
+          , ((m, XMonad.xK_Print), XMonad.spawn "gnome-screenshot -w")
+          -- TODO: Test it ↓ This bind was with “--release” flag in my i3wm config.
+          , ((0, XMonad.xK_Pause), XMonad.spawn "gnome-screenshot -a")
+          , ((m, XMonad.xK_Pause), XMonad.spawn "gnome-screenshot -ia")
+          ]
+
+        calculator = Map.fromList
+          [ ((0, XF86.xF86XK_Calculator), XMonad.spawn "gnome-calculator")
+          ]
+
+        audioControl = Map.fromList
+          [ ((m, XF86.xF86XK_AudioMute), XMonad.spawn "pamng reset")
+          , ((0, XF86.xF86XK_AudioMute), XMonad.spawn "pamng mute")
+          , ((0, XF86.xF86XK_AudioLowerVolume), XMonad.spawn "pamng dec")
+          , ((s, XF86.xF86XK_AudioLowerVolume), XMonad.spawn "pamng dec '5.0dB'")
+          , ((0, XF86.xF86XK_AudioRaiseVolume), XMonad.spawn "pamng inc")
+          , ((s, XF86.xF86XK_AudioRaiseVolume), XMonad.spawn "pamng inc '5.0dB'")
+          ]
+
+        screenBacklightControl = Map.fromList
+          [ ((0, XF86.xF86XK_MonBrightnessDown), XMonad.spawn "screen-backlight -1%")
+          , ((s, XF86.xF86XK_MonBrightnessDown), XMonad.spawn "screen-backlight -5%")
+          , ((0, XF86.xF86XK_MonBrightnessUp), XMonad.spawn "screen-backlight +1%")
+          , ((s, XF86.xF86XK_MonBrightnessUp), XMonad.spawn "screen-backlight +5%")
+          ]
 
 data ResizeKeysMode
   = ResizeKeysModeNormal
