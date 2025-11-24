@@ -55,7 +55,12 @@ let
         ALACRITTY_EXE=${esc alacrittyExe}
         SKIM_EXE=${e.sk}
 
-        ${builtins.readFile srcFile}
+        ${lib.pipe srcFile [
+          builtins.readFile
+          (lib.splitString "\n")
+          lib.tail # Cut off the shebang (fixes usage info generator)
+          (builtins.concatStringsSep "\n")
+        ]}
       '';
     };
 
