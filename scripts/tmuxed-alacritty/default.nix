@@ -18,6 +18,7 @@ let
     head = coreutils;
     tail = coreutils;
     cut = coreutils;
+    sleep = coreutils;
     sed = gnused;
     grep = gnugrep;
     sk = skim;

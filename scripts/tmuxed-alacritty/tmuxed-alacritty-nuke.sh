@@ -21,7 +21,11 @@ fi
 # Guard dependencies
 >/dev/null type sort cut grep head "$TMUX_EXE" "$ALACRITTY_EXE" "$SKIM_EXE"
 
+# Improved command debug tracing
+PS4='+ [${BASH_SOURCE##*/}:${LINENO}] '
+
 if [[ ! -v IS_INNER ]]; then
+	set -o xtrace
 	exec "$ALACRITTY_EXE" -e "$0" INNER "$TMUX_EXE" "$ALACRITTY_EXE" "$SKIM_EXE"
 fi
 
@@ -60,7 +64,7 @@ while :; do
 
 	case "$answer" in
 		[yY]|[yY][eE][sS])
-			if ! "$TMUX_EXE" kill-session -t "$SELECTED_SESSION"; then
+			if ! (set -o xtrace; "$TMUX_EXE" kill-session -t "$SELECTED_SESSION"); then
 				>&2 printf 'Failed to kill tmux session “%s”.\n' "$SELECTED_SESSION"
 				exit 1
 			fi

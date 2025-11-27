@@ -20,7 +20,11 @@ fi
 # Guard dependencies
 >/dev/null type sort head cut grep "$TMUX_EXE" "$ALACRITTY_EXE" "$SKIM_EXE"
 
+# Improved command debug tracing
+PS4='+ [${BASH_SOURCE##*/}:${LINENO}] '
+
 if [[ ! -v IS_INNER ]]; then
+	set -o xtrace
 	exec "$ALACRITTY_EXE" -e "$0" INNER "$TMUX_EXE" "$ALACRITTY_EXE" "$SKIM_EXE"
 fi
 
@@ -54,4 +58,5 @@ if [[ -z $SELECTED_SESSION ]]; then
 	exit 0
 fi
 
+set -o xtrace
 exec "$TMUX_EXE" attach-session -t "$SELECTED_SESSION"

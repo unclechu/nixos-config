@@ -21,14 +21,17 @@ set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 : "${ALACRITTY_EXE:=alacritty}"
 
 # Guard dependencies
->/dev/null type sed sort tail "$TMUX_EXE" "$ALACRITTY_EXE"
+>/dev/null type sed sort tail sleep "$TMUX_EXE" "$ALACRITTY_EXE"
 >/dev/null type xdotool xprop
+
+# Improved command debug tracing
+PS4='+ [${BASH_SOURCE##*/}:${LINENO}] '
 
 gen-session-name() {
 	set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 
 	local last_num; last_num=$(
-		(tmux list-sessions -F '#{session_name}' 2>/dev/null || true) \
+		("$TMUX_EXE" list-sessions -F '#{session_name}' 2>/dev/null || true) \
 		| sed -n 's/^s\([0-9]\+\)$/\1/p' \
 		| sort -n \
 		| tail -n 1
@@ -44,7 +47,7 @@ gen-session-name() {
 if (( $# == 0 )); then
 	# No session name provided, auto-generating one
 
-	new_session_name=$(gen-session-name)
+	new_session_name=_
 
 elif (( $# == 1 )) && [[ $1 == --help || $1 == -h ]]; then
 	# Print usage info (extracted from the comment on top of this script)
@@ -72,15 +75,7 @@ elif (( $# == 1 )) && [[ $1 == --help || $1 == -h ]]; then
 elif (( $# >= 1 )) && [[ -n $1 ]]; then
 	# Session new provided
 
-	if "$TMUX_EXE" has-session -t "$1" 2>/dev/null; then
-		>&2 printf 'Error: tmux session “%s” already exists.\n' "$1"
-		exit 1
-	fi
-
 	new_session_name=$1; shift
-	if [[ $new_session_name == _ ]]; then
-		new_session_name=$(gen-session-name)
-	fi
 
 else
 	>&2 printf 'Unexpected argument: “%s”\n\n' "$@"
@@ -107,13 +102,91 @@ else
 	WORKING_DIRECTORY=$HOME
 fi
 
-CMD=(
-	"$ALACRITTY_EXE"
-	--working-directory "$WORKING_DIRECTORY"
-	-e "$TMUX_EXE" new-session
-	-s "$new_session_name"
-	-c "$WORKING_DIRECTORY"
-	"$@"
-)
+spawn-tmux-session() {
+	set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+	(( $# >= 1 )) && [[ -n $1 ]]
+	local SESSION_NAME=$1; shift
 
-exec "${CMD[@]}"
+	local NEW_SESSION_CMD; NEW_SESSION_CMD=(
+		"$TMUX_EXE"
+		new-session -d
+		-s "$SESSION_NAME"
+		-c "$WORKING_DIRECTORY"
+		"$@"
+	)
+
+	(
+		set -o xtrace
+		"${NEW_SESSION_CMD[@]}" 2>&1
+	)
+}
+
+attach-to-tmux-session() {
+	set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+	(( $# == 1 )) && [[ -n $1 ]]
+	local SESSION_NAME=$1; shift
+
+	CMD=(
+		"$ALACRITTY_EXE"
+		--working-directory "$WORKING_DIRECTORY"
+		-e "$TMUX_EXE" attach-session
+		-t "$SESSION_NAME"
+	)
+
+	set -o xtrace
+	exec "${CMD[@]}"
+}
+
+
+if [[ $new_session_name == _ ]]; then
+	# Just giving a sane limit for retries
+	RETRIES=50
+
+	for (( attempt = 1; attempt <= RETRIES; ++attempt )); do
+		new_session_name=$(gen-session-name)
+
+		if error=$(spawn-tmux-session "$new_session_name" "$@"); then
+			# `exec` inside will replace the script.
+			attach-to-tmux-session "$new_session_name"
+
+		elif [[ $error == "duplicate session: $new_session_name" ]]; then
+			>&2 printf \
+				'Attempt #%d to create “%s” tmux session failed, session name is already taken, retrying…\n' \
+				"$attempt" \
+				"$new_session_name"
+			sleep .1s
+
+		else
+			>&2 printf \
+				'[FAIL] Attempt #%d to create “%s” tmux session failed, unexpected error: %s\n' \
+				"$attempt" \
+				"$new_session_name" \
+				"$error"
+			exit 1
+		fi
+	done
+
+	>&2 echo '[FAIL] Attempts limit to create a tmux session with a generated name are reached!'
+	exit 1
+
+else
+	if error=$(spawn-tmux-session "$new_session_name" "$@"); then
+		# `exec` inside will replace the script.
+		attach-to-tmux-session "$new_session_name"
+
+	elif [[ $error == "duplicate session: $new_session_name" ]]; then
+		>&2 printf \
+			'Session name “%s” is already taken, just attaching…\n' \
+			"$new_session_name"
+
+		# `exec` inside will replace the script.
+		attach-to-tmux-session "$new_session_name"
+
+	else
+		>&2 printf \
+			'[FAIL] Failed to create “%s” tmux session, unexpected error: %s\n' \
+			"$new_session_name" \
+			"$error"
+		exit 1
+	fi
+fi
