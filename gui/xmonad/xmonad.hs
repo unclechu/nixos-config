@@ -137,10 +137,11 @@ withPolybar m = Proc.withProcessWait (Proc.proc "run-polybar" []) (const m)
 -- * Commands
 
 -- Calling terminals
-tmuxedTerminalNew, tmuxedTerminalAttach, tmuxedTerminalNuke ∷ String
+tmuxedTerminalNew, tmuxedTerminalAttach, tmuxedTerminalNuke, tmuxedTerminalNewPrompt ∷ String
 tmuxedTerminalNew = "tmuxed-alacritty-jetbrains-font-dark-new"
 tmuxedTerminalAttach = "tmuxed-alacritty-jetbrains-font-dark-attach"
 tmuxedTerminalNuke = "tmuxed-alacritty-jetbrains-font-dark-nuke"
+tmuxedTerminalNewPrompt = "tmuxed-alacritty-jetbrains-font-dark-new-prompt"
 
 -- Some SIGsomething sending commands
 cmdExterminate, cmdPause, cmdPauseRecursive, cmdResume, cmdResumeRecursive ∷ String
@@ -597,7 +598,7 @@ defaultModeKeys
       -- Terminals
       [ ((m, XMonad.xK_Return), XMonad.spawn tmuxedTerminalNew)
       , ((m .|. a, XMonad.xK_Return), XMonad.spawn tmuxedTerminalAttach)
-      , ((m .|. s, XMonad.xK_Return), XMonad.spawn tmuxedTerminalNuke)
+      , ((m .|. s, XMonad.xK_Return), XMonad.spawn tmuxedTerminalNewPrompt)
 
       -- App/command GUI runners
       , ((m, XMonad.xK_semicolon), XMonad.spawn cmdRunDark)
@@ -843,6 +844,8 @@ doKeysMode ∷ Modal.Mode
     in
     Map.fromList
     [ ((0, XMonad.xK_Escape), Modal.exitMode)
+
+    , ((m, XMonad.xK_Return), XMonad.spawn tmuxedTerminalNuke >> Modal.exitMode)
 
     -- Restart XMonad applying the new configuration.
     -- Mnemonic: ‘r’ is for ‘Restart’.
