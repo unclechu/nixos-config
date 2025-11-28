@@ -11,6 +11,7 @@ let
     tmuxed-alacritty-new
     tmuxed-alacritty-attach
     tmuxed-alacritty-nuke
+    tmuxed-alacritty-new-prompt
     ;
 
   mkCustomFontTerminal = terminalConfig: defaultName: font:
@@ -33,10 +34,13 @@ let
   mkTmuxedAlacritty = alacritty:
     if builtins.match ".*(alacritty).*" (lib.getName alacritty) != ["alacritty"]
       then []
-      else [
-        (tmuxed-alacritty-new alacritty)
+      else let new = (tmuxed-alacritty-new alacritty); in [
+        new
         (tmuxed-alacritty-attach alacritty)
         (tmuxed-alacritty-nuke alacritty)
+        (tmuxed-alacritty-new-prompt {
+          TMUXED_ALACRITTY_EXE = "${new}/bin/${lib.getName new}";
+        } alacritty)
       ];
 
   mkCustomFontTerminals = commandNameInfix: font:

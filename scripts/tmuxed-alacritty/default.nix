@@ -19,6 +19,10 @@ let
     tail = coreutils;
     cut = coreutils;
     sleep = coreutils;
+    realpath = coreutils;
+    nohup = coreutils;
+    dirname = coreutils;
+    basename = coreutils;
     sed = gnused;
     grep = gnugrep;
     sk = skim;
@@ -32,7 +36,7 @@ let
   e = builtins.mapAttrs (n: v: esc (bin v n)) executables;
   executableFileCheck = x: "[[ -f ${x} || -r ${x} || -x ${x} ]]";
 
-  mkScript = action: srcFile: alacrittyPkg:
+  mkScript = action: srcFile: extraEnvMap: alacrittyPkg:
     let alacrittyExe = "${alacrittyPkg}/bin/${lib.getName alacrittyPkg}"; in
     writeTextFile rec {
       name = "tmuxed-${lib.getName alacrittyPkg}-${action}";
@@ -56,6 +60,16 @@ let
         ALACRITTY_EXE=${esc alacrittyExe}
         SKIM_EXE=${e.sk}
 
+        ${lib.pipe extraEnvMap [
+          (x: assert builtins.isAttrs x; x)
+          lib.attrsToList
+          (map (x:
+            assert builtins.match "^[A-Z_]+$" x.name != null;
+            "${x.name}=${esc x.value}"
+          ))
+          (builtins.concatStringsSep "\n")
+        ]}
+
         ${lib.pipe srcFile [
           builtins.readFile
           (lib.splitString "\n")
@@ -66,11 +80,17 @@ let
     };
 
   tmuxed-alacritty-new =
-    mkScript "new" ./tmuxed-alacritty-new.sh;
+    mkScript "new" ./tmuxed-alacritty-new.sh {};
   tmuxed-alacritty-attach =
-    mkScript "attach" ./tmuxed-alacritty-attach.sh;
+    mkScript "attach" ./tmuxed-alacritty-attach.sh {};
   tmuxed-alacritty-nuke =
-    mkScript "nuke" ./tmuxed-alacritty-nuke.sh;
+    mkScript "nuke" ./tmuxed-alacritty-nuke.sh {};
+
+  # You are supposed to pass `{ TMUXED_ALACRITTY_EXE = tmuxed-alacritty-new; }`
+  # to this one. Or a specific wrapper for `tmuxed-alacritty-new`, like one
+  # bound to a colorscheme and/or font.
+  tmuxed-alacritty-new-prompt =
+    mkScript "new-prompt" ./tmuxed-alacritty-new-prompt.sh;
 in
 
 {
@@ -78,5 +98,6 @@ in
     tmuxed-alacritty-new
     tmuxed-alacritty-attach
     tmuxed-alacritty-nuke
+    tmuxed-alacritty-new-prompt
     ;
 }

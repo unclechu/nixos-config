@@ -21,7 +21,15 @@ set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 : "${ALACRITTY_EXE:=alacritty}"
 
 # Guard dependencies
->/dev/null type sed sort tail sleep "$TMUX_EXE" "$ALACRITTY_EXE"
+(X=$TMUX_EXE; if ! >/dev/null type -P -- "$X" && ! [[ -r $X && -x $X ]]; then
+	>&2 printf '[FAIL] Missing TMUX_EXE “%s” dependency' "$X"
+	exit 1
+fi)
+(X=$ALACRITTY_EXE; if ! >/dev/null type -P -- "$X" && ! [[ -r $X && -x $X ]]; then
+	>&2 printf '[FAIL] Missing ALACRITTY_EXE “%s” dependency' "$X"
+	exit 1
+fi)
+>/dev/null type sed sort tail sleep
 >/dev/null type xdotool xprop
 
 # Improved command debug tracing
@@ -43,6 +51,12 @@ gen-session-name() {
 		printf 's%d\n' "$(( last_num + 1 ))"
 	fi
 }
+
+# Support overriding WORKING_DIRECTORY via arguments
+if (( $# > 0 )) && [[ $1 =~ ^WORKING_DIRECTORY=(.+)$ ]]; then
+	working_directory=${BASH_REMATCH[1]}
+	shift
+fi
 
 if (( $# == 0 )); then
 	# No session name provided, auto-generating one
@@ -83,23 +97,27 @@ else
 	exit 1
 fi
 
-if ACTIVE_WINDOW_ID=$(xdotool getactivewindow); then
+# Getting working directory for the new terminal
+if [[ -v working_directory && -n $working_directory ]]; then
+	: # Already set via arguments
+
+elif ACTIVE_WINDOW_ID=$(xdotool getactivewindow); then
 	TMUX_PANE_CWD=$(
 		xprop -id "$ACTIVE_WINDOW_ID" TMUX_PANE_CWD 2>/dev/null \
 		| sed -n 's/^TMUX_PANE_CWD(STRING) = "\(.\+\)"$/\1/p'
 	)
 
 	if [[ -n $TMUX_PANE_CWD ]]; then
-		WORKING_DIRECTORY=$TMUX_PANE_CWD
+		working_directory=$TMUX_PANE_CWD
 	else
 		# Last focused window might be not a terminal emulator
 		# and would not have this property set then.
-		WORKING_DIRECTORY=$HOME
+		working_directory=$HOME
 	fi
 else
 	# For an empty workspace there will be a failure to `getactivewindow`.
 	# It is normal, just defaulting to HOME.
-	WORKING_DIRECTORY=$HOME
+	working_directory=$HOME
 fi
 
 spawn-tmux-session() {
@@ -111,7 +129,7 @@ spawn-tmux-session() {
 		"$TMUX_EXE"
 		new-session -d
 		-s "$SESSION_NAME"
-		-c "$WORKING_DIRECTORY"
+		-c "$working_directory"
 		"$@"
 	)
 
@@ -128,7 +146,7 @@ attach-to-tmux-session() {
 
 	CMD=(
 		"$ALACRITTY_EXE"
-		--working-directory "$WORKING_DIRECTORY"
+		--working-directory "$working_directory"
 		-e "$TMUX_EXE" attach-session
 		-t "$SESSION_NAME"
 	)
