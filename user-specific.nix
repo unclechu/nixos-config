@@ -79,6 +79,13 @@ in
       };
     };
 
+    dconf.settings = {
+      "org/gnome/desktop/interface" = {
+        # Dark theme for Gnome apps (e.g. gnome-calculator & gnome-system-monitor)
+        color-scheme = "prefer-dark";
+      };
+    };
+
     home.file.".bashrc".text = ''
       . ${lib.escapeShellArg wenzels-bash.history-settings-file-path}
     '';

@@ -51,6 +51,14 @@ in
     style = "kvantum";
   };
 
+  xdg.portal = {
+    enable = true;
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    config.common = {
+      default = [ "gtk" ];
+    };
+  };
+
   # X11
   services.xserver = {
     enable = true;
