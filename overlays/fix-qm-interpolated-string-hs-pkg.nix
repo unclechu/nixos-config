@@ -1,7 +1,7 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-# An overlay that fixes “qm-interpolated-string” package in nixos-25.05 release.
+# An overlay that fixes “qm-interpolated-string” package since nixos-25.05 release.
 self: super:
 {
   haskellPackages = super.haskellPackages.override {

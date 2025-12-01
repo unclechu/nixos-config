@@ -32,6 +32,7 @@ in
 
     # Custom options
     custom-options/unfree-predicates.nix
+    custom-options/whitelisted-insecure-packages.nix
   ] ++ (
     let path = ./secret.nix; in
     lib.optional (builtins.pathExists path) path
@@ -55,13 +56,14 @@ in
     '';
   };
 
+  whitelistedInsecurePackages = [
+    # Temporary exception for some of the Matrix clients.
+    "olm-3.2.16"
+  ];
+
   nixpkgs = {
     config = {
-      permittedInsecurePackages = [
-        # Temporary exception for some of the Matrix clients.
-        "olm-3.2.16"
-      ];
-
+      permittedInsecurePackages = config.whitelistedInsecurePackages;
       allowUnfreePredicate = pkg:
         builtins.foldl' (acc: f: f pkg || acc) false config.unfreePredicates;
     };
@@ -101,7 +103,6 @@ in
     seahorse.enable = true;
     dconf.enable = true;
     gpaste.enable = true;
-    file-roller.enable = true;
     bash.completion.enable = true;
     zsh.enable = true;
     zsh.enableCompletion = true;

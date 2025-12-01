@@ -243,7 +243,7 @@ in
       pkgs.x42-plugins
       pkgs.zam-plugins
       midi-trigger
-      pkgs.CHOWTapeModel
+      pkgs.chow-tape-model
       pkgs.lilv # Provides useful tools like “lv2ls”
       pkgs.jalv
       # Restore old `jalv.gtk` executable by symlinking it to the new `jalv.gtk3`
@@ -255,7 +255,7 @@ in
       pkgs.lsp-plugins
 
       # graphics
-      pkgs.glxinfo # debugging opengl system setup
+      pkgs.mesa-demos # e.g. glxinfo for debugging opengl system setup
       pkgs.libva-utils
       pkgs.picom # x11/xorg compositing manager
       pkgs.arandr # simple gui for display/xinerama configuration
@@ -298,6 +298,7 @@ in
       pkgs.gnome-power-manager
       pkgs.gnome-calendar
       pkgs.gnome-calculator
+      pkgs.file-roller
       pkgs.eog # Image viewer
       pkgs.evince # Document (e.g. PDF) viwer
       pkgs.d-spy # DBus inspector GUI (a C rewrite of “dfeet”)

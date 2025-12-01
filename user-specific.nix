@@ -58,21 +58,24 @@ in
 
     programs.git = {
       enable = true;
-      userName = "Viacheslav Lotsmanov";
-      userEmail = "lotsmanov89@gmail.com";
 
-      signing = {
-        signByDefault = true;
-        key = null;
-      };
+      settings = {
+        user = {
+          name = "Viacheslav Lotsmanov";
+          email = "lotsmanov89@gmail.com";
+        };
 
-      extraConfig = {
         # Enable support for git-subtrac kind of techniques for managing Git
         # Submodules. When submodule path is set to the same repo (e.g. “.”)
         # Git fails to do git-submodule-update with an error like this:
         # “fatal: transport 'file' not allowed”. This fixes this problem.
         # See also https://github.com/apenwarr/git-subtrac
         protocol.file.allow = "always";
+      };
+
+      signing = {
+        signByDefault = true;
+        key = null;
       };
     };
 

@@ -6,8 +6,8 @@
     let
       extras = [
         "mesa"
-        "vaapiVdpau"
-        "vaapiIntel"
+        "libva-vdpau-driver"
+        "intel-vaapi-driver"
         "libvdpau-va-gl"
         "libva"
       ];

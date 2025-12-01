@@ -19,7 +19,7 @@ self: super:
           ];
         });
     in
-      super.makeOverridable ({ neovim }: super.neovim-qt.overrideAttrs (srcAttrs: srcAttrs // {
+      super.lib.makeOverridable ({ neovim }: super.neovim-qt.overrideAttrs (srcAttrs: srcAttrs // {
         version = unwrapped.version;
 
         buildCommand = ''

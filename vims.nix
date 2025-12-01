@@ -10,7 +10,7 @@ let
   inherit (import ./constants.nix) wenzelUserName;
 
   system-vim = lib.fix (r: {
-    vim = pkgs.vim_configurable.customize {
+    vim = pkgs.vim-full.customize {
       name = "vim";
       vimrcConfig.packages.myplugins = {
         start = [ pkgs.vimPlugins.vim-nix ];
