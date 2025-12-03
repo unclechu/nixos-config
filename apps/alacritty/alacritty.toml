@@ -6,5 +6,9 @@ style = { blinking = "Off" }
 blink_interval = 500
 
 [font]
-size = 9
+size = 10
 normal = { family = "Hack" }
+
+[env]
+# Make the font size scaling independent of screen DPI.
+WINIT_X11_SCALE_FACTOR = "1.0"
