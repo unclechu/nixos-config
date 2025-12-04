@@ -34,7 +34,7 @@ let
     inherit neovide;
   });
 
-  neovide = pkgs.neovide;
+  neovide = pkgs.callPackage apps/neovide.nix {};
 
   wenzels-neovim = pkgs.callPackage apps/wenzels-neovim.nix {
     inherit (pkgs) neovim;
