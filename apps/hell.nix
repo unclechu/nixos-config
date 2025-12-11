@@ -36,59 +36,25 @@ let
     p.aeson-pretty
   ]);
 
-  # -XTypeInType is deprecated: use -XDataKinds and -XPolyKinds instead
   ghciScript = ''
+    :set -XGHC2024
+    :set -XUnicodeSyntax
     :set -XNoMonomorphismRestriction
     :set -XOverloadedStrings
-    :set -XLambdaCase
-    :set -XUnicodeSyntax
-    :set -XTupleSections
-    :set -XBangPatterns
+    :set -XOverloadedRecordDot
+    :set -XDuplicateRecordFields
     :set -XViewPatterns
     :set -XPackageImports
-    :set -XImportQualifiedPost
-    :set -XExplicitNamespaces
-    -- :set -XFieldSelectors
-    :set -XNumericUnderscores
-    :set -XNamedWildCards
-    :set -XNamedFieldPuns
     :set -XRecordWildCards
-
     :set -XQuasiQuotes
     :set -XTemplateHaskell
-
-    :set -XGADTs
     :set -XDerivingVia
-    :set -XDerivingStrategies
-    :set -XStandaloneDeriving
     :set -XGeneralizedNewtypeDeriving
-    :set -XDeriveGeneric
     :set -XDeriveAnyClass
-    :set -XDeriveFunctor
-    :set -XEmptyDataDeriving
-
-    :set -XEmptyCase
-    :set -XEmptyDataDecls
-    :set -XMultiParamTypeClasses
     :set -XFunctionalDependencies
-    :set -XExistentialQuantification
-    :set -XInstanceSigs
-    :set -XStandaloneKindSignatures
-
-    :set -XDuplicateRecordFields
-
-    :set -XDataKinds
     :set -XTypeFamilies
-    :set -XTypeOperators
-    :set -XTypeApplications
-    :set -XScopedTypeVariables
-    :set -XRankNTypes
-    :set -XPolyKinds
     :set -XNoStarIsType
-    :set -XFlexibleContexts
-    :set -XFlexibleInstances
     :set -XUndecidableInstances
-    :set -XTypeSynonymInstances
 
     :set prompt "λ "
 
@@ -103,6 +69,7 @@ let
     import Data.Proxy
     import Data.Kind
     import GHC.TypeLits
+    import GHC.Generics
 
     import Data.Char
     import Data.String
