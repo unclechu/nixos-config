@@ -17,10 +17,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "bashrc",
-        "rev": "f5711dc89ada9c89d7afbb805fb9cacd70b6f47e",
-        "sha256": "0chksmz18a17aa14cv87f4609v1qfymjcdxf9qz0vw2hvw261n9b",
+        "rev": "2de9fa421703328fa2d87b6dd501e394a6891a6b",
+        "sha256": "0rjijaalwv06lvqgjidy84hzkaksji5qrfz255pibhrv5nvqg971",
         "type": "tarball",
-        "url": "https://github.com/unclechu/bashrc/archive/f5711dc89ada9c89d7afbb805fb9cacd70b6f47e.tar.gz",
+        "url": "https://github.com/unclechu/bashrc/archive/2de9fa421703328fa2d87b6dd501e394a6891a6b.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "gpaste-gui": {
@@ -41,10 +41,10 @@
         "homepage": "https://nix-community.github.io/home-manager/",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "e1680d594a9281651cbf7d126941a8c8e2396183",
-        "sha256": "0l08gm05vlv9vfhykrcrrr8rs8x2gh8wx934pcsvmv1ab8d45vkp",
+        "rev": "fdec8815a86db36f42fc9c8cb2931cd8485f5aed",
+        "sha256": "04lh9fd92bvami7j15fi785y5l2r1g7nb9w0b5iim39f8jdfsr5i",
         "type": "tarball",
-        "url": "https://github.com/nix-community/home-manager/archive/e1680d594a9281651cbf7d126941a8c8e2396183.tar.gz",
+        "url": "https://github.com/nix-community/home-manager/archive/fdec8815a86db36f42fc9c8cb2931cd8485f5aed.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "i3rc": {

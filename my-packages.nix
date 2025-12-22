@@ -67,7 +67,6 @@ let
     inherit (pkgs) nim;
   };
 
-  hsc2hs-pipe = wenzels-bash.hsc2hs-pipe;
   timer = pkgs.callPackage scripts/timer {};
 
   dzen-box = pkgs.callPackage scripts/dzen-box {};
@@ -392,7 +391,6 @@ in
       locktop
       pamng
       screen-backlight
-      hsc2hs-pipe
       timer
       genpass
       pa-add-mono-sink
