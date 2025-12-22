@@ -68,7 +68,7 @@ let
   };
 
   hsc2hs-pipe = wenzels-bash.hsc2hs-pipe;
-  timer = wenzels-bash.timer;
+  timer = pkgs.callPackage scripts/timer {};
 
   dzen-box = pkgs.callPackage scripts/dzen-box {};
   screen-backlight = pkgs.callPackage scripts/screen-backlight.nix {};
