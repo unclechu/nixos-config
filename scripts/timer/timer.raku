@@ -10,10 +10,13 @@ my Str:D \UP := "\c[ESCAPE][1A";
 my Int:D \Lines := 3;
 
 class NotificationInteface {
+  # A promise that resolves only when the desktop notification is closed
   has Promise:D $.notification-close-promise is required;
+  # A callback that forcefully closes shown desktop notification (idempotent)
   has Callable:D $.close-notification is required;
 }
 
+# Show desktop notification
 sub show-message(Str:D $message --> NotificationInteface:D) {
   my Int:D $notification-id = do {
     my Proc::Async:D $spawn-notification-proc := Proc::Async.new(
@@ -120,7 +123,11 @@ sub view-duration(Duration:D $dur is copy, Str:D $pfx --> Str:D) {
     s($r-hours, 'hour'),
     s($r-minutes, 'minute'),
     s($r-seconds, 'second'),
-  ).join.&{$_ || ' '}.substr(1)) ~ ($dur < 1 ?? '<1 second' !! '');
+  ).join.&{$_ || ' '}.substr(1)) ~ (
+    (($r-days + $r-hours + $r-minutes + $r-seconds) == 0)
+      ?? ($dur > 0 ?? '<1 second' !! '0 seconds')
+      !! ''
+  );
 
   $view ~ ' ' x LineLimit - $view.chars;
 }
