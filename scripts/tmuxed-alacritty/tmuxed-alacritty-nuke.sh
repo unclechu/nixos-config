@@ -49,6 +49,8 @@ while :; do
 
 	if [[ -z $SESSIONS_RAW ]]; then
 		>&2 echo 'No tmux sessions found to nuke.'
+		read -n1 -srp 'Press any key to exit… '
+		echo
 		exit 1
 	fi
 

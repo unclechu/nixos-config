@@ -46,7 +46,9 @@ SESSION_LINE_TEMPLATE=$SESSION_LINE_TEMPLATE' #{session_name} (#{session_windows
 SESSIONS_RAW=$("$TMUX_EXE" list-sessions -F "$SESSION_LINE_TEMPLATE" 2>/dev/null || true)
 
 if [[ -z $SESSIONS_RAW ]]; then
-	>&2 echo 'Error: No existing tmux sessions found.'
+	>&2 echo 'No tmux sessions found to attach to.'
+	read -n1 -srp 'Press any key to exit… '
+	echo
 	exit 1
 fi
 
