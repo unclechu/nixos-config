@@ -13,6 +13,8 @@
 , writeShellApplication ? pkgs.writeShellApplication
 
 , __config ? builtins.readFile ./config.hs
+
+, inNixShell ? false
 }:
 
 let
@@ -74,7 +76,7 @@ let
       else file=${esc configNormalPrompt}
       fi
 
-      ${lib.escapeShellArgs ghciCmd} "$file" "$@"
+      exec ${lib.escapeShellArgs ghciCmd} "$file" "$@"
     '';
 
     checkPhase = ''(
@@ -106,6 +108,8 @@ let
       fi
     )'';
   };
+
+  shell = pkgs.mkShell { buildInputs = dependencies; };
 in
 
-hell
+(if inNixShell then shell else hell) // { inherit hell shell; }
