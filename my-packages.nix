@@ -47,7 +47,7 @@ let
 
   nheko = pkgs.callPackage apps/nheko {};
 
-  hell = pkgs.callPackage apps/hell.nix {};
+  hell = pkgs.callPackage apps/hell {};
 
   midi-trigger = pkgs.callPackage sources.MIDI-Trigger {
     src = sources.MIDI-Trigger;
