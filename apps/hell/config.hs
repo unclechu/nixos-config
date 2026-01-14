@@ -71,6 +71,9 @@ import Control.Monad
 
 import System.Environment
 import System.Directory
+import qualified System.Process as SysProc
+import qualified System.Posix.Process as Unix
+import qualified System.IO as SysIO
 
 import Turtle hiding ((<&>), (%), l)
 import qualified Turtle.Bytes as Bytes
@@ -382,6 +385,7 @@ gitcoæ args = øæinproc (_gitæ ‰ ["checkout"] ‰ args); gitcoæþ = stdout
 gitcoß = gitcoæ . T.words; gitcoßþ = stdout . gitcoß
 gitco = gitcoæ ø; gitcoþ = gitco & stdout
 
+-- Git pull/push to/from “origin” current branch
 gitpl = øæinproc . (T.words (_git ‰ "pull origin --") ‰) . pure =<< ßgitb; gitplþ = gitpl & stdout
 gitph = øæinproc . (T.words (_git ‰ "push origin --") ‰) . pure =<< ßgitb; gitphþ = gitph & stdout
 
@@ -398,16 +402,27 @@ shreddyßþ = stdout . shreddyß
 -- For example `p bash` will resolve to something like this:
 --
 -- /nix/store/rdd4pnr4x9rqc9wgbibhngv217w2xvxl-bash-interactive-5.2p26/bin/bash
-p a = liftIO (findExecutable a) >>= maybe (fail $ "Failed to find " <> show a <> " in PATH") (\a → øæinproc ["readlink", "-f", "--", T.pack a] & single)
+p a = liftIO (findExecutable a) >>= maybe (fail $ "Failed to find " ‰ show a ‰ " in PATH") (\a → øæinproc ["readlink", "-f", "--", T.pack a] & single)
 ßp a = p a × lineToText
 
 -- ** Changing directories
 
+-- “cd” up N times, `up 3` means `cd ../../../`
 up n = cd $ DF.fold (replicate n "../")
 
 -- Create directory and “cd" to it
 mkdircd dir = mkdir dir >> cd dir
 mktreecd dir = mktree dir >> mktree dir
+
+-- Helpers for /dev/null redirects
+withNullR = liftIO . SysIO.withFile "/dev/null" SysIO.ReadMode
+withNullW = liftIO . SysIO.withFile "/dev/null" SysIO.AppendMode
+withNullRnW f = withNullR $ \r → withNullW $ \w → f (r, w)
+
+-- Silently spawn and forget a subprocess (it will lives after the Hell session is done)
+burp (cmd ∷ Text) (args ∷ [Text]) = withNullRnW $ \(r, w) → void $ SysProc.createProcess (SysProc.proc (T.unpack cmd) (fmap T.unpack args)) { SysProc.std_in = SysProc.UseHandle r, SysProc.std_out = SysProc.UseHandle w, SysProc.std_err = SysProc.UseHandle w, SysProc.new_session = True }
+æburp (cmd ∷ [Text]) = NE.nonEmpty cmd & maybe (fail "Empty command") (unconsNE × uncurry burp)
+ßburp = æburp . T.words
 
 -- * Miscellaneous stuff
 
