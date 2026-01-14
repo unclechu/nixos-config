@@ -424,6 +424,11 @@ burp (cmd ∷ Text) (args ∷ [Text]) = withNullRnW $ \(r, w) → void $ SysProc
 æburp (cmd ∷ [Text]) = NE.nonEmpty cmd & maybe (fail "Empty command") (unconsNE × uncurry burp)
 ßburp = æburp . T.words
 
+-- Note that this history is not up-to-date, current session commands are written
+-- to the history only as soon as the session is done.
+ßhistory = home >>= \homeDir → liftIO (T.readFile (homeDir ‰ "/.ghc/ghci_history"))
+æhistory = ßhistory × T.lines
+
 -- * Miscellaneous stuff
 
 main = pure () -- A dummy plug to avoid interactive GHC file validation failure
