@@ -30,6 +30,7 @@ import Prelude hiding (id, (.), FilePath)
 import Data.Function hiding (id, (.))
 import Data.Functor
 
+import Numeric (showFFloat)
 import Numeric.Natural
 import Data.Ratio
 
@@ -231,6 +232,11 @@ shellList :: MonadIO m ⇒ Shell a → m [a]; shellList = reduce (Fold (flip (:)
 
 -- “lsif” but only for current level
 lsif1 mp = (ls >=> \x → (x,) · mp x) × mfilter snd × fmap fst
+
+-- * Turtle extras
+
+-- Like `Turtle.f` formatter for fractional numbers but with custom amount of digits precision after the dot
+ff ∷ Integral p ⇒ p → Format r (Double → r); ff p = makeFormat (\n → T.pack (showFFloat ((Just . fromIntegral) p) n ""))
 
 -- * Aliases
 
