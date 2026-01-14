@@ -58,6 +58,8 @@ import qualified Text.Printf as Printf
 import qualified Data.List.NonEmpty as NE
 import qualified Data.List as L
 
+import qualified Data.Foldable as DF
+
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encode.Pretty as J
 
@@ -388,6 +390,24 @@ shreddy args = øæinproc (T.words "shred -vufz -n10" ‰ args)
 shreddyß = shreddy . T.words
 shreddyþ = stdout . shreddy
 shreddyßþ = stdout . shreddyß
+
+-- ** Path resolving
+
+-- Resolve absolute path of an executable following all the symlinks on the way.
+--
+-- For example `p bash` will resolve to something like this:
+--
+-- /nix/store/rdd4pnr4x9rqc9wgbibhngv217w2xvxl-bash-interactive-5.2p26/bin/bash
+p a = liftIO (findExecutable a) >>= maybe (fail $ "Failed to find " <> show a <> " in PATH") (\a → øæinproc ["readlink", "-f", "--", T.pack a] & single)
+ßp a = p a × lineToText
+
+-- ** Changing directories
+
+up n = cd $ DF.fold (replicate n "../")
+
+-- Create directory and “cd" to it
+mkdircd dir = mkdir dir >> cd dir
+mktreecd dir = mktree dir >> mktree dir
 
 -- * Miscellaneous stuff
 
