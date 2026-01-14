@@ -8,6 +8,9 @@
 -- (separated by semicolon `;`). And in general there must be no multiline
 -- functions.
 
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
+
 {-# LANGUAGE GHC2024, UnicodeSyntax #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings, OverloadedRecordDot #-}
@@ -67,7 +70,7 @@ import Control.Monad
 import System.Environment
 import System.Directory
 
-import Turtle hiding ((<&>), (%))
+import Turtle hiding ((<&>), (%), l)
 import qualified Turtle.Bytes as Bytes
 
 -- * Unicode operators
@@ -92,9 +95,11 @@ unconsNE ∷ NE.NonEmpty a → (a, [a]); unconsNE (x NE.:| xs) = (x, xs)
 
 -- * Turtle sub-process commands
 
+-- ø — Finnish layout: AltGr + ö
 -- æ — Finnish layout: AltGr + ä
 -- ß — Finnish layout: AltGr + s
 -- µ — Finnish layout: AltGr + m
+-- þ — Finnish layout: AltGr + t
 
 -- “ø” prefix means (m)empty input (no input)
 --     For example:
@@ -130,8 +135,11 @@ unconsNE ∷ NE.NonEmpty a → (a, [a]); unconsNE (x NE.:| xs) = (x, xs)
 --     - ßinproc  ∷ Text → Shell Line       → Shell Line
 --     - µßinproc ∷ Text → Shell ByteString → Shell ByteString
 
+-- “þ” prefix means the output is automatically redirected to stdout.
+--     For example `gitsþ` vs. `gits & stdout`.
+
 æprocGeneric (cmd ∷ [Text]) f applyF = NE.nonEmpty cmd & maybe (fail "Empty command") (unconsNE × uncurry f × applyF)
-ßprocGeneric (cmd ∷ Text) f applyF = æprocGeneric (T.words cmd) f applyF
+ßprocGeneric (cmd ∷ Text) = æprocGeneric (T.words cmd)
 
 -- ** Text variants
 
@@ -221,58 +229,166 @@ lsif1 mp = (ls >=> \x → (x,) · mp x) × mfilter snd × fmap fst
 
 -- * Aliases
 
--- Directory listing aliases
+-- ** Directory listing aliases
 l args = procs "ls" (["--color=auto", "-lah"] ‰ args) ø
 øl = l ø
 ll args = procs "ls" (["--color=auto", "-lAh"] ‰ args) ø
 øll = ll ø
 
--- Vim aliases
+-- ** Vim aliases
 v = procs "nvim"
 øv = v ø -- No args
+vø = øv
 øøv = v ø ø -- No args and no stdin
+øvø = v ø ø -- No args and no stdin
 
--- Git aliases
+-- ** Git aliases
+
 _gitæ = T.words "git -c color.ui=always"
 _git = T.unwords _gitæ ‰ " "
-gits = øßinproc (_git ‰ "status")
-gitl = øßinproc (_git ‰ "log")
-gitl1 = øßinproc (_git ‰ "log -1")
-gitl2 = øßinproc (_git ‰ "log -2")
-gitl3 = øßinproc (_git ‰ "log -3")
-gitl4 = øßinproc (_git ‰ "log -4")
-gitl5 = øßinproc (_git ‰ "log -5")
-gitls = øßinproc (_git ‰ "log --show-signature")
-gitls1 = øßinproc (_git ‰ "log --show-signature -1")
-gitls2 = øßinproc (_git ‰ "log --show-signature -2")
-gitls3 = øßinproc (_git ‰ "log --show-signature -3")
-gitls4 = øßinproc (_git ‰ "log --show-signature -4")
-gitls5 = øßinproc (_git ‰ "log --show-signature -5")
-gitc = øßinproc (_git ‰ "commit")
-gitca = øßinproc (_git ‰ "commit --amend")
-gitcs = øßinproc (_git ‰ "commit -S")
-gitcsa = øßinproc (_git ‰ "commit -S --amend")
-gitcas = øßinproc (_git ‰ "commit --amend -S")
-gitcm = øßinproc (_git ‰ "commit -m")
-gitcam = øßinproc (_git ‰ "commit --amend -m")
-gitcsm = øßinproc (_git ‰ "commit -S -m")
-gitcsam = øßinproc (_git ‰ "commit -S --amend -m")
-gitcasm = øßinproc (_git ‰ "commit --amend -S -m")
+
+-- Git status
+gitsæ args = øæinproc (_gitæ ‰ ["status"] ‰ args); gitsæþ = stdout . gitsæ
+gitsß = gitsæ . T.words; gitsßþ = stdout . gitsß
+gits = gitsæ ø; gitsþ = gits & stdout
+
+-- Git log
+gitlæ args = øæinproc (_gitæ ‰ ["log"] ‰ args); gitlæþ = stdout . gitlæ
+gitlß = gitlæ . T.words; gitlßþ = stdout . gitlß
+gitl = gitlæ ø; gitlþ = gitl & stdout
+-- Git log, limit to 1
+gitl1æ args = gitlæ (["-1"] ‰ args); gitl1æþ = stdout . gitl1æ
+gitl1ß = gitl1æ . T.words; gitl1ßþ = stdout . gitl1ß
+gitl1 = gitl1æ ø; gitl1þ = gitl1 & stdout
+-- Git log, limit to 2
+gitl2æ args = gitlæ (["-2"] ‰ args); gitl2æþ = stdout . gitl2æ
+gitl2ß = gitl2æ . T.words; gitl2ßþ = stdout . gitl2ß
+gitl2 = gitl2æ ø; gitl2þ = gitl2 & stdout
+-- Git log, limit to 3
+gitl3æ args = gitlæ (["-3"] ‰ args); gitl3æþ = stdout . gitl3æ
+gitl3ß = gitl3æ . T.words; gitl3ßþ = stdout . gitl3ß
+gitl3 = gitl3æ ø; gitl3þ = gitl3 & stdout
+-- Git log, limit to 4
+gitl4æ args = gitlæ (["-4"] ‰ args); gitl4æþ = stdout . gitl4æ
+gitl4ß = gitl4æ . T.words; gitl4ßþ = stdout . gitl4ß
+gitl4 = gitl4æ ø; gitl4þ = gitl4 & stdout
+-- Git log, limit to 5
+gitl5æ args = gitlæ (["-5"] ‰ args); gitl5æþ = stdout . gitl5æ
+gitl5ß = gitl5æ . T.words; gitl5ßþ = stdout . gitl5ß
+gitl5 = gitl5æ ø; gitl5þ = gitl5 & stdout
+-- Git log with showing signature
+gitlsæ args = gitlæ (["--show-signature"] ‰ args); gitlsæþ = stdout . gitlsæ
+gitlsß = gitlsæ . T.words; gitlsßþ = stdout . gitlsß
+gitls = gitlsæ ø; gitlsþ = gitls & stdout
+-- Git log with showing signature, limit to 1
+gitls1æ args = gitlsæ (["-1"] ‰ args); gitls1æþ = stdout . gitls1æ
+gitls1ß = gitls1æ . T.words; gitls1ßþ = stdout . gitls1ß
+gitls1 = gitls1æ ø; gitls1þ = gitls1 & stdout
+-- Git log with showing signature, limit to 2
+gitls2æ args = gitlsæ (["-2"] ‰ args); gitls2æþ = stdout . gitls2æ
+gitls2ß = gitls2æ . T.words; gitls2ßþ = stdout . gitls2ß
+gitls2 = gitls2æ ø; gitls2þ = gitls2 & stdout
+-- Git log with showing signature, limit to 3
+gitls3æ args = gitlsæ (["-3"] ‰ args); gitls3æþ = stdout . gitls3æ
+gitls3ß = gitls3æ . T.words; gitls3ßþ = stdout . gitls3ß
+gitls3 = gitls3æ ø; gitls3þ = gitls3 & stdout
+-- Git log with showing signature, limit to 4
+gitls4æ args = gitlsæ (["-4"] ‰ args); gitls4æþ = stdout . gitls4æ
+gitls4ß = gitls4æ . T.words; gitls4ßþ = stdout . gitls4ß
+gitls4 = gitls4æ ø; gitls4þ = gitls4 & stdout
+-- Git log with showing signature, limit to 5
+gitls5æ args = gitlsæ (["-5"] ‰ args); gitls5æþ = stdout . gitls5æ
+gitls5ß = gitls5æ . T.words; gitls5ßþ = stdout . gitls5ß
+gitls5 = gitls5æ ø; gitls5þ = gitls5 & stdout
+
+-- Git commit
+gitcæ args = øæinproc (_gitæ ‰ ["commit"] ‰ args); gitcæþ = stdout . gitcæ
+gitcß = gitcæ . T.words; gitcßþ = stdout . gitcß
+gitc = gitcæ ø; gitcþ = gitc & stdout
+-- Git commit amend
+gitcaæ args = gitcæ (["--amend"] ‰ args); gitcaæþ = stdout . gitcaæ
+gitcaß = gitcaæ . T.words; gitcaßþ = stdout . gitcaß
+gitca = gitcaæ ø; gitcaþ = gitca & stdout
+-- Git commit sign
+gitcsæ args = gitcæ (["-S"] ‰ args); gitcsæþ = stdout . gitcsæ
+gitcsß = gitcsæ . T.words; gitcsßþ = stdout . gitcsß
+gitcs = gitcsæ ø; gitcsþ = gitcs & stdout
+-- Git commit sign amend
+gitcsaæ args = gitcsæ (["--amend"] ‰ args); gitcsaæþ = stdout . gitcsaæ
+gitcsaß = gitcsaæ . T.words; gitcsaßþ = stdout . gitcsaß
+gitcsa = gitcsaæ ø; gitcsaþ = gitcsa & stdout
+-- Git commit amend sign
+gitcasæ args = gitcaæ (["-S"] ‰ args); gitcasæþ = stdout . gitcasæ
+gitcasß = gitcasæ . T.words; gitcasßþ = stdout . gitcasß
+gitcas = gitcasæ ø; gitcasþ = gitcas & stdout
+-- Git commit message
+gitcmæ args = gitcæ (["-m"] ‰ args); gitcmæþ = stdout . gitcmæ
+gitcmß = gitcmæ . T.words; gitcmßþ = stdout . gitcmß
+gitcm = gitcmæ ø; gitcmþ = gitcm & stdout
+-- Git commit amend message
+gitcamæ args = gitcaæ (["-m"] ‰ args); gitcamæþ = stdout . gitcamæ
+gitcamß = gitcamæ . T.words; gitcamßþ = stdout . gitcamß
+gitcam = gitcamæ ø; gitcamþ = gitcam & stdout
+-- Git commit sign message
+gitcsmæ args = gitcsæ (["-m"] ‰ args); gitcsmæþ = stdout . gitcsmæ
+gitcsmß = gitcsmæ . T.words; gitcsmßþ = stdout . gitcsmß
+gitcsm = gitcsmæ ø; gitcsmþ = gitcsm & stdout
+-- Git commit sign amend message
+gitcsamæ args = gitcsaæ (["-m"] ‰ args); gitcsamæþ = stdout . gitcsamæ
+gitcsamß = gitcsamæ . T.words; gitcsamßþ = stdout . gitcsamß
+gitcsam = gitcsamæ ø; gitcsamþ = gitcsam & stdout
+-- Git commit amend sign message
+gitcasmæ args = gitcasæ (["-m"] ‰ args); gitcasmæþ = stdout . gitcasmæ
+gitcasmß = gitcasmæ . T.words; gitcasmßþ = stdout . gitcasmß
+gitcasm = gitcasmæ ø; gitcasmþ = gitcasm & stdout
+
 -- just add a signature to a commit (last commit by default)
-gitsign args = øæinproc (T.words (_git ‰ "commit -S --amend --no-edit") ‰ args)
-gitsignß = gitsign . T.words
--- rebase + sign. e.g. `gitrsign "origin/master"`.
+gitsignæ args = øæinproc (T.words (_git ‰ "commit -S --amend --no-edit") ‰ args); gitsignæþ = stdout . gitsignæ
+gitsignß = gitsignæ . T.words; gitsignßþ = stdout . gitsignß
+gitsign = gitsignæ ø; gitsignþ = gitsign & stdout
+
+-- rebase + sign. e.g. `gitrsignß "origin/master"`.
 -- it will do a rebase but also sign all the rebased commits.
-gitrsign args = øæinproc ((T.words (_git ‰ "rebase -i --exec") ‰ [_git ‰ "commit -S --amend --no-edit"]) ‰ args)
-gita = øßinproc (_git ‰ "add")
-gitd = øßinproc (_git ‰ "diff")
-gitds = øßinproc (_git ‰ "diff --staged")
+gitrsignæ args = øæinproc ((T.words (_git ‰ "rebase -i --exec") ‰ [_git ‰ "commit -S --amend --no-edit"]) ‰ args); gitrsignæþ = stdout . gitrsignæ
+gitrsignß = gitrsignæ . T.words; gitrsignßþ = stdout . gitrsignß
+gitrsign = gitrsignæ ø; gitrsignþ = gitrsign & stdout
+
+-- Git add
+gitaæ args = øæinproc (_gitæ ‰ ["add"] ‰ args); gitaæþ = stdout . gitaæ
+gitaß = gitaæ . T.words; gitaßþ = stdout . gitaß
+gita = gitaæ ø; gitaþ = gita & stdout
+
+-- Git diff
+gitdæ args = øæinproc (_gitæ ‰ ["diff"] ‰ args); gitdæþ = stdout . gitdæ
+gitdß = gitdæ . T.words; gitdßþ = stdout . gitdß
+gitd = gitdæ ø; gitdþ = gitd & stdout
+-- Git diff staged
+gitdsæ args = gitdæ (["--staged"] ‰ args); gitdsæþ = stdout . gitdsæ
+gitdsß = gitdsæ . T.words; gitdsßþ = stdout . gitdsß
+gitds = gitdsæ ø; gitdsþ = gitds & stdout
+
 gitb = øßinproc "git branch" & grep (begins "* ") & sedEntire ("* " *> chars) & single
 ßgitb = gitb × lineToText
-gitbn = øßinproc (_git ‰ "branch")
-gitco = øßinproc (_git ‰ "checkout")
-gitpl = øæinproc . (T.words (_git ‰ "pull origin --") ‰) . pure =<< ßgitb
-gitph = øæinproc . (T.words (_git ‰ "push origin --") ‰) . pure =<< ßgitb
 
--- shred with my favorite options
-shreddy args = øæinproc (T.words "shred -vufz -n10" ‰ args); shreddyß = shreddy . T.words
+-- Git branch
+gitbnæ args = øæinproc (_gitæ ‰ ["branch"] ‰ args); gitbnæþ = stdout . gitbnæ
+gitbnß = gitbnæ . T.words; gitbnßþ = stdout . gitbnß
+gitbn = gitbnæ ø; gitbnþ = gitbn & stdout
+
+-- Git checkout
+gitcoæ args = øæinproc (_gitæ ‰ ["checkout"] ‰ args); gitcoæþ = stdout . gitcoæ
+gitcoß = gitcoæ . T.words; gitcoßþ = stdout . gitcoß
+gitco = gitcoæ ø; gitcoþ = gitco & stdout
+
+gitpl = øæinproc . (T.words (_git ‰ "pull origin --") ‰) . pure =<< ßgitb; gitplþ = gitpl & stdout
+gitph = øæinproc . (T.words (_git ‰ "push origin --") ‰) . pure =<< ßgitb; gitphþ = gitph & stdout
+
+-- ** shred with my favorite options
+shreddy args = øæinproc (T.words "shred -vufz -n10" ‰ args)
+shreddyß = shreddy . T.words
+shreddyþ = stdout . shreddy
+shreddyßþ = stdout . shreddyß
+
+-- * Miscellaneous stuff
+
+main = pure () -- A dummy plug to avoid interactive GHC file validation failure
