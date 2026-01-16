@@ -34,6 +34,7 @@ let
 
     p.containers
     p.mtl
+    p.foldl
 
     p.time
     p.aeson

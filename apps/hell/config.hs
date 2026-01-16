@@ -25,7 +25,8 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-import Prelude hiding (id, (.), FilePath)
+import Prelude hiding (id, (.), FilePath, head, tail, last)
+import qualified Prelude
 
 import Data.Function hiding (id, (.))
 import Data.Functor
@@ -36,6 +37,7 @@ import Data.Ratio
 
 import Data.Proxy
 import Data.Kind
+import Data.Maybe
 import GHC.TypeLits
 import GHC.Generics
 
@@ -60,6 +62,7 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.List as L
 
 import qualified Data.Foldable as DF
+import qualified Data.Bifunctor as BF
 
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encode.Pretty as J
@@ -67,8 +70,9 @@ import qualified Data.Aeson.Encode.Pretty as J
 import qualified Data.Time as Time
 
 import Control.Arrow
-import Control.Category
+import Control.Category hiding (first)
 import Control.Monad
+import qualified Control.Foldl as Fold
 
 import System.Environment
 import System.Directory
@@ -77,6 +81,7 @@ import qualified System.Posix.Process as Unix
 import qualified System.IO as SysIO
 
 import Turtle hiding ((<&>), (%), l)
+import qualified Turtle
 import qualified Turtle.Bytes as Bytes
 
 -- * Unicode operators
@@ -141,8 +146,10 @@ unconsNE ∷ NE.NonEmpty a → (a, [a]); unconsNE (x NE.:| xs) = (x, xs)
 --     - ßinproc  ∷ Text → Shell Line       → Shell Line
 --     - µßinproc ∷ Text → Shell ByteString → Shell ByteString
 
--- “þ” prefix means the output is automatically redirected to stdout.
---     For example `gitsþ` vs. `gits & stdout`.
+-- “þ” suffix means the output is intended for piping (`Shell Line`)
+--     while functions that do not have it forward the output to stdout
+--     automatically (`IO`-compatible, can be run without manual redirects).
+--     For example `gitsþ & stdout` vs. `gits`.
 
 æprocGeneric (cmd ∷ [Text]) f applyF = NE.nonEmpty cmd & maybe (fail "Empty command") (unconsNE × uncurry f × applyF)
 ßprocGeneric (cmd ∷ Text) = æprocGeneric (T.words cmd)
@@ -225,8 +232,10 @@ unconsNE ∷ NE.NonEmpty a → (a, [a]); unconsNE (x NE.:| xs) = (x, xs)
 
 -- ** Extra helpers
 
--- Kind of an equivalent to `reduce Control.Foldl.list`
-shellList :: MonadIO m ⇒ Shell a → m [a]; shellList = reduce (Fold (flip (:)) [] id)
+-- Suck everything from a Shell into a list
+suck ∷ MonadIO m ⇒ Shell a → m [a]; suck = reduce Fold.list
+-- Reversed `suck`
+suckRev ∷ MonadIO m ⇒ Shell a → m [a]; suckRev = reduce (Fold (flip (:)) [] id)
 
 -- * Extra Turtle variants
 
@@ -235,165 +244,193 @@ lsif1 mp = (ls >=> \x → (x,) · mp x) × mfilter snd × fmap fst
 
 -- * Turtle extras
 
+-- ** Formatters
+
 -- Like `Turtle.f` formatter for fractional numbers but with custom amount of digits precision after the dot
 ff ∷ Integral p ⇒ p → Format r (Double → r); ff p = makeFormat (\n → T.pack (showFFloat ((Just . fromIntegral) p) n ""))
+
+-- ** Extra filters
+
+tailN n = reduce (Fold.lastN (fromIntegral n)) >=> select; tail = tailN 10
+headN n = limit (fromIntegral n); head = headN 10
+last = reduce Fold.last
+first = reduce Fold.head
 
 -- * Aliases
 
 -- ** Directory listing aliases
-l args = procs "ls" (["--color=auto", "-lah"] ‰ args) ø
-øl = l ø
-ll args = procs "ls" (["--color=auto", "-lAh"] ‰ args) ø
-øll = ll ø
+_læ = T.words "ls --color=auto -lah"; _llæ = T.words "ls --color=auto -lAh"
+læ args = øæprocs (_læ ‰ args); lß = læ . T.words; l = læ ø
+læþ args = øæinproc (_læ ‰ args); lßþ = læþ . T.words; lþ = læþ ø
+llæ args = øæprocs (_llæ ‰ args); llß = llæ . T.words; ll = llæ ø
+llæþ args = øæinproc (_llæ ‰ args); llßþ = llæþ . T.words; llþ = llæþ ø
 
 -- ** Vim aliases
 v = procs "nvim"
-øv = v ø -- No args
-vø = øv
-øøv = v ø ø -- No args and no stdin
-øvø = v ø ø -- No args and no stdin
+øv = v ø; vø = øv -- No args
+øøv = v ø ø; øvø = øøv -- No args and no stdin
 
 -- ** Git aliases
 
-_gitæ = T.words "git -c color.ui=always"
-_git = T.unwords _gitæ ‰ " "
-
 -- Git status
-gitsæ args = øæinproc (_gitæ ‰ ["status"] ‰ args); gitsæþ = stdout . gitsæ
-gitsß = gitsæ . T.words; gitsßþ = stdout . gitsß
-gits = gitsæ ø; gitsþ = gits & stdout
-
+_gits = "git status"; _gitsæ = T.words _gits
+gitsæ args = øæprocs (_gitsæ ‰ args); gitsæþ args = øæinproc (_gitsæ ‰ args)
+gitsß = gitsæ . T.words; gitsßþ = gitsæþ . T.words
+gits = gitsæ ø; gitsþ = gitsæþ ø
 -- Git log
-gitlæ args = øæinproc (_gitæ ‰ ["log"] ‰ args); gitlæþ = stdout . gitlæ
-gitlß = gitlæ . T.words; gitlßþ = stdout . gitlß
-gitl = gitlæ ø; gitlþ = gitl & stdout
+_gitl = "git log"; _gitlæ = T.words _gitl
+gitlæ args = øæprocs (_gitlæ ‰ args); gitlæþ args = øæinproc (_gitlæ ‰ args)
+gitlß = gitlæ . T.words; gitlßþ = gitlæþ . T.words
+gitl = gitlæ ø; gitlþ = gitlæþ ø
 -- Git log, limit to 1
-gitl1æ args = gitlæ (["-1"] ‰ args); gitl1æþ = stdout . gitl1æ
-gitl1ß = gitl1æ . T.words; gitl1ßþ = stdout . gitl1ß
-gitl1 = gitl1æ ø; gitl1þ = gitl1 & stdout
+_gitl1æ = ["-1"]
+gitl1æ args = gitlæ (_gitl1æ ‰ args); gitl1æþ args = gitlæþ (_gitl1æ ‰ args)
+gitl1ß = gitl1æ . T.words; gitl1ßþ = gitl1æþ . T.words
+gitl1 = gitl1æ ø; gitl1þ = gitl1æþ ø
 -- Git log, limit to 2
-gitl2æ args = gitlæ (["-2"] ‰ args); gitl2æþ = stdout . gitl2æ
-gitl2ß = gitl2æ . T.words; gitl2ßþ = stdout . gitl2ß
-gitl2 = gitl2æ ø; gitl2þ = gitl2 & stdout
+_gitl2æ = ["-2"]
+gitl2æ args = gitlæ (_gitl2æ ‰ args); gitl2æþ args = gitlæþ (_gitl2æ ‰ args)
+gitl2ß = gitl2æ . T.words; gitl2ßþ = gitl2æþ . T.words
+gitl2 = gitl2æ ø; gitl2þ = gitl2æþ ø
 -- Git log, limit to 3
-gitl3æ args = gitlæ (["-3"] ‰ args); gitl3æþ = stdout . gitl3æ
-gitl3ß = gitl3æ . T.words; gitl3ßþ = stdout . gitl3ß
-gitl3 = gitl3æ ø; gitl3þ = gitl3 & stdout
+_gitl3æ = ["-3"]
+gitl3æ args = gitlæ (_gitl3æ ‰ args); gitl3æþ args = gitlæþ (_gitl3æ ‰ args)
+gitl3ß = gitl3æ . T.words; gitl3ßþ = gitl3æþ . T.words
+gitl3 = gitl3æ ø; gitl3þ = gitl3æþ ø
 -- Git log, limit to 4
-gitl4æ args = gitlæ (["-4"] ‰ args); gitl4æþ = stdout . gitl4æ
-gitl4ß = gitl4æ . T.words; gitl4ßþ = stdout . gitl4ß
-gitl4 = gitl4æ ø; gitl4þ = gitl4 & stdout
+_gitl4æ = ["-4"]
+gitl4æ args = gitlæ (_gitl4æ ‰ args); gitl4æþ args = gitlæþ (_gitl4æ ‰ args)
+gitl4ß = gitl4æ . T.words; gitl4ßþ = gitl4æþ . T.words
+gitl4 = gitl4æ ø; gitl4þ = gitl4æþ ø
 -- Git log, limit to 5
-gitl5æ args = gitlæ (["-5"] ‰ args); gitl5æþ = stdout . gitl5æ
-gitl5ß = gitl5æ . T.words; gitl5ßþ = stdout . gitl5ß
-gitl5 = gitl5æ ø; gitl5þ = gitl5 & stdout
+_gitl5æ = ["-5"]
+gitl5æ args = gitlæ (_gitl5æ ‰ args); gitl5æþ args = gitlæþ (_gitl5æ ‰ args)
+gitl5ß = gitl5æ . T.words; gitl5ßþ = gitl5æþ . T.words
+gitl5 = gitl5æ ø; gitl5þ = gitl5æþ ø
 -- Git log with showing signature
-gitlsæ args = gitlæ (["--show-signature"] ‰ args); gitlsæþ = stdout . gitlsæ
-gitlsß = gitlsæ . T.words; gitlsßþ = stdout . gitlsß
-gitls = gitlsæ ø; gitlsþ = gitls & stdout
+_gitlsæ = ["--show-signature"]
+gitlsæ args = gitlæ (_gitlsæ ‰ args); gitlsæþ args = gitlæþ (_gitlsæ ‰ args)
+gitlsß = gitlsæ . T.words; gitlsßþ = gitlsæþ . T.words
+gitls = gitlsæ ø; gitlsþ = gitlsæþ ø
 -- Git log with showing signature, limit to 1
-gitls1æ args = gitlsæ (["-1"] ‰ args); gitls1æþ = stdout . gitls1æ
-gitls1ß = gitls1æ . T.words; gitls1ßþ = stdout . gitls1ß
-gitls1 = gitls1æ ø; gitls1þ = gitls1 & stdout
+gitls1æ args = gitlsæ (_gitl1æ ‰ args); gitls1æþ args = gitlsæþ (_gitl1æ ‰ args)
+gitls1ß = gitls1æ . T.words; gitls1ßþ = gitls1æþ . T.words
+gitls1 = gitls1æ ø; gitls1þ = gitls1æþ ø
 -- Git log with showing signature, limit to 2
-gitls2æ args = gitlsæ (["-2"] ‰ args); gitls2æþ = stdout . gitls2æ
-gitls2ß = gitls2æ . T.words; gitls2ßþ = stdout . gitls2ß
-gitls2 = gitls2æ ø; gitls2þ = gitls2 & stdout
+gitls2æ args = gitlsæ (_gitl2æ ‰ args); gitls2æþ args = gitlsæþ (_gitl2æ ‰ args)
+gitls2ß = gitls2æ . T.words; gitls2ßþ = gitls2æþ . T.words
+gitls2 = gitls2æ ø; gitls2þ = gitls2æþ ø
 -- Git log with showing signature, limit to 3
-gitls3æ args = gitlsæ (["-3"] ‰ args); gitls3æþ = stdout . gitls3æ
-gitls3ß = gitls3æ . T.words; gitls3ßþ = stdout . gitls3ß
-gitls3 = gitls3æ ø; gitls3þ = gitls3 & stdout
+gitls3æ args = gitlsæ (_gitl3æ ‰ args); gitls3æþ args = gitlsæþ (_gitl3æ ‰ args)
+gitls3ß = gitls3æ . T.words; gitls3ßþ = gitls3æþ . T.words
+gitls3 = gitls3æ ø; gitls3þ = gitls3æþ ø
 -- Git log with showing signature, limit to 4
-gitls4æ args = gitlsæ (["-4"] ‰ args); gitls4æþ = stdout . gitls4æ
-gitls4ß = gitls4æ . T.words; gitls4ßþ = stdout . gitls4ß
-gitls4 = gitls4æ ø; gitls4þ = gitls4 & stdout
+gitls4æ args = gitlsæ (_gitl4æ ‰ args); gitls4æþ args = gitlsæþ (_gitl4æ ‰ args)
+gitls4ß = gitls4æ . T.words; gitls4ßþ = gitls4æþ . T.words
+gitls4 = gitls4æ ø; gitls4þ = gitls4æþ ø
 -- Git log with showing signature, limit to 5
-gitls5æ args = gitlsæ (["-5"] ‰ args); gitls5æþ = stdout . gitls5æ
-gitls5ß = gitls5æ . T.words; gitls5ßþ = stdout . gitls5ß
-gitls5 = gitls5æ ø; gitls5þ = gitls5 & stdout
+gitls5æ args = gitlsæ (_gitl5æ ‰ args); gitls5æþ args = gitlsæþ (_gitl5æ ‰ args)
+gitls5ß = gitls5æ . T.words; gitls5ßþ = gitls5æþ . T.words
+gitls5 = gitls5æ ø; gitls5þ = gitls5æþ ø
 
 -- Git commit
-gitcæ args = øæinproc (_gitæ ‰ ["commit"] ‰ args); gitcæþ = stdout . gitcæ
-gitcß = gitcæ . T.words; gitcßþ = stdout . gitcß
-gitc = gitcæ ø; gitcþ = gitc & stdout
+_gitc = "git commit"; _gitcæ = T.words _gitc
+gitcæ args = øæprocs (_gitcæ ‰ args); gitcæþ args = øæinproc (_gitcæ ‰ args)
+gitcß = gitcæ . T.words; gitcßþ = gitcæþ . T.words
+gitc = gitcæ ø; gitcþ = gitcæþ ø
 -- Git commit amend
-gitcaæ args = gitcæ (["--amend"] ‰ args); gitcaæþ = stdout . gitcaæ
-gitcaß = gitcaæ . T.words; gitcaßþ = stdout . gitcaß
-gitca = gitcaæ ø; gitcaþ = gitca & stdout
+_gitcaæ = ["--amend"]
+gitcaæ args = gitcæ (_gitcaæ ‰ args); gitcaæþ args = gitcæþ (_gitcaæ ‰ args)
+gitcaß = gitcaæ . T.words; gitcaßþ = gitcaæþ . T.words
+gitca = gitcaæ ø; gitcaþ = gitcaæþ ø
 -- Git commit sign
-gitcsæ args = gitcæ (["-S"] ‰ args); gitcsæþ = stdout . gitcsæ
-gitcsß = gitcsæ . T.words; gitcsßþ = stdout . gitcsß
-gitcs = gitcsæ ø; gitcsþ = gitcs & stdout
+_gitcsæ = ["-S"]
+gitcsæ args = gitcæ (_gitcsæ ‰ args); gitcsæþ args = gitcæþ (_gitcsæ ‰ args)
+gitcsß = gitcsæ . T.words; gitcsßþ = gitcsæþ . T.words
+gitcs = gitcsæ ø; gitcsþ = gitcsæþ ø
 -- Git commit sign amend
-gitcsaæ args = gitcsæ (["--amend"] ‰ args); gitcsaæþ = stdout . gitcsaæ
-gitcsaß = gitcsaæ . T.words; gitcsaßþ = stdout . gitcsaß
-gitcsa = gitcsaæ ø; gitcsaþ = gitcsa & stdout
+gitcsaæ args = gitcsæ (_gitcaæ ‰ args); gitcsaæþ args = gitcsæþ (_gitcaæ ‰ args)
+gitcsaß = gitcsaæ . T.words; gitcsaßþ = gitcsaæþ . T.words
+gitcsa = gitcsaæ ø; gitcsaþ = gitcsaæþ ø
 -- Git commit amend sign
-gitcasæ args = gitcaæ (["-S"] ‰ args); gitcasæþ = stdout . gitcasæ
-gitcasß = gitcasæ . T.words; gitcasßþ = stdout . gitcasß
-gitcas = gitcasæ ø; gitcasþ = gitcas & stdout
+gitcasæ args = gitcaæ (_gitcsæ ‰ args); gitcasæþ args = gitcaæþ (_gitcsæ ‰ args)
+gitcasß = gitcasæ . T.words; gitcasßþ = gitcasæþ . T.words
+gitcas = gitcasæ ø; gitcasþ = gitcasæþ ø
 -- Git commit message
-gitcmæ args = gitcæ (["-m"] ‰ args); gitcmæþ = stdout . gitcmæ
-gitcmß = gitcmæ . T.words; gitcmßþ = stdout . gitcmß
-gitcm = gitcmæ ø; gitcmþ = gitcm & stdout
+_gitcmæ = ["-m"]
+gitcmæ args = gitcæ (_gitcmæ ‰ args); gitcmæþ args = gitcæþ (_gitcmæ ‰ args)
+gitcmß = gitcmæ . T.words; gitcmßþ = gitcmæþ . T.words
+-- No arguments after “-m” makes no sense
+-- gitcm = gitcmæ ø; gitcmþ = gitcmæþ ø
 -- Git commit amend message
-gitcamæ args = gitcaæ (["-m"] ‰ args); gitcamæþ = stdout . gitcamæ
-gitcamß = gitcamæ . T.words; gitcamßþ = stdout . gitcamß
-gitcam = gitcamæ ø; gitcamþ = gitcam & stdout
+gitcamæ args = gitcaæ (_gitcmæ ‰ args); gitcamæþ args = gitcaæþ (_gitcmæ ‰ args)
+gitcamß = gitcamæ . T.words; gitcamßþ = gitcamæþ . T.words
+-- No arguments after “-m” makes no sense
+-- gitcam = gitcamæ ø; gitcamþ = gitcamæþ ø
 -- Git commit sign message
-gitcsmæ args = gitcsæ (["-m"] ‰ args); gitcsmæþ = stdout . gitcsmæ
-gitcsmß = gitcsmæ . T.words; gitcsmßþ = stdout . gitcsmß
-gitcsm = gitcsmæ ø; gitcsmþ = gitcsm & stdout
+gitcsmæ args = gitcsæ (_gitcmæ ‰ args); gitcsmæþ args = gitcaæþ (_gitcmæ ‰ args)
+gitcsmß = gitcsmæ . T.words; gitcsmßþ = gitcsmæþ . T.words
+-- No arguments after “-m” makes no sense
+-- gitcsm = gitcsmæ ø; gitcsmþ = gitcsmæþ ø
 -- Git commit sign amend message
-gitcsamæ args = gitcsaæ (["-m"] ‰ args); gitcsamæþ = stdout . gitcsamæ
-gitcsamß = gitcsamæ . T.words; gitcsamßþ = stdout . gitcsamß
-gitcsam = gitcsamæ ø; gitcsamþ = gitcsam & stdout
+gitcsamæ args = gitcsaæ (_gitcmæ ‰ args); gitcsamæþ args = gitcsaæþ (_gitcmæ ‰ args)
+gitcsamß = gitcsamæ . T.words; gitcsamßþ = gitcsamæþ . T.words
+-- No arguments after “-m” makes no sense
+-- gitcsam = gitcsamæ ø; gitcsamþ = gitcsamæþ ø
 -- Git commit amend sign message
-gitcasmæ args = gitcasæ (["-m"] ‰ args); gitcasmæþ = stdout . gitcasmæ
-gitcasmß = gitcasmæ . T.words; gitcasmßþ = stdout . gitcasmß
-gitcasm = gitcasmæ ø; gitcasmþ = gitcasm & stdout
+gitcasmæ args = gitcasæ (_gitcmæ ‰ args); gitcasmæþ args = gitcasæþ (_gitcmæ ‰ args)
+gitcasmß = gitcasmæ . T.words; gitcasmßþ = gitcasmæþ . T.words
+-- No arguments after “-m” makes no sense
+-- gitcasm = gitcasmæ ø; gitcasmþ = gitcasmæþ ø
 
 -- just add a signature to a commit (last commit by default)
-gitsignæ args = øæinproc (T.words (_git ‰ "commit -S --amend --no-edit") ‰ args); gitsignæþ = stdout . gitsignæ
-gitsignß = gitsignæ . T.words; gitsignßþ = stdout . gitsignß
-gitsign = gitsignæ ø; gitsignþ = gitsign & stdout
+_gitneæ = ["--no-edit"]
+gitsignæ args = gitcsaæ (_gitneæ ‰ args); gitsignæþ args = gitcsaæþ (_gitneæ ‰ args)
+gitsignß = gitsignæ . T.words; gitsignßþ = gitsignæþ . T.words
+gitsign = gitsignæ ø; gitsignþ = gitsignæþ ø
 
 -- rebase + sign. e.g. `gitrsignß "origin/master"`.
 -- it will do a rebase but also sign all the rebased commits.
-gitrsignæ args = øæinproc ((T.words (_git ‰ "rebase -i --exec") ‰ [_git ‰ "commit -S --amend --no-edit"]) ‰ args); gitrsignæþ = stdout . gitrsignæ
-gitrsignß = gitrsignæ . T.words; gitrsignßþ = stdout . gitrsignß
-gitrsign = gitrsignæ ø; gitrsignþ = gitrsign & stdout
+_gitrsignæ = T.words "git rebase -i --exec" ‰ ["git commit -S --amend --no-edit"]
+gitrsignæ args = øæprocs (_gitrsignæ ‰ args); gitrsignæþ args = øæinproc (_gitrsignæ ‰ args)
+gitrsignß = gitrsignæ . T.words; gitrsignßþ = gitrsignæþ . T.words
+gitrsign = gitrsignæ ø; gitrsignþ = gitrsignæþ ø
 
 -- Git add
-gitaæ args = øæinproc (_gitæ ‰ ["add"] ‰ args); gitaæþ = stdout . gitaæ
-gitaß = gitaæ . T.words; gitaßþ = stdout . gitaß
-gita = gitaæ ø; gitaþ = gita & stdout
+_gita = "git add"; _gitaæ = T.words _gita
+gitaæ args = øæprocs (_gitaæ ‰ args); gitaæþ args = øæinproc (_gitaæ ‰ args)
+gitaß = gitaæ . T.words; gitaßþ = gitaæþ . T.words
+gita = gitaæ ["."]; gitaþ = gitaæþ ["."]
 
 -- Git diff
-gitdæ args = øæinproc (_gitæ ‰ ["diff"] ‰ args); gitdæþ = stdout . gitdæ
-gitdß = gitdæ . T.words; gitdßþ = stdout . gitdß
-gitd = gitdæ ø; gitdþ = gitd & stdout
+_gitd = "git diff"; _gitdæ = T.words _gitd
+gitdæ args = øæprocs (_gitdæ ‰ args); gitdæþ args = øæinproc (_gitdæ ‰ args)
+gitdß = gitdæ . T.words; gitdßþ = gitdæþ . T.words
+gitd = gitdæ ø; gitdþ = gitdæþ ø
 -- Git diff staged
-gitdsæ args = gitdæ (["--staged"] ‰ args); gitdsæþ = stdout . gitdsæ
-gitdsß = gitdsæ . T.words; gitdsßþ = stdout . gitdsß
-gitds = gitdsæ ø; gitdsþ = gitds & stdout
+_gitdsæ = ["--staged"]
+gitdsæ args = gitdæ (_gitdsæ ‰ args); gitdsæþ args = gitdæþ (_gitdsæ ‰ args)
+gitdsß = gitdsæ . T.words; gitdsßþ = gitdsæþ . T.words
+gitds = gitdsæ ø; gitdsþ = gitdsæþ ø
 
 gitb = øßinproc "git branch" & grep (begins "* ") & sedEntire ("* " *> chars) & single
 ßgitb = gitb × lineToText
 
 -- Git branch
-gitbnæ args = øæinproc (_gitæ ‰ ["branch"] ‰ args); gitbnæþ = stdout . gitbnæ
-gitbnß = gitbnæ . T.words; gitbnßþ = stdout . gitbnß
-gitbn = gitbnæ ø; gitbnþ = gitbn & stdout
+_gitbn = "git branch"; _gitbnæ = T.words _gitbn
+gitbnæ args = øæprocs (_gitbnæ ‰ args); gitbnæþ args = øæinproc (_gitbnæ ‰ args)
+gitbnß = gitbnæ . T.words; gitbnßþ = gitbnæþ . T.words
+gitbn = gitbnæ ø; gitbnþ = gitbnæþ ø
 
 -- Git checkout
-gitcoæ args = øæinproc (_gitæ ‰ ["checkout"] ‰ args); gitcoæþ = stdout . gitcoæ
-gitcoß = gitcoæ . T.words; gitcoßþ = stdout . gitcoß
-gitco = gitcoæ ø; gitcoþ = gitco & stdout
+_gitco = "git checkout"; _gitcoæ = T.words _gitco
+gitcoæ args = øæprocs (_gitcoæ ‰ args); gitcoæþ args = øæinproc (_gitcoæ ‰ args)
+gitcoß = gitcoæ . T.words; gitcoßþ = gitcoæþ . T.words
+gitco = gitcoæ ø; gitcoþ = gitcoæþ ø
 
 -- Git pull/push to/from “origin” current branch
-gitpl = øæinproc . (T.words (_git ‰ "pull origin --") ‰) . pure =<< ßgitb; gitplþ = gitpl & stdout
-gitph = øæinproc . (T.words (_git ‰ "push origin --") ‰) . pure =<< ßgitb; gitphþ = gitph & stdout
+gitpl = øæprocs . (T.words "git pull origin --" ‰) . pure =<< ßgitb
+gitph = øæprocs . (T.words "git push origin --" ‰) . pure =<< ßgitb
 
 -- ** shred with my favorite options
 shreddy args = øæinproc (T.words "shred -vufz -n10" ‰ args)
@@ -432,8 +469,9 @@ burp (cmd ∷ Text) (args ∷ [Text]) = withNullRnW $ \(r, w) → void $ SysProc
 
 -- Note that this history is not up-to-date, current session commands are written
 -- to the history only as soon as the session is done.
-ßhistory = home >>= \homeDir → liftIO (T.readFile (homeDir ‰ "/.ghc/ghci_history"))
-æhistory = ßhistory × T.lines
+historyþ = home >>= \homeDir → input (homeDir ‰ "/.ghc/ghci_history")
+history = historyþ & stdout
+æhistory = historyþ & reduce Fold.list
 
 -- * Miscellaneous stuff
 
