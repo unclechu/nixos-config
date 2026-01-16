@@ -80,7 +80,7 @@ import qualified System.Process as SysProc
 import qualified System.Posix.Process as Unix
 import qualified System.IO as SysIO
 
-import Turtle hiding ((<&>), (%), l)
+import Turtle hiding ((<&>), (%), l, toText)
 import qualified Turtle
 import qualified Turtle.Bytes as Bytes
 
@@ -241,6 +241,13 @@ unconsNE ∷ NE.NonEmpty a → (a, [a]); unconsNE (x NE.:| xs) = (x, xs)
 suck ∷ MonadIO m ⇒ Shell a → m [a]; suck = reduce Fold.list
 -- Reversed `suck`
 suckRev ∷ MonadIO m ⇒ Shell a → m [a]; suckRev = reduce (Fold (flip (:)) [] id)
+
+class ToText a where toText ∷ a → T.Text
+instance ToText T.Text where toText = id
+instance ToText String where toText = T.pack
+instance ToText BSC.ByteString where toText = T.decodeUtf8
+
+feedStr ∷ ToText s ⇒ Shell s → Shell Line; feedStr = (>>= select . textToLines . toText)
 
 -- * Extra Turtle variants
 
