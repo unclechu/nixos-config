@@ -73,6 +73,8 @@ import Control.Arrow
 import Control.Category hiding (first)
 import Control.Monad
 import qualified Control.Foldl as Fold
+import qualified Control.Monad.Managed as Managed
+import qualified Control.Concurrent.Async as Async
 
 import System.Environment
 import System.Directory
@@ -80,7 +82,7 @@ import qualified System.Process as SysProc
 import qualified System.Posix.Process as Unix
 import qualified System.IO as SysIO
 
-import Turtle hiding ((<&>), (%), l, toText)
+import Turtle hiding ((<&>), (%), l, toText, cd)
 import qualified Turtle
 import qualified Turtle.Bytes as Bytes
 
@@ -267,6 +269,18 @@ tailN n = reduce (Fold.lastN (fromIntegral n)) >=> select; tail = tailN 10
 headN n = limit (fromIntegral n); head = headN 10
 last = reduce Fold.last
 first = reduce Fold.head
+
+-- ** Extra spawners
+
+-- Helpers for /dev/null redirects
+withNullR = liftIO . SysIO.withFile "/dev/null" SysIO.ReadMode
+withNullW = liftIO . SysIO.withFile "/dev/null" SysIO.AppendMode
+withNullRnW f = withNullR $ \r → withNullW $ \w → f (r, w)
+
+-- Silently spawn and forget a subprocess (it will lives after the Hell session is done)
+burp (cmd ∷ Text) (args ∷ [Text]) = withNullRnW $ \(r, w) → void $ SysProc.createProcess (SysProc.proc (T.unpack cmd) (fmap T.unpack args)) { SysProc.std_in = SysProc.UseHandle r, SysProc.std_out = SysProc.UseHandle w, SysProc.std_err = SysProc.UseHandle w, SysProc.new_session = True }
+æburp (cmd ∷ [Text]) = NE.nonEmpty cmd & maybe (fail "Empty command") (unconsNE × uncurry burp)
+ßburp = æburp . T.words
 
 -- * Aliases
 
@@ -462,22 +476,17 @@ p a = liftIO (findExecutable a) >>= maybe (fail $ "Failed to find " ‰ show a �
 
 -- ** Changing directories
 
+_isActiveTmuxPane pane = øæinproc (T.words "tmux display-message -p -F #{pane_active} -t" <> [pane]) & single & fmap (== "1")
+_tmuxReportCurrentPaneCwd pane = _isActiveTmuxPane pane >>= \x → ((guard x >>) · liftIO (findExecutable "tmux-report-current-pane-cwd")) >>= maybe (pure ()) (sh . øæinproc . pure . T.pack)
+-- `Turtle.cd` but report working directory for tmux (related to my config specifically)
+cd ∷ (MonadIO m, MonadFail m) ⇒ FilePath → m (); cd x = Turtle.cd x >> (((>>) · need "TMUX" ° need "TMUX_PANE") >>= maybe (pure ()) _tmuxReportCurrentPaneCwd)
+
 -- “cd” up N times, `up 3` means `cd ../../../`
 up n = cd $ DF.fold (replicate n "../")
 
 -- Create directory and “cd" to it
 mkdircd dir = mkdir dir >> cd dir
 mktreecd dir = mktree dir >> mktree dir
-
--- Helpers for /dev/null redirects
-withNullR = liftIO . SysIO.withFile "/dev/null" SysIO.ReadMode
-withNullW = liftIO . SysIO.withFile "/dev/null" SysIO.AppendMode
-withNullRnW f = withNullR $ \r → withNullW $ \w → f (r, w)
-
--- Silently spawn and forget a subprocess (it will lives after the Hell session is done)
-burp (cmd ∷ Text) (args ∷ [Text]) = withNullRnW $ \(r, w) → void $ SysProc.createProcess (SysProc.proc (T.unpack cmd) (fmap T.unpack args)) { SysProc.std_in = SysProc.UseHandle r, SysProc.std_out = SysProc.UseHandle w, SysProc.std_err = SysProc.UseHandle w, SysProc.new_session = True }
-æburp (cmd ∷ [Text]) = NE.nonEmpty cmd & maybe (fail "Empty command") (unconsNE × uncurry burp)
-ßburp = æburp . T.words
 
 -- Note that this history is not up-to-date, current session commands are written
 -- to the history only as soon as the session is done.

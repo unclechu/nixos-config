@@ -31,10 +31,12 @@ let
     p.unix
     p.typed-process
     p.process
+    p.async
 
     p.containers
     p.mtl
     p.foldl
+    p.managed
 
     p.time
     p.aeson
