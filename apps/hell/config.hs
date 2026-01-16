@@ -111,6 +111,7 @@ unconsNE ∷ NE.NonEmpty a → (a, [a]); unconsNE (x NE.:| xs) = (x, xs)
 -- ß — Finnish layout: AltGr + s
 -- µ — Finnish layout: AltGr + m
 -- þ — Finnish layout: AltGr + t
+-- ə — Finnish layout: AltGr + ə
 
 -- “ø” prefix means (m)empty input (no input)
 --     For example:
@@ -150,6 +151,10 @@ unconsNE ∷ NE.NonEmpty a → (a, [a]); unconsNE (x NE.:| xs) = (x, xs)
 --     while functions that do not have it forward the output to stdout
 --     automatically (`IO`-compatible, can be run without manual redirects).
 --     For example `gitsþ & stdout` vs. `gits`.
+
+-- “ə” prefix means the commands takes standard input.
+--     It is used only for commands for which standard input piping
+--     is uncommon/rare use case.
 
 æprocGeneric (cmd ∷ [Text]) f applyF = NE.nonEmpty cmd & maybe (fail "Empty command") (unconsNE × uncurry f × applyF)
 ßprocGeneric (cmd ∷ Text) = æprocGeneric (T.words cmd)
@@ -266,9 +271,9 @@ llæ args = øæprocs (_llæ ‰ args); llß = llæ . T.words; ll = llæ ø
 llæþ args = øæinproc (_llæ ‰ args); llßþ = llæþ . T.words; llþ = llæþ ø
 
 -- ** Vim aliases
-v = procs "nvim"
-øv = v ø; vø = øv -- No args
-øøv = v ø ø; øvø = øøv -- No args and no stdin
+əvæ args = æprocs (["nvim"] ‰ args); væ = flip əvæ ø
+əvß args = əvæ (T.words args); vß = flip əvß ø
+əv = əvæ ø; v = əv ø
 
 -- ** Git aliases
 
