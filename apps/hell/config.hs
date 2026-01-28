@@ -77,8 +77,9 @@ import qualified Control.Monad.Managed as Managed
 import qualified Control.Concurrent.Async as Async
 
 import System.Environment
-import System.Directory
-import qualified System.Process as SysProc
+import System.Directory hiding (isSymbolicLink)
+import qualified System.Directory as Dir
+import qualified System.Process as Proc
 import qualified System.Posix.Process as Unix
 import qualified System.IO as SysIO
 
@@ -278,7 +279,7 @@ withNullW = liftIO . SysIO.withFile "/dev/null" SysIO.AppendMode
 withNullRnW f = withNullR $ \r → withNullW $ \w → f (r, w)
 
 -- Silently spawn and forget a subprocess (it will lives after the Hell session is done)
-burp (cmd ∷ Text) (args ∷ [Text]) = withNullRnW $ \(r, w) → void $ SysProc.createProcess (SysProc.proc (T.unpack cmd) (fmap T.unpack args)) { SysProc.std_in = SysProc.UseHandle r, SysProc.std_out = SysProc.UseHandle w, SysProc.std_err = SysProc.UseHandle w, SysProc.new_session = True }
+burp (cmd ∷ Text) (args ∷ [Text]) = withNullRnW $ \(r, w) → void $ Proc.createProcess (Proc.proc (T.unpack cmd) (fmap T.unpack args)) { Proc.std_in = Proc.UseHandle r, Proc.std_out = Proc.UseHandle w, Proc.std_err = Proc.UseHandle w, Proc.new_session = True }
 æburp (cmd ∷ [Text]) = NE.nonEmpty cmd & maybe (fail "Empty command") (unconsNE × uncurry burp)
 ßburp = æburp . T.words
 

@@ -29,8 +29,11 @@ let
     p.directory
     p.filepath
     p.unix
+    p.filepath
+
     p.typed-process
     p.process
+
     p.async
 
     p.containers
