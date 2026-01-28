@@ -14,10 +14,15 @@ in
 
   environment = {
     variables = {
-      # XCompose and XIM setup
-      XMODIFIERS = "@im=none";
-      QT_IM_MODULE = "xim";
-      GTK_IM_MODULE = "xim";
+      # The reason of not using xim input method is that for some applications
+      # (e.g. KiCad) it causes rendering glitches and flickering. Also I wasn’t
+      # using it for a long time, rather relying on the unicode chars input
+      # from the language layout (e.g. Finnish keyboard layout).
+      #
+      # # XCompose and XIM setup
+      # XMODIFIERS = "@im=none";
+      # QT_IM_MODULE = "xim";
+      # GTK_IM_MODULE = "xim";
     };
 
     sessionVariables = {
