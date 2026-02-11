@@ -75,6 +75,7 @@ let
   pamng = pkgs.callPackage scripts/pamng.nix {};
   pa-add-mono-sink = pkgs.callPackage scripts/pa-add-mono-sink.nix {};
   autostart-setup = pkgs.callPackage scripts/autostart-setup.nix { inherit systemConfig; };
+  pointers-setup = pkgs.callPackage scripts/pointers-setup.nix {};
   input-setup = pkgs.callPackage scripts/input-setup.nix {};
   wenzels-picom = pkgs.callPackage scripts/wenzels-picom { inherit systemConfig; };
   genpass = pkgs.callPackage scripts/genpass.nix {};
@@ -93,7 +94,7 @@ in
 {
   my-apps = {
     inherit
-      autostart-setup input-setup
+      autostart-setup pointers-setup input-setup
       cursor-to-display invert-window-colors gpaste-gui pamng screen-backlight
       ;
     inherit (wenzels-bash) wenzels-bash;
@@ -381,6 +382,7 @@ in
       wenzels-xlib-keys-hack
       wenzels-xbindkeys
       wenzels-keyboard-script
+      pointers-setup
       input-setup
       autostart-setup
       autolock

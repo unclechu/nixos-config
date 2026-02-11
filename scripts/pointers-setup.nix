@@ -4,21 +4,22 @@ let sources = import ../nix/sources.nix; in
 { callPackage
 , lib
 , dash
+, xorg # Just for ‘xinput’
 
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
-, __wenzels-keyboard ? callPackage ./wenzels-keyboard { inherit __nix-utils; }
-, __pointers-setup ? callPackage ./pointers-setup.nix {}
+, __pointers ? callPackage ./pointers.nix {}
 }:
 let
   inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
   name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
 
+  pointers = lib.filterAttrs (n: v: lib.isDerivation v) __pointers;
+
   dependencies = {
     dash = dash;
-    ${lib.getName __wenzels-keyboard} = __wenzels-keyboard;
-    ${lib.getName __pointers-setup} = __pointers-setup;
-  };
+    xinput = xorg.xinput;
+  } // pointers;
 
   executables = builtins.mapAttrs (n: v: "${v}/bin/${n}") dependencies;
 
@@ -30,11 +31,15 @@ writeCheckedExecutable name checkPhase ''
   #! ${executables.dash}
   exec <&- 1>/dev/null 2>/dev/null # silent
 
-  # keyboard
-  ${esc executables.${lib.getName __wenzels-keyboard}} &
+  # all pointer setup scripts (mice)
+  ${
+    builtins.concatStringsSep "\n"
+      (map (name: "${esc (executables.${name})} &") (builtins.attrNames pointers))
+  }
 
-  # mouse
-  ${esc executables.${lib.getName __pointers-setup}}
+  # laptop touchscreen
+  ${esc executables.xinput} --map-to-output 'ELAN25B6:00 04F3:0732' eDP1
 
-  exit 0 # prevent returning exit status of the latest command
+  # prevent returning exit status of the latest command (it’s okay to fail)
+  exit 0
 ''
