@@ -66,7 +66,7 @@ let
             # years ago or so but never released. Maybe I’ll try to build from
             # “master” to see if it works.
             if hostName == rw-wenzel-nixos-laptop.networking.hostName
-            || hostName == wenzel-silver-laptop
+            || hostName == wenzel-silver-laptop.networking.hostName
             then "with-vsync.conf"
             else "without-vsync.conf"
           }"
