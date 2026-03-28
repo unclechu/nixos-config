@@ -41,10 +41,10 @@
         "homepage": "https://nix-community.github.io/home-manager/",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "366d78c2856de6ab3411c15c1cb4fb4c2bf5c826",
-        "sha256": "04yamxkwdfjcz5dl8c6nayg1w6dhf325fdklbn09gymnzwzq5nml",
+        "rev": "a0bb0d11514f92b639514220114ac8063c72d0a3",
+        "sha256": "12fzldyirydka2d3cspcfbrxy7aqlqq19ry3ihhs13rp53pv3s3m",
         "type": "tarball",
-        "url": "https://github.com/nix-community/home-manager/archive/366d78c2856de6ab3411c15c1cb4fb4c2bf5c826.tar.gz",
+        "url": "https://github.com/nix-community/home-manager/archive/a0bb0d11514f92b639514220114ac8063c72d0a3.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "i3rc": {
@@ -65,10 +65,10 @@
         "homepage": "",
         "owner": "musnix",
         "repo": "musnix",
-        "rev": "d65f98e0b1f792365f1705653d7b2d266ceeff6e",
-        "sha256": "10ca6cc8vhvrga6l1p1ssddk9cqgzfcym36gm9cwx1g7rbls2bwn",
+        "rev": "739e2a1f94c87d5f4c8b880a12480185cf0d7620",
+        "sha256": "15l5m4is9g9lpj3chllzshry0gc0nlzds3b1jqddmsrsb288ksq8",
         "type": "tarball",
-        "url": "https://github.com/musnix/musnix/archive/d65f98e0b1f792365f1705653d7b2d266ceeff6e.tar.gz",
+        "url": "https://github.com/musnix/musnix/archive/739e2a1f94c87d5f4c8b880a12480185cf0d7620.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "neovim-qt": {
@@ -89,10 +89,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "796891d4dba7ca78854db6ad46d0329e50a0027a",
-        "sha256": "1l2hs322j3s7w8v01czs632cm68ha24cf4hnsbirpiwnqfn2kwgq",
+        "rev": "5900bd5e8f3559df7dc9b890a5bc262858d03022",
+        "sha256": "1xc5jfdkkm90lvmk7f0z1gik76n9549v572jbcdaysr7j8pv53l1",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/796891d4dba7ca78854db6ad46d0329e50a0027a.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/5900bd5e8f3559df7dc9b890a5bc262858d03022.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-utils": {

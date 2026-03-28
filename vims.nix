@@ -37,7 +37,7 @@ let
   neovide = pkgs.callPackage apps/neovide.nix {};
 
   wenzels-neovim = pkgs.callPackage apps/wenzels-neovim.nix {
-    inherit (pkgs) neovim;
+    inherit (pkgs) neovim-unwrapped;
     inherit neovide bashEnvFile;
   };
 

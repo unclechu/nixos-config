@@ -11,7 +11,7 @@ let
     pkgs-unstable = import <nixos-unstable> {};
   in {
     inherit (pkgs-unstable.python3Packages) yt-dlp;
-    inherit (pkgs-unstable) freetube ardour neovim;
+    inherit (pkgs-unstable) freetube ardour neovim-unwrapped;
   };
 
   # *** apps ***
@@ -28,7 +28,7 @@ let
     let
       patchedPkgs = pkgs.extend (self: super: {
         # Wanna latest Neovim
-        neovim = unstable.neovim;
+        neovim-unwrapped = unstable.neovim-unwrapped;
       });
     in
     import ./vims.nix {

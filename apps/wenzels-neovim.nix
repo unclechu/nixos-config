@@ -3,7 +3,7 @@
 let sources = import ../nix/sources.nix; in
 { callPackage
 
-, neovim
+, neovim-unwrapped
 , neovim-qt
 , neovide
 
@@ -15,11 +15,11 @@ let
   inherit (sources) neovimrc;
 
   wenzels-neovim =
-    callPackage "${neovimrc}/nix/apps/neovim.nix" { inherit neovim bashEnvFile; };
+    callPackage "${neovimrc}/nix/apps/neovim.nix" { inherit neovim-unwrapped bashEnvFile; };
   wenzels-neovim-qt =
-    callPackage "${neovimrc}/nix/apps/neovim-qt.nix" { inherit neovim neovim-qt bashEnvFile; };
+    callPackage "${neovimrc}/nix/apps/neovim-qt.nix" { inherit neovim-unwrapped neovim-qt bashEnvFile; };
   wenzels-neovide =
-    callPackage "${neovimrc}/nix/apps/neovide.nix" { inherit neovim neovide bashEnvFile; };
+    callPackage "${neovimrc}/nix/apps/neovide.nix" { inherit neovim-unwrapped neovide bashEnvFile; };
 in
 {
   neovim    = wenzels-neovim;
