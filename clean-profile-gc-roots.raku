@@ -615,7 +615,7 @@ package Cleanup {
         ~ Util::Log::info('(y)es') ~ Util::Log::warning(' or ') ~ Util::Log::info('(n)o')
         ~ Util::Log::warning(': ');
       my Str:D \answer = $*IN.get;
-      (answer.lc ~~ /^(y|yes)$/).defined;
+      (answer.lc ~~ /^(y|yes)$/) !~~ Nil;
     }
 
     # Ask the user to confirm the cleanup plan.
