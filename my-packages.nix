@@ -84,6 +84,7 @@ let
   rt-audio = pkgs.callPackage scripts/rt-audio {};
   screen-saver = pkgs.callPackage scripts/screen-saver {};
   render-kicad-schematic-pdf-to-png = pkgs.callPackage scripts/render-kicad-schematic-pdf-to-png {};
+  scream = pkgs.callPackage scripts/scream.nix {};
 
   clunky-toml-json-converter = pkgs.callPackage apps/clunky-toml-json-converter {};
 
@@ -306,6 +307,7 @@ in
       pkgs.kitty # TODO: configure
       pkgs.piper # GUI for “ratbagd” service
       pkgs.libnotify
+      scream
       polybar
       run-polybar
 
