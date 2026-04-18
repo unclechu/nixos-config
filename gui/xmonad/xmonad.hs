@@ -95,6 +95,7 @@ import Text.Read (readMaybe)
 import qualified System.Process.Typed as Proc
 import Network.HostName (getHostName)
 import Data.Functor ((<&>))
+import XMonad.Layout.PerWorkspace (onWorkspace)
 
 main ∷ IO ()
 main = do
@@ -104,11 +105,12 @@ main = do
 data Options = Options
   { options_startMode ∷ XMonadStartMode
   , options_saveMoreSpace ∷ Bool
+  , options_tallMasters ∷ Int
   }
 
 mkOptions ∷ IO Options
 mkOptions =
-  Options <$> getRestartMode <*> isSavingMoreSpaceNeeded
+  Options <$> getRestartMode <*> isSavingMoreSpaceNeeded <*> pure 1
 
 getRestartMode ∷ IO XMonadStartMode
 getRestartMode = do
@@ -252,7 +254,11 @@ myConfig opts config = config
         Full → XMonad.spawn "sleep 1s ; autostart-setup"
         Shallow → pure ()
 
-  , layoutHook = myLayout opts
+  , layoutHook
+      -- Workspace 8 has my audio x-over setup
+      = onWorkspace "8" (myLayout opts { options_tallMasters = 3 })
+      $ myLayout opts
+
   , manageHook = myManageHook
   }
 
@@ -280,7 +286,7 @@ myLayout opts = go where
     ||| grids
 
   -- | Two-column (or two-row when mirrored) layout
-  tall = ResizableTile.ResizableTall 1 delta ratio []
+  tall = ResizableTile.ResizableTall opts.options_tallMasters delta ratio []
 
   -- | Tree-column (or three-row) or grid-like layouts
   grids
