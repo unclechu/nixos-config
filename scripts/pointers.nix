@@ -238,3 +238,12 @@ makePointer {
     with-prop 'libinput Tapping Enabled', { set-prop $_<name>, '1' }
   '';
 }
+//
+makePointer {
+  pointerName = "logitech-b100";
+  deviceName = "Logitech USB Optical Mouse";
+  rakuCommands = ''
+    with-prop 'libinput Left Handed Enabled', { set-prop $_<name>, '1' }
+    with-prop 'libinput Accel Speed', { set-prop $_<name>, '-1' }
+  '';
+}
