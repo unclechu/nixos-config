@@ -89,10 +89,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "5900bd5e8f3559df7dc9b890a5bc262858d03022",
-        "sha256": "1xc5jfdkkm90lvmk7f0z1gik76n9549v572jbcdaysr7j8pv53l1",
+        "rev": "dcbd3bec0db5c609b213d3df102604dda4da0ab3",
+        "sha256": "0x6jkscrplnx3ldi3rr2z7x6l12sx7wks8qcpwr373jm7sa8v7y1",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/5900bd5e8f3559df7dc9b890a5bc262858d03022.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/dcbd3bec0db5c609b213d3df102604dda4da0ab3.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-utils": {
@@ -117,18 +117,6 @@
         "sha256": "1kryqcjnj33v6dva8nfb46qjw7ar9x7lhrns1ncns53xy2mdl9f0",
         "type": "tarball",
         "url": "https://github.com/unclechu/place-cursor-at/archive/500718f8aac606cbccdb3fd944b62a92337e0bfc.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "psi-plus": {
-        "branch": "1.5.2073",
-        "description": "Codebase snapshots for Psi+ project",
-        "homepage": "https://psi-plus.com/",
-        "owner": "psi-plus",
-        "repo": "psi-plus-snapshots",
-        "rev": "36a96e9b2e7586c6e9d871001a64342ed1d586cb",
-        "sha256": "0mslz7nxcgd2g74mm1aiy9mk8w548h1vyd1m9z0m41wvb4jm3d9j",
-        "type": "tarball",
-        "url": "https://github.com/psi-plus/psi-plus-snapshots/archive/36a96e9b2e7586c6e9d871001a64342ed1d586cb.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "qt-jdenticon": {
