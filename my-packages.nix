@@ -28,7 +28,7 @@ let
     let
       patchedPkgs = pkgs.extend (self: super: {
         # Wanna latest Neovim
-        neovim-unwrapped = unstable.neovim-unwrapped;
+        # neovim-unwrapped = unstable.neovim-unwrapped;
       });
     in
     import ./vims.nix {
