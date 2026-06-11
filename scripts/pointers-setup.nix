@@ -4,7 +4,7 @@ let sources = import ../nix/sources.nix; in
 { callPackage
 , lib
 , dash
-, xorg # Just for ‘xinput’
+, xinput
 
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
@@ -18,7 +18,7 @@ let
 
   dependencies = {
     dash = dash;
-    xinput = xorg.xinput;
+    xinput = xinput;
   } // pointers;
 
   executables = builtins.mapAttrs (n: v: "${v}/bin/${n}") dependencies;

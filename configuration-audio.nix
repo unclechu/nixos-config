@@ -48,7 +48,9 @@ in
 
     kernelModules = lib.mkForce (boot.kernelModules ++ [ "snd-seq" "snd-rawmidi" ]);
     kernelParams = lib.mkForce (boot.kernelParams ++ [ "threadirq" ]);
-    kernelPackages = lib.mkForce pkgs.linuxPackages-rt_latest;
+
+    # linuxPackages-rt was removed from nixpkgs due to lack of maintenance
+    # kernelPackages = lib.mkForce pkgs.linuxPackages-rt_latest;
 
     postBootCommands = ''
       echo 2048 > /sys/class/rtc/rtc0/max_user_freq

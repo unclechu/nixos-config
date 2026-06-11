@@ -1,5 +1,6 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+let sources = import nix/sources.nix; in
 { pkgs
 , lib
 
@@ -30,7 +31,6 @@ let
       };
     };
 
-    neovim-qt = pkgs.neovim-qt.override { neovim = r.neovim; };
     inherit neovide;
   });
 
@@ -41,22 +41,34 @@ let
     inherit neovide bashEnvFile;
   };
 
+  pluginsLackingLicenseInformation =
+    import "${sources.neovimrc}/nix/plugins/plugins-lacking-license-information.nix";
+
   configuration = {
     environment.systemPackages = [
       system-vim.vim
       system-vim.neovim
-      system-vim.neovim-qt
       system-vim.neovide
       pkgs.neovim-remote
     ];
 
     users.users.${wenzelUserName}.packages = [
       wenzels-neovim.neovim
-      wenzels-neovim.neovim-qt
       wenzels-neovim.neovide
       wenzels-neovim.scripts.clean-vim
       wenzels-neovim.scripts.git-grep-nvr
       wenzels-neovim.scripts.nvimd
+    ];
+
+    unfreePredicates = [
+      # Allow some “unfree” Vim plugins that are marked as “unfree” due to
+      # lacking any license information.
+      (pkg:
+        lib.pipe pluginsLackingLicenseInformation [
+          builtins.attrNames
+          (builtins.any (name: lib.getName pkg == name))
+        ] && pkg.meta.license == lib.licenses.unfree
+      )
     ];
   };
 in

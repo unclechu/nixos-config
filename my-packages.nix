@@ -88,9 +88,11 @@ let
 
   clunky-toml-json-converter = pkgs.callPackage apps/clunky-toml-json-converter {};
 
-  mpv =
-    let pkg = pkgs.mpv-unwrapped.override { jackaudioSupport = true; };
-    in pkg.wrapper { mpv = pkg; };
+  mpv = pkgs.mpv.override {
+    mpv-unwrapped = pkgs.mpv-unwrapped.override {
+      jackaudioSupport = true;
+    };
+  };
 in
 {
   my-apps = {
@@ -187,7 +189,7 @@ in
 
       # file managers
       pkgs.mc
-      pkgs.xfce.thunar
+      pkgs.thunar
 
       # audio
       pkgs.alsa-utils # alsamixer tui
@@ -234,7 +236,7 @@ in
       pkgs.fomp
       pkgs.infamousPlugins
       pkgs.mda_lv2
-      pkgs.metersLv2
+      pkgs.meters-lv2
       pkgs.mod-distortion
       pkgs.noise-repellent
       pkgs.rkrlv2
@@ -286,14 +288,13 @@ in
 
       # desktop environment
       pkgs.tk
-      pkgs.xorg.xev
+      pkgs.xev
       pkgs.gmrun pkgs.dmenu pkgs.dzen2 pkgs.rofi
       pkgs.xsel pkgs.xdotool pkgs.numlockx pkgs.xkb-switch
       pkgs.xbindkeys
       xlib-keys-hack
       pkgs.place-cursor-at
       pkgs.xautolock
-      pkgs.termite
       pkgs.networkmanagerapplet
       pkgs.gnome-system-monitor
       pkgs.gnome-power-manager

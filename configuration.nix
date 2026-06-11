@@ -88,7 +88,7 @@ in
   environment = {
     variables = {
       EDITOR = "nvim";
-      TERMINAL = "termite";
+      TERMINAL = "uxterm";
     };
 
     sessionVariables = {

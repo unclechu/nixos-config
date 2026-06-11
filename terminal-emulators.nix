@@ -4,7 +4,6 @@
 let
   inherit (import ./constants.nix) wenzelUserName;
   sources = import nix/sources.nix;
-  termite-config = pkgs.callPackage sources.termiterc {};
   alacritty-config = pkgs.callPackage apps/alacritty {};
 
   inherit (pkgs.callPackage scripts/tmuxed-alacritty {})
@@ -44,8 +43,7 @@ let
       ];
 
   mkCustomFontTerminals = commandNameInfix: font:
-    mkCustomFontTerminal termite-config "termite-${commandNameInfix}-font" font
-    ++ mkCustomFontTerminal alacritty-config "alacritty-${commandNameInfix}-font" font;
+    mkCustomFontTerminal alacritty-config "alacritty-${commandNameInfix}-font" font;
 
   # All terminal emulators with all configs for them (different color schemes and fonts)
   allTerminalEmulators = []

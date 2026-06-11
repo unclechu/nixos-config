@@ -6,7 +6,7 @@
 , coreutils
 , gnused
 , gnugrep
-, xorg
+, xprop
 , xdotool
 , tmux
 , skim
@@ -27,7 +27,7 @@ let
     grep = gnugrep;
     sk = skim;
     xdotool = xdotool;
-    xprop = xorg.xprop;
+    xprop = xprop;
     tmux = tmux;
   };
 

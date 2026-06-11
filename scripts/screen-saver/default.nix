@@ -3,12 +3,12 @@
 { lib
 , writeTextFile
 , bash
-, xorg
+, xset
 }:
 let
   executables = {
     bash = bash;
-    xset = xorg.xset;
+    xset = xset;
   };
 
   esc = lib.escapeShellArg;

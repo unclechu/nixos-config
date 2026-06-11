@@ -7,7 +7,8 @@ in
 { callPackage
 , lib
 , rakudo
-, xorg # ‘xset’ and ‘setxkbmap’
+, xset
+, setxkbmap
 , numlockx
 , procps
 
@@ -42,8 +43,8 @@ let
   # Name is executable name and value is a derivation that provides that executable
   dependencies = {
     raku = rakudo;
-    xset = xorg.xset;
-    setxkbmap = xorg.setxkbmap;
+    xset = xset;
+    setxkbmap = setxkbmap;
     numlockx = numlockx;
     pkill = procps;
 

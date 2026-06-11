@@ -7,7 +7,7 @@ let sources = import ../nix/sources.nix; in
 , pulseaudio
 , networkmanagerapplet
 , gpaste
-, xorg # ‘xsetroot’
+, xsetroot
 
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
@@ -34,7 +34,7 @@ let
     pactl = pulseaudio;
     gpaste-client = gpaste;
     nm-applet = networkmanagerapplet;
-    xsetroot = xorg.xsetroot;
+    xsetroot = xsetroot;
 
     ${__input-setup.name} = __input-setup;
     ${__autolock.name} = __autolock;
