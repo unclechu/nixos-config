@@ -46,7 +46,9 @@ if ACTIVE_WINDOW_ID=$(xdotool getactivewindow); then
 	)
 
 	if [[ -n $TMUX_PANE_CWD ]]; then
-		WORKING_DIRECTORY=$TMUX_PANE_CWD
+		# xprop returns unicode in escaped format,
+		# `printf %b` restores original value.
+		WORKING_DIRECTORY=$(printf %b "$TMUX_PANE_CWD")
 	else
 		# Last focused window might be not a terminal emulator
 		# and would not have this property set then.
