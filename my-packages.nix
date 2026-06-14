@@ -350,6 +350,7 @@ in
       pkgs.pass
       pkgs.monkeysphere
       pkgs.keepassxc
+      pkgs.libsecret # secret-tool
 
       # antivirus
       pkgs.clamav
