@@ -50,7 +50,6 @@ let
 
   hostName = systemConfig.networking.hostName or null;
   rw-wenzel-nixos-laptop = callPackage ../hardware/rw-wenzel-nixos-laptop.nix {};
-  wenzel-silver-laptop = callPackage ../hardware/wenzel-silver-laptop.nix {};
   wenzel-rusty-chunk = callPackage ../hardware/wenzel-rusty-chunk.nix {};
 in
 writeCheckedExecutable name checkPhase ''
@@ -67,8 +66,7 @@ writeCheckedExecutable name checkPhase ''
   fi
   ${
     # Disable autostart of Picom on some of the machines
-    if hostName != wenzel-silver-laptop.networking.hostName
-    && hostName != wenzel-rusty-chunk.networking.hostName
+    if hostName != wenzel-rusty-chunk.networking.hostName
     then esc executables.run-picom
     else ""
   }
