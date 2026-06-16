@@ -1,0 +1,252 @@
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<>
+	a pset:Preset ;
+	lv2:appliesTo <http://lsp-plug.in/plugins/lv2/crossover_stereo> ;
+	lv2:port [
+		lv2:symbol "bd_0" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bd_1" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bd_2" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bd_3" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bd_4" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bd_5" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bd_6" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bd_7" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bg_0" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "bg_1" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "bg_2" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "bg_3" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "bg_4" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "bg_5" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "bg_6" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "bg_7" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "bm_0" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bm_1" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bm_2" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bm_3" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bm_4" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bm_5" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bm_6" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bm_7" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bp_0" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bp_1" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bp_2" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bp_3" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bp_4" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bp_5" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bp_6" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bp_7" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bs_0" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bs_1" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bs_2" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bs_3" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bs_4" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bs_5" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bs_6" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "bs_7" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "crv" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "enabled" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "flt" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "frs_1" ;
+		pset:value 2.0
+	] , [
+		lv2:symbol "frs_2" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "frs_3" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "frs_4" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "frs_5" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "frs_6" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "frs_7" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "g_in" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "g_out" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "hue_0" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "hue_1" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "hue_2" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "hue_3" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "hue_4" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "hue_5" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "hue_6" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "hue_7" ;
+		pset:value 0.0
+	] , [
+		lv2:symbol "ife_l" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "ife_r" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "mode" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "ofe_l" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "ofe_r" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "react" ;
+		pset:value 0.2
+	] , [
+		lv2:symbol "sf_1" ;
+		pset:value 85.0
+	] , [
+		lv2:symbol "sf_2" ;
+		pset:value 10.0
+	] , [
+		lv2:symbol "sf_3" ;
+		pset:value 10.0
+	] , [
+		lv2:symbol "sf_4" ;
+		pset:value 10.0
+	] , [
+		lv2:symbol "sf_5" ;
+		pset:value 10.0
+	] , [
+		lv2:symbol "sf_6" ;
+		pset:value 10.0
+	] , [
+		lv2:symbol "sf_7" ;
+		pset:value 10.0
+	] , [
+		lv2:symbol "shift" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "smapply" ;
+		pset:value 1.0
+	] , [
+		lv2:symbol "zoom" ;
+		pset:value 1.0
+	] ;
+	state:state [
+		<http://lsp-plug.in/plugins/lv2/crossover_stereo/KVT> [
+			a atom:Tuple ;
+			rdf:value ()
+		] ;
+		<http://lsp-plug.in/plugins/lv2/crossover_stereo/preset_state> [
+			a <http://lsp-plug.in/types/lv2/PresetState> ;
+			<http://lsp-plug.in/types/lv2/PresetState#name> "" ;
+			<http://lsp-plug.in/types/lv2/PresetState#flags> "0"^^xsd:int ;
+			<http://lsp-plug.in/types/lv2/PresetState#tab> "0"^^xsd:int
+		]
+	] .

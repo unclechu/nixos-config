@@ -85,6 +85,7 @@ let
   screen-saver = pkgs.callPackage scripts/screen-saver {};
   render-kicad-schematic-pdf-to-png = pkgs.callPackage scripts/render-kicad-schematic-pdf-to-png {};
   scream = pkgs.callPackage scripts/scream.nix {};
+  home-audio-setup = pkgs.callPackage scripts/home-audio-setup {};
 
   clunky-toml-json-converter = pkgs.callPackage apps/clunky-toml-json-converter {};
 
@@ -134,6 +135,7 @@ in
       pkgs.file
       pkgs.socat
       pkgs.pandoc
+      pkgs.bc
       tmux-config.tmuxsh
       tmux-config.tmux-report-current-pane-cwd
       pspg
@@ -144,13 +146,14 @@ in
       # TODO: Maybe make a more universal script out of this.
       pkgs.convmv
 
-      # dealing with json/yaml/toml from shell
+      # dealing with json/yaml/toml/xml from shell
       pkgs.jq
       pkgs.jo # json creator. see https://github.com/jpmens/jo
       pkgs.gron # json to greppable format converter. see https://github.com/tomnomnom/gron
       pkgs.remarshal # Convert between TOML, YAML and JSON
       clunky-toml-json-converter # Convert between TOML and JSON
       pkgs.pv # monitoring progress of data transfer through a pipeline
+      pkgs.xmlstarlet # XML command-line manipulation
 
       # nix stuff
       pkgs.nix-index
@@ -405,6 +408,8 @@ in
       rt-audio
       screen-saver
       render-kicad-schematic-pdf-to-png
+      home-audio-setup.home-audio-lh-xover
+      home-audio-setup.home-audio-setup
     ] ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
   };
 }
