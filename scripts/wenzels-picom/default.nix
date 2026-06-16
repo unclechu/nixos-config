@@ -26,7 +26,6 @@ let sources = import ../../nix/sources.nix; in
 let
   # Hardware detection stuff
   hostName = systemConfig.networking.hostName or null;
-  rw-wenzel-nixos-laptop = callPackage ../../hardware/rw-wenzel-nixos-laptop.nix {};
   wenzel-silver-laptop = callPackage ../../hardware/wenzel-silver-laptop.nix {};
 
   conf = lib.fileset.toSource rec {
@@ -65,8 +64,7 @@ let
             # videodriver. The “TearFree” was merged to X.Org “master” a couple
             # years ago or so but never released. Maybe I’ll try to build from
             # “master” to see if it works.
-            if hostName == rw-wenzel-nixos-laptop.networking.hostName
-            || hostName == wenzel-silver-laptop.networking.hostName
+            if hostName == wenzel-silver-laptop.networking.hostName
             then "with-vsync.conf"
             else "without-vsync.conf"
           }"

@@ -49,7 +49,6 @@ let
       (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
 
   hostName = systemConfig.networking.hostName or null;
-  rw-wenzel-nixos-laptop = callPackage ../hardware/rw-wenzel-nixos-laptop.nix {};
   wenzel-rusty-chunk = callPackage ../hardware/wenzel-rusty-chunk.nix {};
 in
 writeCheckedExecutable name checkPhase ''
