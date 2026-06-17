@@ -124,10 +124,10 @@ in
       pkgs.inotify-tools
       pkgs.bindfs
       pkgs.skim pkgs.fzf # fuzzy search
-      pkgs.eza
+      pkgs.eza # “ls” alternative
       pkgs.tree
-      pkgs.bat
-      pkgs.lf
+      pkgs.bat # Command-line file viewer with syntax highlighting
+      pkgs.lf # Command-line file manager
       pkgs.silver-searcher
       pkgs.zip pkgs.unzip pkgs.p7zip
       pkgs.parallel
@@ -135,7 +135,8 @@ in
       pkgs.file
       pkgs.socat
       pkgs.pandoc
-      pkgs.bc
+      pkgs.bc # Arbitrary precision calculator
+      pkgs.iperf # Measuring IP bandwidth
       tmux-config.tmuxsh
       tmux-config.tmux-report-current-pane-cwd
       pspg
@@ -147,7 +148,7 @@ in
       pkgs.convmv
 
       # dealing with json/yaml/toml/xml from shell
-      pkgs.jq
+      pkgs.jq # Command-line JSON manipulation
       pkgs.jo # json creator. see https://github.com/jpmens/jo
       pkgs.gron # json to greppable format converter. see https://github.com/tomnomnom/gron
       pkgs.remarshal # Convert between TOML, YAML and JSON
