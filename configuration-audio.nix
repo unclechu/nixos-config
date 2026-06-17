@@ -4,11 +4,9 @@
 # The optimization tweaks are taken from this page:
 # https://nixos.wiki/wiki/JACK
 #
-args@{ pkgs, lib, ... }:
+args@{ config, pkgs, lib, ... }:
 let
   inherit (import ./constants.nix) systemProfile;
-  machine-specific = import ./machine-specific.nix args;
-  inherit (machine-specific) boot;
   sources = import nix/sources.nix;
   rtirq = pkgs.callPackage "${sources.musnix}/pkgs/os-specific/linux/rtirq/default.nix" {};
 
@@ -42,12 +40,18 @@ in
 
   boot = {
     kernel.sysctl = {
-      "vm.swappiness" = lib.mkForce 10;
+      "vm.swappiness" = lib.mkForce 1;
       "fs.inotify.max_user_watches" = lib.mkForce 524288;
     };
 
-    kernelModules = lib.mkForce (boot.kernelModules ++ [ "snd-seq" "snd-rawmidi" ]);
-    kernelParams = lib.mkForce (boot.kernelParams ++ [ "threadirq" ]);
+    kernelModules = lib.mkForce (
+      config.my-boot-attributes.kernelModules
+      ++ [ "snd-seq" "snd-rawmidi" ]
+    );
+    kernelParams = lib.mkForce (
+      config.my-boot-attributes.kernelParams
+      ++ [ "threadirq" ]
+    );
 
     # linuxPackages-rt was removed from nixpkgs due to lack of maintenance
     # kernelPackages = lib.mkForce pkgs.linuxPackages-rt_latest;

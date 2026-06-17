@@ -11,6 +11,8 @@ let
 in
 { config, pkgs, lib, ... }:
 {
+  networking.hostName = "wenzel-rusty-chunk";
+
   boot = {
     # This hardware is pretty old, it doesn't support EFI.
     loader.grub.efiSupport = lib.mkForce false;
@@ -30,8 +32,6 @@ in
 
     kernelParams = [];
     kernelModules = ["kvm-amd" "fuse"];
-
-    kernelPackages = pkgs.linuxPackages_latest;
   };
 
   fileSystems = {
@@ -44,8 +44,6 @@ in
   swapDevices = [
     { device = "/dev/disk/by-uuid/${swapPartitionUUID}"; }
   ];
-
-  networking.hostName = "wenzel-rusty-chunk";
 
   services.xserver = {
     # Technically this pretty old machine has AMD GPU chip but I’m not sure

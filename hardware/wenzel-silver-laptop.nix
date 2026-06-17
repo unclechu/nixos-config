@@ -1,25 +1,58 @@
-{ config, pkgs, ... }:
-{
-  networking.hostName = "wenzel-silver-laptop";
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-  boot = {
-    initrd = {
-      luks.devices = {
-        boot.device = "/dev/disk/by-uuid/7096ef04-5ea3-4c58-8ac0-914f0e8934a9";
-        NixOS.device = "/dev/disk/by-uuid/eb1fea47-2000-4aa9-94e9-d12f9801c95d";
-      };
+# This file is supposed to be symlinked as "machine-specific.nix"
+# and imported in "configuration.nix".
+{ pkgs, ... }:
+
+let
+  swap = {
+    swapDevices = [ ];
+
+    zramSwap = {
+      enable = false; # I have enough RAM, turned off
+      memoryPercent = 100 / 5;
     };
+  };
 
-    kernelModules = [ "kvm-intel" "fuse" ];
-
-    kernelParams = [
+  graphics = {
+    my-boot-attributes.kernelParams = [
       "radeon.cik_support=0"
       "amdgpu.cik_support=1"
       "amdgpu.dc=1"
       "amdgpu.ppfeaturemask=0xffffffff" # allows to adjust clocks and voltages via sysfs
     ];
 
-    kernelPackages = pkgs.linuxPackages_latest;
+    # Need some non-free microcodes for "amdgpu"
+    hardware.enableRedistributableFirmware = true;
+
+    services.xserver = {
+      videoDrivers = [ "modesetting" "amdgpu" ];
+
+      deviceSection = ''
+        Option "TearFree" "true"
+      '';
+
+      screenSection = ''
+        DefaultDepth 24
+      '';
+    };
+  };
+in
+
+{
+  imports = [
+    swap
+    graphics
+  ];
+
+  networking.hostName = "wenzel-silver-laptop";
+
+  my-boot-attributes.kernelModules = [ "kvm-intel" "fuse" ];
+
+  boot.initrd.luks.devices = {
+    boot.device = "/dev/disk/by-uuid/7096ef04-5ea3-4c58-8ac0-914f0e8934a9";
+    NixOS.device = "/dev/disk/by-uuid/eb1fea47-2000-4aa9-94e9-d12f9801c95d";
   };
 
   fileSystems = {
@@ -41,27 +74,7 @@
     };
   };
 
-  swapDevices = [ ];
-
-  zramSwap = {
-    enable = false; # I have enough RAM, turned off
-    memoryPercent = 100 / 5;
-  };
-
   nix.settings.max-jobs = 4;
   powerManagement.cpuFreqGovernor = "powersave";
-  hardware.enableRedistributableFirmware = true; # Need some non-free microcodes for "amdgpu"
-  hardware.cpu.intel.updateMicrocode = config.hardware.enableRedistributableFirmware;
-
-  services.xserver = {
-    videoDrivers = [ "modesetting" "amdgpu" ];
-
-    deviceSection = ''
-      Option "TearFree" "true"
-    '';
-
-    screenSection = ''
-      DefaultDepth 24
-    '';
-  };
+  hardware.cpu.intel.updateMicrocode = true;
 }

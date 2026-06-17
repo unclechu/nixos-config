@@ -33,6 +33,7 @@ in
     # Custom options
     custom-options/unfree-predicates.nix
     custom-options/whitelisted-insecure-packages.nix
+    custom-options/my-boot-attributes.nix
   ] ++ (
     let path = ./secret.nix; in
     lib.optional (builtins.pathExists path) path

@@ -1,6 +1,6 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-{ ... }:
+{ config, pkgs, ... }:
 {
   boot = {
     loader = {
@@ -23,11 +23,10 @@
         "xfs" "crc32c"
         "nvme"
       ];
-
-      # kernelModules = [];
     };
 
-    # kernelModules = [];
-    # extraModulePackages = [];
+    kernelModules = config.my-boot-attributes.kernelModules;
+    kernelParams = config.my-boot-attributes.kernelParams;
+    kernelPackages = pkgs.linuxPackages_latest;
   };
 }
