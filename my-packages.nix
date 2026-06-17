@@ -215,7 +215,7 @@ in
       pkgs.jack_capture
       pkgs.qjackctl
       pkgs.patchage
-      pkgs.patchance
+      (pkgs.callPackage apps/patchance.nix {})
       pkgs.audacious
       pkgs.audacity
       # Use newer Ardour 8.11 instead of 8.8 (8.8 is very buggy)
