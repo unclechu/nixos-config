@@ -108,6 +108,7 @@ in
     imports = [
       vims.configuration
       terminal-emulators.configuration
+      (import gui/gtk-filepicker.nix args)
     ];
 
     environment.shells = [
