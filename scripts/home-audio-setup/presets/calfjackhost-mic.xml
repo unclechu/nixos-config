@@ -1,0 +1,34 @@
+<?xml version="1.1" encoding="utf-8"?>
+<rack><plugin type="limiter" instance-name="Mic Limiter 1" input-index="1" output-index="1">
+<preset bank="0" program="0" plugin="limiter" name="">
+  <param name="bypass" value="0" />
+  <param name="level_in" value="1" />
+  <param name="level_out" value="1" />
+  <param name="limit" value="0.15604132413864136" />
+  <param name="attack" value="5" />
+  <param name="release" value="50" />
+  <param name="att" value="1" />
+  <param name="asc" value="1" />
+  <param name="asc_led" value="0" />
+  <param name="asc_coeff" value="0.5" />
+  <param name="oversampling" value="1" />
+  <param name="auto_level" value="1" />
+</preset>
+</plugin>
+<plugin type="limiter" instance-name="Mic Limiter 2" input-index="3" output-index="3">
+<preset bank="0" program="0" plugin="limiter" name="">
+  <param name="bypass" value="0" />
+  <param name="level_in" value="1" />
+  <param name="level_out" value="0.96727627515792847" />
+  <param name="limit" value="1" />
+  <param name="attack" value="5" />
+  <param name="release" value="50" />
+  <param name="att" value="1" />
+  <param name="asc" value="1" />
+  <param name="asc_led" value="0" />
+  <param name="asc_coeff" value="0.5" />
+  <param name="oversampling" value="1" />
+  <param name="auto_level" value="1" />
+</preset>
+</plugin>
+</rack>

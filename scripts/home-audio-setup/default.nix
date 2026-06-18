@@ -327,6 +327,45 @@ let
       runHook postInstall
     '';
   };
+
+  home-audio-mic = stdenvNoCC.mkDerivation rec {
+    name = "home-audio-mic";
+    src = ./home-audio-mic.sh;
+
+    nativeBuildInputs = [
+      makeBinaryWrapper
+      shellcheck
+    ];
+
+    dontUnpack = true;
+    doCheck = true;
+
+    checkPhase = ''
+      runHook preCheck
+      shellcheck -- "$src"
+      ${executablesCheckPhase}
+      runHook postCheck
+    '';
+
+    installPhase = ''
+      runHook preInstall
+
+      BIN_PATH="$out/bin/"${lib.escapeShellArg name}
+      install -Dm755 -- "$src" "$BIN_PATH"
+
+      CMD=(
+        wrapProgram "$BIN_PATH"
+        --prefix PATH : ${lib.makeBinPath (lib.pipe src [
+          getScriptDependencies
+          scriptDependenciesToDerivations
+        ])}
+        --set CALFJACKHOST_PRESET ${lib.escapeShellArg "${presets/calfjackhost-mic.xml}"}
+      )
+      "''${CMD[@]}"
+
+      runHook postInstall
+    '';
+  };
 in
 
 {
@@ -338,5 +377,6 @@ in
 
     home-audio-lh-xover
     home-audio-setup
+    home-audio-mic
     ;
 }

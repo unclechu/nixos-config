@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
-set -o errexit || exit; set -o nounset; set -o pipefail
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+set -o errexit || exit; set -o nounset; set -o pipefail
 SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 
 # My home audio setup script.
@@ -26,7 +26,12 @@ fi
 
 set -o xtrace
 
+# Launch the JACK server (in case it’s not already started yet)
 jack_control start
 sleep 1s
+
+# Start the cross-over setup and connect everything
 ./home-audio-lh-xover.sh
+
+# Make sure that the JACK PulseAudio input is not attenuated
 pactl set-source-volume 'jack_in' 100%

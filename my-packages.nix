@@ -412,6 +412,7 @@ in
       render-kicad-schematic-pdf-to-png
       home-audio-setup.home-audio-lh-xover
       home-audio-setup.home-audio-setup
+      home-audio-setup.home-audio-mic
     ] ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
   };
 }
