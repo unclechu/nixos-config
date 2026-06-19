@@ -24,6 +24,13 @@ in
     enableContribAndExtras = false; # Added in “extraPackages” instead
     config = builtins.readFile ./xmonad.hs;
 
+    # Keep up-to-date with `./build.sh`
+    ghcArgs = [
+      "-threaded"
+      "-rtsopts"
+      "-with-rtsopts=-N"
+    ];
+
     extraPackages = hsPkgs:
       let
         # For development & testing
@@ -40,6 +47,7 @@ in
         newHsPkgs.qm-interpolated-string
         newHsPkgs.typed-process
         newHsPkgs.hostname
+        newHsPkgs.async
         newHsPkgs.xmonad
         newHsPkgs.xmonad-contrib
       ];

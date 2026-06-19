@@ -77,12 +77,12 @@ run-per-monitor-polybars() {
 		if [[ $monitor != "$MONITOR_PRIMARY" ]]; then bar=secondary; fi
 		if backlight-module; then barsub=${barsub}bl; fi
 		if battery-module; then barsub=${barsub}bt; fi
-		
+
 		MONITOR="$monitor" \
 			WINDOW_TITLE_MAX_LEN="${MONITORS_MAP["$monitor"]}" \
 			"${POLYBAR_CMD[@]}" \
 			"${bar}${barsub:+-}${barsub}" &
-			
+
 		pids+=($!)
 	done
 }
@@ -119,16 +119,49 @@ watch-reload() {
 	done
 }
 
+# Listen for stdin reports for modules.
+#
+# IPC reports examples:
+#
+# ```
+# TRIGGER_HOOK xmonad-workspaces 0
+# ```
+handle-ipc-reports() {
+	while read -r line; do
+		if [[ $line =~ ^TRIGGER_HOOK[[:space:]]+([^[:space:]]+)[[:space:]]+([0-9]+)$ ]]; then
+			module_name=${BASH_REMATCH[1]}
+			hook_idx=${BASH_REMATCH[2]}
+
+			for pid in "${polybar_pids[@]}"; do
+				(
+					set -o xtrace
+					</dev/null 1>&2 polybar-msg -p "$pid" action "$module_name" hook "$hook_idx"
+				) || true
+			done
+		else
+			>&2 printf 'Unrecognized IPC report: “%s”\n' "$line"
+		fi
+	done
+}
+
 # Arguments parsing
 
 # Main action is just to run Polybar
 if (( $# == 0 )); then
 	terminate-old-polybars
-	pids=()
+	pids=() # All pids to wait for & cleanup
 	cleanup-hook
 
-	set -o xtrace
+	>&2 echo '+ run-per-monitor-polybars'
 	run-per-monitor-polybars
+	polybar_pids=("${pids[@]}") # Only pids of Polybar instances
+	>&2 printf 'Polybar pids: %s\n' "${polybar_pids[*]}"
+
+	>&2 echo 'Waiting for IPC reports…'
+	</dev/stdin handle-ipc-reports &
+	pids+=($!)
+
+	set -o xtrace
 	wait -- "${pids[@]}"
 
 elif (( $# == 1 )) && [[ $1 == watch ]]; then

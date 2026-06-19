@@ -1,2 +1,7 @@
 # Xmonad source code (used for development purposes)
 xmonad-src
+
+# GHC build artifacts
+xmonad-x86_64-linux
+*.hi
+*.o

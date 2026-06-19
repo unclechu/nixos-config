@@ -14,11 +14,6 @@
 --       XMonad.Actions.DynamicWorkspaceOrder
 --       XMonad.Actions.DynamicWorkspaceGroups
 
--- TODO: Try out Polybar. There is no bar used yet in this config.
---       https://polybar.github.io
---       https://github.com/polybar/polybar
---       https://gvolpe.com/blog/xmonad-polybar-nixos/
-
 -- TODO: Find out if “free layouts” like in i3wm are possible in XMonad.
 --       Every tile can be either one window or nest one of the layouts:
 --       1. Vertical/horizontal split
@@ -34,13 +29,6 @@
 --       Try to patch XMonad.Operations.windows.
 --       As pointed out by geekosaur from #xmonad:libera.chat here is the place to change:
 --       https://github.com/xmonad/xmonad/blob/1aac661/src/XMonad/Operations.hs#L197-L202
-
--- TODO: Come up with a i3wm-like solution where workspaces are assigned to
---       particular screens. So workspaces would have some kind of memory
---       effect what screen they were on last time. And if you try to go to
---       that workspace it opens on a screen where it was on last time.
---       The key bindings for moving current workspace between screens
---       can work as a way to bind a workspace to another screen.
 
 {-# OPTIONS_GHC -Wall -Wno-partial-type-signatures -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
@@ -65,7 +53,7 @@ import Text.InterpolatedString.QM (qms, qns)
 import qualified Graphics.X11.ExtraTypes.XF86 as XF86
 import qualified XMonad.StackSet as W
 import qualified XMonad.Hooks.Modal as Modal
-import Control.Monad (replicateM_, when)
+import Control.Monad (replicateM_, when, guard, void)
 import qualified XMonad.Layout.ResizableTile as ResizableTile
 import Data.Foldable (traverse_)
 import qualified XMonad.Layout.Tabbed as Tabbed
@@ -89,18 +77,54 @@ import Data.List (partition)
 import Data.Maybe (listToMaybe, fromMaybe)
 import XMonad.Hooks.TaffybarPagerHints (pagerHints)
 import qualified Data.List.NonEmpty as NE
-import System.Posix.Process (executeFile)
 import System.Environment (getEnvironment, lookupEnv, unsetEnv)
 import Text.Read (readMaybe)
-import qualified System.Process.Typed as Proc
+import qualified System.Process.Typed as ProcT
 import Network.HostName (getHostName)
 import Data.Functor ((<&>))
 import XMonad.Layout.PerWorkspace (onWorkspace)
+import System.Posix (getEnv)
+import System.Posix.Process (executeFile)
+import System.FilePath ((</>))
+import qualified XMonad.Hooks.DynamicLog as DynamicLog
+import XMonad.Util.Loggers (Logger)
+import qualified Control.Concurrent.MVar as MVar
+import qualified Control.Concurrent.Async as Async
+import qualified Control.Exception as E
+import Control.Concurrent (threadDelay, forkIO)
+import qualified XMonad.Hooks.UrgencyHook as UrgencyHook
+import qualified Data.IORef as IORef
+import qualified System.IO as SysIO
+import Control.Monad.Fix (fix)
 
 main ∷ IO ()
 main = do
-  opts ← mkOptions
-  withPolybar $ XMonad.xmonad . configCustomizations opts $ XMonad.def
+  writeFile "/tmp/xmonad.log" "XMonad initializes\n"
+
+  polybarRunScript ← do
+    let envVarName = "POLYBAR_RUN_SCRIPT"
+    !x ← fromMaybe "run-polybar" <$> getEnv envVarName
+    x <$ unsetEnv envVarName
+
+  polybarStateFiles ← mkPolybarStateFiles
+
+  withPolybar polybarStateFiles polybarRunScript $ \polybarInterface → do
+    opts ← mkOptions
+
+    let
+      myStartupHook = do
+        XMonad.io . void . forkIO $ do
+          autoStartScript opts
+
+          -- Wait for the screens to fully update (by the autostart script)
+          -- so that Polybar can properly render.
+          threadDelay 1_000_000
+
+          polybarInterface.polybar_release
+
+    writeFile "/tmp/xmonad.log" "XMonad starts\n"
+    XMonad.xmonad $
+      configCustomizations opts polybarInterface myStartupHook XMonad.def
 
 data Options = Options
   { options_startMode ∷ XMonadStartMode
@@ -110,7 +134,10 @@ data Options = Options
 
 mkOptions ∷ IO Options
 mkOptions =
-  Options <$> getRestartMode <*> isSavingMoreSpaceNeeded <*> pure 1
+  Options
+    <$> getRestartMode
+    <*> isSavingMoreSpaceNeeded
+    <*> pure 1
 
 getRestartMode ∷ IO XMonadStartMode
 getRestartMode = do
@@ -133,8 +160,177 @@ isSavingMoreSpaceNeeded =
     "wenzel-rusty-chunk" → True
     _ → False
 
-withPolybar ∷ IO () -> IO ()
-withPolybar m = Proc.withProcessWait (Proc.proc "run-polybar" []) (const m)
+-- | Startup script that is provided by my NixOS configuration.
+--
+-- Blocking! Waits for the script to finish.
+autoStartScript ∷ Options → IO ()
+autoStartScript opts = do
+  case options_startMode opts of
+    Full → do
+      report "Sleeping before starting autostart-setup script"
+      threadDelay 1_000_000 -- Wait for 1 sec
+
+      report "Starting autostart-setup script"
+      E.try (ProcT.runProcess_ $ ProcT.proc "autostart-setup" []) >>= \case
+        Left (e ∷ E.SomeException) →
+          report $ "autostart-setup script failed: " <> E.displayException e
+        Right () →
+          report "autostart-setup script finished successfully"
+
+    Shallow → pure ()
+
+  where
+    report = writeFile "/tmp/xmonad-autostart-setup.log" . (<> "\n")
+
+-- | Polybar state files information
+--
+-- Pairs of Polybar module name + state file path
+data PolybarStateFiles = PolybarStateFiles
+  { polybar_workspacesFile ∷ (String, FilePath)
+  , polybar_layoutFile ∷ (String, FilePath)
+  , polybar_modeFile ∷ (String, FilePath)
+  }
+
+mkPolybarStateFiles ∷ IO PolybarStateFiles
+mkPolybarStateFiles = do
+  dir ←
+    let envVarName = "XDG_RUNTIME_DIR" in
+    getEnv envVarName >>=
+      maybe (fail $ "Failed to get " <> envVarName) pure
+        . (>>= \x → x <$ guard (x /= mempty))
+
+  pure PolybarStateFiles
+    { polybar_workspacesFile = ("xmonad-workspaces", dir </> "xmonad-polybar-workspaces")
+    , polybar_layoutFile = ("xmonad-layout", dir </> "xmonad-polybar-layout")
+    , polybar_modeFile = ("xmonad-mode", dir </> "xmonad-polybar-mode")
+    }
+
+data PolybarInterface = PolybarInterface
+  { polybar_release ∷ IO ()
+  , polybar_reportWorkspaces ∷ String → IO ()
+  , polybar_reportLayout ∷ String → IO ()
+  , polybar_reportMode ∷ String → IO ()
+  }
+
+withPolybar ∷ PolybarStateFiles → FilePath → (PolybarInterface → IO ()) → IO ()
+withPolybar stateFiles polybarRunScript runXMonad = do
+  startPolybarLatch ← MVar.newEmptyMVar
+  polybarIpcHandle ← IORef.newIORef (Nothing @SysIO.Handle)
+
+  let
+    startPolybar ∷ IO ()
+    startPolybar = void $ MVar.tryPutMVar startPolybarLatch ()
+
+  let
+    polybarThread ∷ IO ()
+    polybarThread = do
+      report "Waiting for startupHook trigger before starting Polybar"
+
+      -- Wait for startupHook to call the startPolybar
+      MVar.takeMVar startPolybarLatch
+
+      report $ "Starting Polybar script " <> show polybarRunScript
+
+      let
+        process =
+          ProcT.setStdout ProcT.nullStream
+            . ProcT.setStderr ProcT.inherit
+            . ProcT.setStdin ProcT.createPipe
+            $ ProcT.proc polybarRunScript []
+
+        start =
+          ProcT.withProcessTerm process $ \procHandle → do
+            IORef.atomicWriteIORef polybarIpcHandle . Just $
+              ProcT.getStdin procHandle
+
+            -- Keep this scope alive while run-polybar is alive.
+            -- On cancellation, withProcessTerm terminates run-polybar
+            -- and waits for it to exit.
+            exitCode ← ProcT.waitExitCode procHandle
+            report $
+              "Polybar script "
+                <> show polybarRunScript
+                <> " finished with: "
+                <> show exitCode
+
+      start `E.catch` \(e :: E.SomeException) ->
+        report $
+          "Polybar script "
+            <> show polybarRunScript
+            <> " failed: "
+            <> E.displayException e
+
+  Async.withAsync polybarThread $ \polybarAsync →
+    withPolybarReporter polybarIpcHandle stateFiles.polybar_workspacesFile $ \reportWorkspaces →
+      withPolybarReporter polybarIpcHandle stateFiles.polybar_layoutFile $ \reportLayout →
+        withPolybarReporter polybarIpcHandle stateFiles.polybar_modeFile $ \reportMode →
+          let
+            polybarInterface = PolybarInterface
+              { polybar_release = startPolybar
+              , polybar_reportWorkspaces = reportWorkspaces
+              , polybar_reportLayout = reportLayout
+              , polybar_reportMode = reportMode
+              }
+          in
+            runXMonad polybarInterface `E.finally` Async.cancel polybarAsync
+
+  where
+    report = writeFile "/tmp/xmonad-polybar.log" . (<> "\n")
+
+withPolybarReporter
+  ∷ IORef.IORef (Maybe SysIO.Handle)
+  → (String, FilePath)
+  → ((String → IO ()) → IO a)
+  → IO a
+withPolybarReporter polybarIpcHandle file@(moduleName, statusStateFile) run = do
+  latestRef ← IORef.newIORef ""
+  wake ← MVar.newEmptyMVar
+
+  let
+    requestUpdate ∷ String → IO ()
+    requestUpdate !line = do
+      IORef.atomicWriteIORef latestRef line
+      void $ MVar.tryPutMVar wake ()
+
+  SysIO.withFile statusStateFile SysIO.WriteMode $ \fileHandle -> do
+    SysIO.hSetBuffering fileHandle SysIO.NoBuffering
+
+    let
+      writeStatusAtomic ∷ String → IO ()
+      writeStatusAtomic line =
+        E.handle @E.SomeException errHandler $ do
+          -- Write new line to the state file
+          SysIO.hSeek fileHandle SysIO.AbsoluteSeek 0
+          SysIO.hPutStrLn fileHandle line
+          SysIO.hTell fileHandle >>= SysIO.hSetFileSize fileHandle
+          SysIO.hFlush fileHandle
+
+          -- Notify Polybar instances
+          IORef.readIORef polybarIpcHandle >>= \case
+            Nothing → pure () -- Polybar is not ready yet
+            Just h → do
+              SysIO.hPutStrLn h $ unwords ["TRIGGER_HOOK", moduleName, "0"]
+              SysIO.hFlush h
+        where
+          errHandler (e ∷ E.SomeException) =
+            report $
+              "Polybar reporter " <> show file <> " failed for line " <>
+              show line <> ": " <> E.displayException e
+
+    let
+      handler ∷ IO ()
+      handler =
+        ($ "") . fix $ \again lastWritten → do
+          MVar.takeMVar wake
+          line ← IORef.readIORef latestRef
+          when (lastWritten /= line) (writeStatusAtomic line)
+          again line
+
+    Async.withAsync handler $ \handlerAsync ->
+      run requestUpdate `E.finally` Async.cancel handlerAsync
+
+  where
+    report = writeFile "/tmp/xmonad-polybar-reporter.log" . (<> "\n")
 
 -- * Commands
 
@@ -217,21 +413,23 @@ displayNToNum = \case D1 → 1 ; D2 → 2 ; D3 → 3 ; D4 → 4
 -- * XMonad configuration
 
 -- | All the configuration customizations together
-configCustomizations ∷ Options → XConfig _layoutA → XConfig _layoutB
-configCustomizations opts
+configCustomizations ∷ Options → PolybarInterface → XMonad.X () → XConfig _layoutA → XConfig _layoutB
+configCustomizations opts polybarInterface myStartupHook
   -- Real fullscreen instead of bounding the fullscreen to the window dimentions.
   -- But I personally prefer to keep windows inside their tiles even when they are fullscreened.
   -- N.B. Note that this one must come above “ewmh”.
-  -- ewmhFullscreen
+  -- EwmhDesktops.ewmhFullscreen
 
   = ManageDocks.docks
+  . EwmhDesktops.setEwmhActivateHook UrgencyHook.doAskUrgent
   . EwmhDesktops.ewmh
+  . UrgencyHook.withUrgencyHook UrgencyHook.NoUrgencyHook
   . pagerHints
   . withKeysModes
-  . myConfig opts
+  . myConfig opts polybarInterface myStartupHook
 
-myConfig ∷ Options → XConfig _layoutA → XConfig _layoutB
-myConfig opts config = config
+myConfig ∷ Options → PolybarInterface → XMonad.X () → XConfig _layoutA → XConfig _layoutB
+myConfig opts polybarInterface myStartupHook config = config
   { modMask = XMonad.mod4Mask -- Super/Meta/Windows key
   , workspaces = show <$> [1 .. 10 ∷ Word]
 
@@ -248,11 +446,7 @@ myConfig opts config = config
 
   -- Hooks:
 
-  -- This startup script is provided by my NixOS configuration
-  , startupHook =
-      case options_startMode opts of
-        Full → XMonad.spawn "sleep 1s ; autostart-setup"
-        Shallow → pure ()
+  , startupHook = myStartupHook
 
   , layoutHook
       -- Workspace 8 has my audio x-over setup
@@ -260,6 +454,8 @@ myConfig opts config = config
       $ myLayout opts
 
   , manageHook = myManageHook
+
+  , logHook = polybarLogHook polybarInterface
   }
 
 tabsLayoutName, fullscreenLayoutName ∷ String
@@ -301,7 +497,7 @@ myLayout opts = go where
   delta = 1 / 100 -- Resize step
   ratio = 1 / 2 -- Default ratio between the master and the slave windows
 
-  myTabTheme :: Tabbed.Theme
+  myTabTheme ∷ Tabbed.Theme
   myTabTheme = XMonad.def
     { Tabbed.activeColor = "#285577"
     , Tabbed.activeTextColor = "#ffffff"
@@ -332,14 +528,14 @@ layoutSpacing opts
 -- ** Mouse bindings
 
 -- | Mouse button mapping set
-type MouseButtons = Map.Map (XMonad.KeyMask, XMonad.Button) (XMonad.Window -> X ())
+type MouseButtons = Map.Map (XMonad.KeyMask, XMonad.Button) (XMonad.Window → X ())
 
 -- | Mouse bindings: default actions bound to mouse events
-myMouseBindings :: XConfig layout -> MouseButtons
+myMouseBindings ∷ XConfig layout → MouseButtons
 myMouseBindings XConfig { XMonad.modMask = m } = Map.fromList
   -- %! Set the window to floating mode and move by dragging
   [ ( (m, XMonad.button1)
-    , \window -> do
+    , \window → do
         XMonad.focus window
         XMonad.mouseMoveWindow window
         XMonad.windows W.shiftMaster
@@ -350,7 +546,7 @@ myMouseBindings XConfig { XMonad.modMask = m } = Map.fromList
 
   -- %! Set the window to floating mode and resize by dragging
   , ( (m, XMonad.button3)
-    , \window -> do
+    , \window → do
         XMonad.focus window
         -- XMonad.mouseResizeWindow window
         FlexibleResize.mouseResizeWindow window
@@ -419,8 +615,8 @@ type WorkspaceLabel = String
 navigationBetweenWorkspacesKeys ∷ [WorkspaceLabel] → (XMonad.KeyMask, XMonad.KeyMask) → Keys
 navigationBetweenWorkspacesKeys ws (switchMask, moveMask) = Map.fromList
   [ ((mask, key), XMonad.windows $ operation workspace)
-  | (workspace, key) <- zip ws $ [XMonad.xK_1 .. XMonad.xK_9] <> [XMonad.xK_0]
-  , (mask, operation) <-
+  | (workspace, key) ← zip ws $ [XMonad.xK_1 .. XMonad.xK_9] <> [XMonad.xK_0]
+  , (mask, operation) ←
       [ (switchMask, W.greedyView) -- %! Switch to workspace
       , (moveMask, W.shift) -- %! Move focused window to workspace
       ]
@@ -468,8 +664,8 @@ data MusicPlayerControls = MusicPlayerControls
   }
   deriving (Eq, Show)
 
-audaciousMusicPlayerControls ∷ MusicPlayerControls
-audaciousMusicPlayerControls = MusicPlayerControls
+_audaciousMusicPlayerControls ∷ MusicPlayerControls
+_audaciousMusicPlayerControls = MusicPlayerControls
   { mpPlayCmd = "audacious --play"
   , mpPlayToggleCmd = "audacious --play-pause"
   , mpPrevCmd = "audacious --rew"
@@ -855,10 +1051,14 @@ doKeysMode ∷ Modal.Mode
 
     -- Restart XMonad applying the new configuration.
     -- Mnemonic: ‘r’ is for ‘Restart’.
-    , ((m, XMonad.xK_r), Modal.exitMode >> restartXMonad Full True)
+    , ((m, XMonad.xK_r), Modal.exitMode >> restartXMonad Normal Full True)
+    -- For dev testing
+    , ((m .|. s, XMonad.xK_r), Modal.exitMode >> restartXMonad Dev Full True)
     -- “Shallow” mode restart (skipping the autostart script)
     -- Mnemonic: ‘t’ is for ‘restarT’.
-    , ((m, XMonad.xK_t), Modal.exitMode >> restartXMonad Shallow True)
+    , ((m, XMonad.xK_t), Modal.exitMode >> restartXMonad Normal Shallow True)
+    -- For dev testing
+    , ((m .|. s, XMonad.xK_t), Modal.exitMode >> restartXMonad Dev Shallow True)
     -- Exit XMonad. Log out from the X session.
     -- Mnemonic: ‘e’ is for ‘Exit’.
     -- TODO: Come up with a solution to trigger “io exitSuccess” instead when YES is pressed.
@@ -1058,7 +1258,7 @@ myManageHook = XMonad.composeAll
     -- See https://unix.stackexchange.com/a/708140
     getNetWMState ∷ XMonad.Window → X [XMonad.Atom]
     getNetWMState window = do
-      atom <- XMonad.getAtom "_NET_WM_STATE"
+      atom ← XMonad.getAtom "_NET_WM_STATE"
       maybe [] (fmap fromIntegral) <$> getProp32 atom window
 
     hasNetWMState ∷ String → XMonad.Window → X Bool
@@ -1103,20 +1303,29 @@ data XMonadStartMode
 
 instance XMonad.Default XMonadStartMode where def = Full
 
+data XMonadExecutableType
+  = Normal
+  | Dev
+  deriving (Show, Read, Eq, Enum, Bounded)
+
 -- | Customized "XMonad.Operations.restart" that also passes “start mode” environment variable
 --
 -- See "startModeMarkerEnvName" for environment variable name.
 -- See "XMonadStartMode" for possible environment variable values (it’s just “show”n).
-restartXMonad ∷ XMonadStartMode → Bool → X ()
-restartXMonad mode resume = do
+restartXMonad ∷ XMonadExecutableType → XMonadStartMode → Bool → X ()
+restartXMonad xmonadExecutableType mode resume = do
   XMonad.broadcastMessage XMonad.ReleaseResources
   XMonad.io . XMonad.flush =<< XMonad.asks XMonad.display
   when resume XMonad.writeStateToFile
   XMonad.catchIO $ do
     env ← (<> [startModeMarker]) . filter ((/= startModeMarkerEnvName) . fst) <$> getEnvironment
-    executeFile "xmonad" True [] (Just env)
+    executeFile xmonadExecutable True [] (Just env)
   where
     startModeMarker = (startModeMarkerEnvName, show mode)
+    xmonadExecutable =
+      case xmonadExecutableType of
+        Normal → "xmonad"
+        Dev → "/etc/nixos/gui/xmonad/xmonad-dev.sh"
 
 -- | Environment variable name
 startModeMarkerEnvName ∷ String
@@ -1194,3 +1403,125 @@ swapLast = W.modify' $ \c → case c of
   W.Stack t ls (NE.nonEmpty → fmap NE.reverse → Just (lastWindow NE.:| rs)) →
     W.Stack t (rs <> (lastWindow : ls)) []
   _ → c -- Already last
+
+polybarLogHook ∷ PolybarInterface → XMonad.X ()
+polybarLogHook polybarInterface = do
+  workspacesPP
+    >>= DynamicLog.dynamicLogString
+    >>= XMonad.io . polybarInterface.polybar_reportWorkspaces
+
+  DynamicLog.dynamicLogString layoutPP
+    >>= XMonad.io . polybarInterface.polybar_reportLayout
+
+  DynamicLog.dynamicLogString modePP
+    >>= XMonad.io . polybarInterface.polybar_reportMode
+
+  where
+    workspacesPP ∷ XMonad.X DynamicLog.PP
+    workspacesPP = do
+      visibleOn ← workspaceScreenMap
+      let f = formatWorkspace visibleOn
+
+      pure $ XMonad.def
+        { DynamicLog.ppCurrent = \w →
+            pbWorkspace (Just _cFgActive) (Just _cBgActive) (f w)
+        , DynamicLog.ppVisible = \w →
+            pbWorkspace Nothing (Just _cBorderUrgent) (f w)
+        , DynamicLog.ppHidden = \w →
+            pbWorkspace Nothing Nothing (f w)
+        , DynamicLog.ppHiddenNoWindows = \w →
+            pbWorkspace (Just _cFgDisabled) Nothing (f w)
+        , DynamicLog.ppUrgent = \w ->
+            pbWorkspace (Just _cFgUrgent) (Just _cBgUrgent) (f w)
+        , DynamicLog.ppLayout = const mempty
+        , DynamicLog.ppTitle = const mempty
+        , DynamicLog.ppWsSep = mempty
+        }
+
+    layoutPP ∷ DynamicLog.PP
+    layoutPP =
+      XMonad.def
+        { DynamicLog.ppCurrent = const mempty
+        , DynamicLog.ppVisible = const mempty
+        , DynamicLog.ppHidden = const mempty
+        , DynamicLog.ppHiddenNoWindows = const mempty
+        , DynamicLog.ppUrgent = const mempty
+        , DynamicLog.ppLayout = \layout → layout
+        , DynamicLog.ppTitle = const mempty
+        , DynamicLog.ppWsSep = mempty
+        }
+
+    modePP ∷ DynamicLog.PP
+    modePP =
+      XMonad.def
+        { DynamicLog.ppCurrent = const mempty
+        , DynamicLog.ppVisible = const mempty
+        , DynamicLog.ppHidden = const mempty
+        , DynamicLog.ppHiddenNoWindows = const mempty
+        , DynamicLog.ppUrgent = const mempty
+        , DynamicLog.ppLayout = const mempty
+        , DynamicLog.ppTitle = const mempty
+        , DynamicLog.ppExtras = [modeLogger]
+        , DynamicLog.ppWsSep = mempty
+        }
+
+    screenIdToInt ∷ XMonad.ScreenId → Int
+    screenIdToInt (XMonad.S i) = i
+
+    workspaceScreenMap ∷ XMonad.X (Map.Map XMonad.WorkspaceId Int)
+    workspaceScreenMap = XMonad.withWindowSet $ \ws →
+      pure . Map.fromList $
+        [ (W.tag (W.workspace screen), screenIdToInt (W.screen screen) + 1)
+        | screen ← W.current ws : W.visible ws
+        ]
+
+    formatWorkspace ∷ Map.Map XMonad.WorkspaceId Int → XMonad.WorkspaceId → String
+    formatWorkspace visibleOn tag =
+      maybe tag (\screenNo → tag <> formatScreenNo screenNo) (Map.lookup tag visibleOn)
+      where formatScreenNo = \case 1 → "-"; 2 → "="; 3 → "≡"; 4 → "≢"; _ → "_"
+
+    modeLogger ∷ Logger
+    modeLogger =
+      Modal.logMode >>=
+        pure . Just . maybe "Normal" (pbFgBg _cFgUrgent _cBgUrgent . pbPad')
+
+    -- Duplicating colors from Polybar config.
+    -- Normal
+    _cBg = "#222" ∷ String
+    _cFg = "#888" ∷ String
+    _cBorder = "#333" ∷ String
+    -- Active
+    _cBgActive = "#285577" ∷ String
+    _cFgActive = "#ffffff" ∷ String
+    _cBorderActive = "#4c7899" ∷ String
+    -- Urgent
+    _cBgUrgent = "#900000" ∷ String
+    _cFgUrgent = "#fff" ∷ String
+    _cBorderUrgent = "#2f343a" ∷ String
+    -- Disabled
+    _cFgDisabled = "#555" ∷ String
+
+    pbFg ∷ String → String → String
+    pbFg color text = "%{F" <> color <> "}" <> text <> "%{F-}"
+
+    pbBg ∷ String → String → String
+    pbBg color text = "%{B" <> color <> "}" <> text <> "%{B-}"
+
+    pbFgBg ∷ String → String → String → String
+    pbFgBg fg bg text = "%{F" <> fg <> "}%{B" <> bg <> "}" <> text <> "%{B-}%{F-}"
+
+    pbPad ∷ String → String → String
+    pbPad amount text = "%{O" <> amount <> "}" <> text <> "%{O" <> amount <> "}"
+
+    pbPad' ∷ String → String
+    pbPad' = pbPad "8px"
+
+    pbWorkspace ∷ Maybe String → Maybe String → String → String
+    pbWorkspace mFg mBg name = applyFgBg (pbPad' name)
+      where
+        applyFgBg =
+          case (mFg, mBg) of
+            (Just fg, Just bg) → pbFgBg fg bg
+            (Just fg, Nothing) → pbFg fg
+            (Nothing, Just bg) → pbBg bg
+            (Nothing, Nothing) → id
