@@ -214,16 +214,42 @@ data PolybarInterface = PolybarInterface
 
 withPolybar ∷ PolybarStateFiles → FilePath → (PolybarInterface → IO ()) → IO ()
 withPolybar stateFiles polybarRunScript runXMonad = do
-  startPolybarLatch ← MVar.newEmptyMVar
-  polybarIpcHandle ← IORef.newIORef (Nothing @SysIO.Handle)
+  startPolybarLatch ← MVar.newEmptyMVar @()
 
-  let
-    startPolybar ∷ IO ()
-    startPolybar = void $ MVar.tryPutMVar startPolybarLatch ()
+  -- Writing handle + writing lock wrapper
+  polybarIpcHandle ← IORef.newIORef (Nothing @(SysIO.Handle, IO () → IO ()))
 
-  let
-    polybarThread ∷ IO ()
-    polybarThread = do
+  Async.withAsync (polybarThread startPolybarLatch polybarIpcHandle) $ \polybarAsync →
+    withPolybarReporter polybarIpcHandle stateFiles.polybar_workspacesFile $ \reportWorkspaces →
+      withPolybarReporter polybarIpcHandle stateFiles.polybar_layoutFile $ \reportLayout →
+        withPolybarReporter polybarIpcHandle stateFiles.polybar_modeFile $ \reportMode →
+          let
+            polybarInterface = PolybarInterface
+              { polybar_release = startPolybar startPolybarLatch
+              , polybar_reportWorkspaces = reportWorkspaces
+              , polybar_reportLayout = reportLayout
+              , polybar_reportMode = reportMode
+              }
+          in
+            runXMonad polybarInterface `E.finally` Async.cancel polybarAsync
+
+  where
+    report = writeFile "/tmp/xmonad-polybar.log" . (<> "\n")
+
+    runPolybarProcess
+      = ProcT.setStdout ProcT.nullStream
+      . ProcT.setStderr ProcT.inherit
+      . ProcT.setStdin ProcT.createPipe
+      $ ProcT.proc polybarRunScript []
+
+    startPolybar ∷ MVar.MVar () → IO ()
+    startPolybar = void . flip MVar.tryPutMVar ()
+
+    polybarThread
+      ∷ MVar.MVar ()
+      → IORef.IORef (Maybe (SysIO.Handle, IO () → IO ()))
+      → IO ()
+    polybarThread startPolybarLatch polybarIpcHandle = do
       report "Waiting for startupHook trigger before starting Polybar"
 
       -- Wait for startupHook to call the startPolybar
@@ -232,16 +258,11 @@ withPolybar stateFiles polybarRunScript runXMonad = do
       report $ "Starting Polybar script " <> show polybarRunScript
 
       let
-        process =
-          ProcT.setStdout ProcT.nullStream
-            . ProcT.setStderr ProcT.inherit
-            . ProcT.setStdin ProcT.createPipe
-            $ ProcT.proc polybarRunScript []
-
         start =
-          ProcT.withProcessTerm process $ \procHandle → do
+          ProcT.withProcessTerm runPolybarProcess $ \procHandle → do
+            lock ← MVar.newMVar ()
             IORef.atomicWriteIORef polybarIpcHandle . Just $
-              ProcT.getStdin procHandle
+              (ProcT.getStdin procHandle, MVar.withMVar @() lock . const)
 
             -- Keep this scope alive while run-polybar is alive.
             -- On cancellation, withProcessTerm terminates run-polybar
@@ -260,25 +281,8 @@ withPolybar stateFiles polybarRunScript runXMonad = do
             <> " failed: "
             <> E.displayException e
 
-  Async.withAsync polybarThread $ \polybarAsync →
-    withPolybarReporter polybarIpcHandle stateFiles.polybar_workspacesFile $ \reportWorkspaces →
-      withPolybarReporter polybarIpcHandle stateFiles.polybar_layoutFile $ \reportLayout →
-        withPolybarReporter polybarIpcHandle stateFiles.polybar_modeFile $ \reportMode →
-          let
-            polybarInterface = PolybarInterface
-              { polybar_release = startPolybar
-              , polybar_reportWorkspaces = reportWorkspaces
-              , polybar_reportLayout = reportLayout
-              , polybar_reportMode = reportMode
-              }
-          in
-            runXMonad polybarInterface `E.finally` Async.cancel polybarAsync
-
-  where
-    report = writeFile "/tmp/xmonad-polybar.log" . (<> "\n")
-
 withPolybarReporter
-  ∷ IORef.IORef (Maybe SysIO.Handle)
+  ∷ IORef.IORef (Maybe (SysIO.Handle, IO () → IO ()))
   → (String, FilePath)
   → ((String → IO ()) → IO a)
   → IO a
@@ -294,43 +298,40 @@ withPolybarReporter polybarIpcHandle file@(moduleName, statusStateFile) run = do
 
   SysIO.withFile statusStateFile SysIO.WriteMode $ \fileHandle -> do
     SysIO.hSetBuffering fileHandle SysIO.NoBuffering
-
-    let
-      writeStatusAtomic ∷ String → IO ()
-      writeStatusAtomic line =
-        E.handle @E.SomeException errHandler $ do
-          -- Write new line to the state file
-          SysIO.hSeek fileHandle SysIO.AbsoluteSeek 0
-          SysIO.hPutStrLn fileHandle line
-          SysIO.hTell fileHandle >>= SysIO.hSetFileSize fileHandle
-          SysIO.hFlush fileHandle
-
-          -- Notify Polybar instances
-          IORef.readIORef polybarIpcHandle >>= \case
-            Nothing → pure () -- Polybar is not ready yet
-            Just h → do
-              SysIO.hPutStrLn h $ unwords ["TRIGGER_HOOK", moduleName, "0"]
-              SysIO.hFlush h
-        where
-          errHandler (e ∷ E.SomeException) =
-            report $
-              "Polybar reporter " <> show file <> " failed for line " <>
-              show line <> ": " <> E.displayException e
-
-    let
-      handler ∷ IO ()
-      handler =
-        ($ "") . fix $ \again lastWritten → do
-          MVar.takeMVar wake
-          line ← IORef.readIORef latestRef
-          when (lastWritten /= line) (writeStatusAtomic line)
-          again line
-
-    Async.withAsync handler $ \handlerAsync ->
+    Async.withAsync (handler wake latestRef fileHandle) $ \handlerAsync ->
       run requestUpdate `E.finally` Async.cancel handlerAsync
 
   where
     report = writeFile "/tmp/xmonad-polybar-reporter.log" . (<> "\n")
+
+    handler ∷ MVar.MVar () → IORef.IORef String → SysIO.Handle → IO ()
+    handler wake latestRef fileHandle =
+      ($ "") . fix $ \again lastWritten → do
+        MVar.takeMVar wake
+        line ← IORef.readIORef latestRef
+        when (lastWritten /= line) (writeStatusAtomic fileHandle line)
+        again line
+
+    writeStatusAtomic ∷ SysIO.Handle → String → IO ()
+    writeStatusAtomic fileHandle line =
+      E.handle @E.SomeException errHandler $ do
+        -- Write new line to the state file
+        SysIO.hSeek fileHandle SysIO.AbsoluteSeek 0
+        SysIO.hPutStrLn fileHandle line
+        SysIO.hTell fileHandle >>= SysIO.hSetFileSize fileHandle
+        SysIO.hFlush fileHandle
+
+        -- Notify Polybar instances
+        IORef.readIORef polybarIpcHandle >>= \case
+          Nothing → pure () -- Polybar is not ready yet
+          Just (h, withLock) → withLock $ do
+            SysIO.hPutStrLn h $ unwords ["TRIGGER_HOOK", moduleName, "0"]
+            SysIO.hFlush h
+      where
+        errHandler (e ∷ E.SomeException) =
+          report $
+            "Polybar reporter " <> show file <> " failed for line " <>
+            show line <> ": " <> E.displayException e
 
 -- * Commands
 
