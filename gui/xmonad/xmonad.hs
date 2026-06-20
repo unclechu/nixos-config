@@ -1589,15 +1589,14 @@ polybarWindowFlags executableType =
     Just window → do
       isSticky ← TagWindows.hasTag stickyWindowTag window
       isFloating ← isWindowFloating window
-      pure . intercalate " + " . mconcat $
-        [ [ pbLMB executableType (xMonadActionToAtomString ToggleStickyWindow)
-          $ pbFgBg _cFgUrgent _cBgUrgent (pbPad' "Sticky")
-          | isSticky
-          ]
-        , [ pbLMB executableType (xMonadActionToAtomString ToggleFloatingWindow)
-          $ pbFgBg _cFgActive _cBgActive (pbPad' "Floating")
-          | isFloating
-          ]
+      let disabled = pbBg _cBorderUrgent
+      pure $ intercalate (pbPad "4px" "")
+        [ pbLMB executableType (xMonadActionToAtomString ToggleStickyWindow) $
+          (if isSticky then pbFgBg _cFgUrgent _cBgUrgent else disabled)
+          (pbPad' (if isSticky then "\984067" else "\985393"))
+        , pbLMB executableType (xMonadActionToAtomString ToggleFloatingWindow) $
+          (if isFloating then pbFgBg _cFgActive _cBgActive else disabled)
+          (pbPad' (if isFloating then "\983624" else "\9633"))
         ]
 
 handleXMonadAction
