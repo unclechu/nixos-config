@@ -73,7 +73,7 @@ import qualified XMonad.Actions.FloatKeys as FloatKeys
 import qualified XMonad.Actions.FlexibleResize as FlexibleResize
 import qualified XMonad.Actions.CycleWS as CycleWS
 import qualified XMonad.Hooks.InsertPosition as InsertPosition
-import Data.List (partition)
+import Data.List (partition, intercalate)
 import Data.Maybe (listToMaybe, fromMaybe)
 import XMonad.Hooks.TaffybarPagerHints (pagerHints)
 import qualified Data.List.NonEmpty as NE
@@ -242,6 +242,7 @@ data PolybarStateFiles = PolybarStateFiles
   { polybar_workspacesFile ∷ (String, FilePath)
   , polybar_layoutFile ∷ (String, FilePath)
   , polybar_modeFile ∷ (String, FilePath)
+  , polybar_windowFlagsFile ∷ (String, FilePath)
   }
 
 mkPolybarStateFiles ∷ XdgRuntimeDir → PolybarStateFiles
@@ -249,6 +250,7 @@ mkPolybarStateFiles (unXdgRuntimeDir → dir) = PolybarStateFiles
   { polybar_workspacesFile = ("xmonad-workspaces", dir </> "xmonad-polybar-workspaces")
   , polybar_layoutFile = ("xmonad-layout", dir </> "xmonad-polybar-layout")
   , polybar_modeFile = ("xmonad-mode", dir </> "xmonad-polybar-mode")
+  , polybar_windowFlagsFile = ("xmonad-window-flags", dir </> "xmonad-polybar-window-flags")
   }
 
 data PolybarInterface = PolybarInterface
@@ -256,6 +258,7 @@ data PolybarInterface = PolybarInterface
   , polybar_reportWorkspaces ∷ String → IO ()
   , polybar_reportLayout ∷ String → IO ()
   , polybar_reportMode ∷ String → IO ()
+  , polybar_reportWindowFlags ∷ String → IO ()
   }
 
 withPolybar ∷ PolybarStateFiles → FilePath → (PolybarInterface → IO ()) → IO ()
@@ -269,15 +272,17 @@ withPolybar stateFiles polybarRunScript runXMonad = do
     withPolybarReporter polybarIpcHandle stateFiles.polybar_workspacesFile $ \reportWorkspaces →
       withPolybarReporter polybarIpcHandle stateFiles.polybar_layoutFile $ \reportLayout →
         withPolybarReporter polybarIpcHandle stateFiles.polybar_modeFile $ \reportMode →
-          let
-            polybarInterface = PolybarInterface
-              { polybar_release = startPolybar startPolybarLatch
-              , polybar_reportWorkspaces = reportWorkspaces
-              , polybar_reportLayout = reportLayout
-              , polybar_reportMode = reportMode
-              }
-          in
-            runXMonad polybarInterface `E.finally` Async.cancel polybarAsync
+          withPolybarReporter polybarIpcHandle stateFiles.polybar_windowFlagsFile $ \reportWindowFlags →
+            let
+              polybarInterface = PolybarInterface
+                { polybar_release = startPolybar startPolybarLatch
+                , polybar_reportWorkspaces = reportWorkspaces
+                , polybar_reportLayout = reportLayout
+                , polybar_reportMode = reportMode
+                , polybar_reportWindowFlags = reportWindowFlags
+                }
+            in
+              runXMonad polybarInterface `E.finally` Async.cancel polybarAsync
 
   where
     report = writeFile "/tmp/xmonad-polybar.log" . (<> "\n")
@@ -1467,6 +1472,9 @@ polybarLogHook polybarInterface = do
   DynamicLog.dynamicLogString modePP
     >>= XMonad.io . polybarInterface.polybar_reportMode
 
+  windowFlags
+    >>= XMonad.io . polybarInterface.polybar_reportWindowFlags
+
   where
     workspacesPP ∷ XMonad.X DynamicLog.PP
     workspacesPP = do
@@ -1515,6 +1523,18 @@ polybarLogHook polybarInterface = do
         , DynamicLog.ppExtras = [modeLogger]
         , DynamicLog.ppWsSep = mempty
         }
+
+    windowFlags ∷ XMonad.X String
+    windowFlags =
+      XMonad.gets (W.peek . XMonad.windowset) >>= \case
+        Nothing → pure ""
+        Just window → do
+          isSticky ← TagWindows.hasTag stickyWindowTag window
+          isFloating ← isWindowFloating window
+          pure . intercalate " + " . mconcat $
+            [ [pbFgBg _cFgUrgent _cBgUrgent (pbPad' "Sticky") | isSticky]
+            , [pbFgBg _cFgActive _cBgActive (pbPad' "Floating") | isFloating]
+            ]
 
     screenIdToInt ∷ XMonad.ScreenId → Int
     screenIdToInt (XMonad.S i) = i

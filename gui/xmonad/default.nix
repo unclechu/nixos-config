@@ -48,7 +48,6 @@ in
         newHsPkgs.typed-process
         newHsPkgs.hostname
         newHsPkgs.async
-        newHsPkgs.time
         newHsPkgs.xmonad
         newHsPkgs.xmonad-contrib
       ];
