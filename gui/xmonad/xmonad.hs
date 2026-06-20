@@ -49,7 +49,7 @@ import qualified XMonad
 import qualified XMonad.Hooks.Modal as HModal
 import qualified XMonad.Hooks.EwmhDesktops as EwmhDesktops
 import qualified Data.Map.Strict as Map
-import Text.InterpolatedString.QM (qms, qns)
+import Text.InterpolatedString.QM (qms, qns, qmb)
 import qualified Graphics.X11.ExtraTypes.XF86 as XF86
 import qualified XMonad.StackSet as W
 import qualified XMonad.Hooks.Modal as Modal
@@ -91,36 +91,34 @@ import XMonad.Util.Loggers (Logger)
 import qualified Control.Concurrent.MVar as MVar
 import qualified Control.Concurrent.Async as Async
 import qualified Control.Exception as E
-import Control.Concurrent (threadDelay, forkIO)
 import qualified XMonad.Hooks.UrgencyHook as UrgencyHook
 import qualified Data.IORef as IORef
 import qualified System.IO as SysIO
 import Control.Monad.Fix (fix)
+import qualified System.IO.Error as IOError
+import qualified System.Directory as Dir
+import qualified System.Posix.Process as PosixProc
+import qualified System.Posix.Files as PosixFiles
+import qualified Data.Time.Clock.POSIX as POSIX
 
 main ∷ IO ()
 main = do
   writeFile "/tmp/xmonad.log" "XMonad initializes\n"
+  xdgRuntimeDir ← mkXdgRuntimeDir
+  let polybarStateFiles = mkPolybarStateFiles xdgRuntimeDir
 
   polybarRunScript ← do
     let envVarName = "POLYBAR_RUN_SCRIPT"
     !x ← fromMaybe "run-polybar" <$> getEnv envVarName
     x <$ unsetEnv envVarName
 
-  polybarStateFiles ← mkPolybarStateFiles
-
   withPolybar polybarStateFiles polybarRunScript $ \polybarInterface → do
     opts ← mkOptions
 
     let
       myStartupHook = do
-        XMonad.io . void . forkIO $ do
-          autoStartScript opts
-
-          -- Wait for the screens to fully update (by the autostart script)
-          -- so that Polybar can properly render.
-          threadDelay 1_000_000
-
-          polybarInterface.polybar_release
+        autoStartScript xdgRuntimeDir opts
+        XMonad.io polybarInterface.polybar_release
 
     writeFile "/tmp/xmonad.log" "XMonad starts\n"
     XMonad.xmonad $
@@ -163,24 +161,79 @@ isSavingMoreSpaceNeeded =
 -- | Startup script that is provided by my NixOS configuration.
 --
 -- Blocking! Waits for the script to finish.
-autoStartScript ∷ Options → IO ()
-autoStartScript opts = do
+autoStartScript ∷ XdgRuntimeDir → Options → XMonad.X ()
+autoStartScript xdgRuntimeDir opts = do
   case options_startMode opts of
-    Full → do
-      report "Sleeping before starting autostart-setup script"
-      threadDelay 1_000_000 -- Wait for 1 sec
-
-      report "Starting autostart-setup script"
-      E.try (ProcT.runProcess_ $ ProcT.proc "autostart-setup" []) >>= \case
-        Left (e ∷ E.SomeException) →
-          report $ "autostart-setup script failed: " <> E.displayException e
-        Right () →
-          report "autostart-setup script finished successfully"
-
     Shallow → pure ()
+    Full → do
+      XMonad.io $ report "Creating FIFO for autostart-setup script"
+      fifoPath ← XMonad.io mkRuntimeFifo
+
+      XMonad.io $ report "Starting autostart-setup script"
+      XMonad.spawn [qmb|
+        autostart-setup 1>&2
+        status=$?
+        printf '%s\n' "$status" > {shellQuote fifoPath}
+        exit "$status"
+      |]
+
+      XMonad.io $ do
+        report "Waiting for autostart-setup script FIFO report"
+        flip E.finally (removeFileIfExists fifoPath) $
+          E.try (SysIO.withFile fifoPath SysIO.ReadWriteMode SysIO.hGetLine) >>= \case
+            Left (e ∷ E.SomeException) →
+              report $
+                "autostart-setup script FIFO read failed: "
+                <> E.displayException e
+
+            Right (readMaybe → Just (exitCode ∷ Int)) →
+              case exitCode of
+                0 → report "autostart-setup script finished successfully"
+                n →
+                  report $
+                    "autostart-setup script failed with exit code: " <> show n
+
+            Right x →
+              report $
+                "autostart-setup script failed with unexpected FIFO report: "
+                <> show x
 
   where
     report = writeFile "/tmp/xmonad-autostart-setup.log" . (<> "\n")
+
+    shellQuote ∷ String → String
+    shellQuote str = "'" <> concatMap (\case '\'' → "'\\''"; c → [c]) str <> "'"
+
+    removeFileIfExists ∷ FilePath → IO ()
+    removeFileIfExists path = do
+      E.catch (Dir.removeFile path) $ \(e ∷ IOError.IOError) →
+        if IOError.isDoesNotExistError e then pure () else E.throwIO e
+
+    mkRuntimeFifo ∷ IO FilePath
+    mkRuntimeFifo = do
+      fifoPath ← do
+        -- XMonad PID stays the same between restarts, so using time.
+        time ∷ Word ← round . (* 1_000_000_000) <$> POSIX.getPOSIXTime
+
+        PosixProc.getProcessID <&> \pid →
+          xdgRuntimeDir.unXdgRuntimeDir </>
+            ("xmonad-" <> show pid <> "-" <> show time <> "-autostart-wait.fifo")
+
+      -- Should not exist because name is unique,
+      -- but this makes retries harmless.
+      removeFileIfExists fifoPath
+
+      fifoPath <$ PosixFiles.createNamedPipe fifoPath PosixFiles.ownerModes
+
+newtype XdgRuntimeDir = XdgRuntimeDir { unXdgRuntimeDir ∷ String }
+  deriving (Eq, Show)
+
+mkXdgRuntimeDir ∷ IO XdgRuntimeDir
+mkXdgRuntimeDir =
+  getEnv envVarName >>=
+    maybe (fail $ "Failed to get " <> envVarName) pure
+      . (>>= \x → XdgRuntimeDir x <$ guard (x /= mempty))
+  where envVarName = "XDG_RUNTIME_DIR"
 
 -- | Polybar state files information
 --
@@ -191,19 +244,12 @@ data PolybarStateFiles = PolybarStateFiles
   , polybar_modeFile ∷ (String, FilePath)
   }
 
-mkPolybarStateFiles ∷ IO PolybarStateFiles
-mkPolybarStateFiles = do
-  dir ←
-    let envVarName = "XDG_RUNTIME_DIR" in
-    getEnv envVarName >>=
-      maybe (fail $ "Failed to get " <> envVarName) pure
-        . (>>= \x → x <$ guard (x /= mempty))
-
-  pure PolybarStateFiles
-    { polybar_workspacesFile = ("xmonad-workspaces", dir </> "xmonad-polybar-workspaces")
-    , polybar_layoutFile = ("xmonad-layout", dir </> "xmonad-polybar-layout")
-    , polybar_modeFile = ("xmonad-mode", dir </> "xmonad-polybar-mode")
-    }
+mkPolybarStateFiles ∷ XdgRuntimeDir → PolybarStateFiles
+mkPolybarStateFiles (unXdgRuntimeDir → dir) = PolybarStateFiles
+  { polybar_workspacesFile = ("xmonad-workspaces", dir </> "xmonad-polybar-workspaces")
+  , polybar_layoutFile = ("xmonad-layout", dir </> "xmonad-polybar-layout")
+  , polybar_modeFile = ("xmonad-mode", dir </> "xmonad-polybar-mode")
+  }
 
 data PolybarInterface = PolybarInterface
   { polybar_release ∷ IO ()
