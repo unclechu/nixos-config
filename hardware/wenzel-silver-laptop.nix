@@ -7,11 +7,23 @@
 
 let
   swap = {
-    swapDevices = [ ];
+    swapDevices = [
+      {
+        device = "/swapfile";
+        size = 8192; # 8 GiB
+      }
+    ];
 
     zramSwap = {
       enable = false; # I have enough RAM, turned off
       memoryPercent = 100 / 5;
+    };
+
+    boot.kernel.sysctl = {
+      # Default is 60.
+      # Lower means “avoid swap unless memory pressure is high”.
+      # Use as less swap as possible.
+      "vm.swappiness" = 1;
     };
   };
 
