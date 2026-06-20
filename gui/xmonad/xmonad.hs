@@ -613,7 +613,7 @@ myConfig opts polybarInterface myStartupHook = XMonad.def
   , handleEventHook =
       ServerMode.serverModeEventHookF
         xmonadActionXMessageType
-        (handleXMonadAction layout)
+        (handleXMonadAction opts polybarInterface layout)
   }
   where
     layout
@@ -1582,19 +1582,45 @@ switchToWorkspace
 switchToWorkspace = W.greedyView
 {-# INLINE switchToWorkspace #-}
 
+polybarWindowFlags ∷ XMonadExecutableType → XMonad.X String
+polybarWindowFlags executableType =
+  XMonad.gets (W.peek . XMonad.windowset) >>= \case
+    Nothing → pure ""
+    Just window → do
+      isSticky ← TagWindows.hasTag stickyWindowTag window
+      isFloating ← isWindowFloating window
+      pure . intercalate " + " . mconcat $
+        [ [ pbLMB executableType (xMonadActionToAtomString ToggleStickyWindow)
+          $ pbFgBg _cFgUrgent _cBgUrgent (pbPad' "Sticky")
+          | isSticky
+          ]
+        , [ pbLMB executableType (xMonadActionToAtomString ToggleFloatingWindow)
+          $ pbFgBg _cFgActive _cBgActive (pbPad' "Floating")
+          | isFloating
+          ]
+        ]
+
 handleXMonadAction
   ∷ (Read (layout XMonad.Window), XMonad.LayoutClass layout XMonad.Window)
-  ⇒ layout XMonad.Window
+  ⇒ Options
+  → PolybarInterface
+  → layout XMonad.Window
   → String
   → XMonad.X ()
-handleXMonadAction layout actionStr =
+handleXMonadAction opts polybarInterface layout actionStr =
   case parseXMonadAction actionStr of
     Nothing →
       XMonad.io . writeFile "/tmp/xmonad-action-handler.log" . (<> "\n") $
         "Unrecognized XMonad action: " <> show actionStr
     Just action →
       case action of
-        ToggleStickyWindow → toggleStickyWindow
+        ToggleStickyWindow → do
+          toggleStickyWindow
+          -- Report the flags, otherwise toggled sticky status
+          -- does not propagate to Polybar. @logHook@ for some
+          -- reason is not handling it for this particular case.
+          polybarWindowFlags opts.options_executableType
+            >>= XMonad.io . polybarInterface.polybar_reportWindowFlags
         ToggleFloatingWindow → XMonad.withFocused toggleFloatWindow
         CycleLayout → XMonad.sendMessage XMonad.NextLayout
         ResetLayout → XMonad.setLayout (XMonad.Layout layout)
@@ -1613,7 +1639,7 @@ polybarLogHook opts polybarInterface = do
   DynamicLog.dynamicLogString modePP
     >>= XMonad.io . polybarInterface.polybar_reportMode
 
-  windowFlags
+  polybarWindowFlags et
     >>= XMonad.io . polybarInterface.polybar_reportWindowFlags
 
   where
@@ -1624,19 +1650,19 @@ polybarLogHook opts polybarInterface = do
 
       pure $ XMonad.def
         { DynamicLog.ppCurrent = \w →
-            pbLMB (xMonadActionToAtomString $ SwitchWorkspace w) $
+            pbLMB et (xMonadActionToAtomString $ SwitchWorkspace w) $
             pbWorkspace (Just _cFgActive) (Just _cBgActive) (f w)
         , DynamicLog.ppVisible = \w →
-            pbLMB (xMonadActionToAtomString $ SwitchWorkspace w) $
+            pbLMB et (xMonadActionToAtomString $ SwitchWorkspace w) $
             pbWorkspace Nothing (Just _cBorderUrgent) (f w)
         , DynamicLog.ppHidden = \w →
-            pbLMB (xMonadActionToAtomString $ SwitchWorkspace w) $
+            pbLMB et (xMonadActionToAtomString $ SwitchWorkspace w) $
             pbWorkspace Nothing Nothing (f w)
         , DynamicLog.ppHiddenNoWindows = \w →
-            pbLMB (xMonadActionToAtomString $ SwitchWorkspace w) $
+            pbLMB et (xMonadActionToAtomString $ SwitchWorkspace w) $
             pbWorkspace (Just _cFgDisabled) Nothing (f w)
         , DynamicLog.ppUrgent = \w ->
-            pbLMB (xMonadActionToAtomString $ SwitchWorkspace w) $
+            pbLMB et (xMonadActionToAtomString $ SwitchWorkspace w) $
             pbWorkspace (Just _cFgUrgent) (Just _cBgUrgent) (f w)
         , DynamicLog.ppLayout = const mempty
         , DynamicLog.ppTitle = const mempty
@@ -1652,8 +1678,8 @@ polybarLogHook opts polybarInterface = do
         , DynamicLog.ppHiddenNoWindows = const mempty
         , DynamicLog.ppUrgent = const mempty
         , DynamicLog.ppLayout = \layout →
-            pbLMB (xMonadActionToAtomString CycleLayout) $
-            pbRMB (xMonadActionToAtomString ResetLayout) $
+            pbLMB et (xMonadActionToAtomString CycleLayout) $
+            pbRMB et (xMonadActionToAtomString ResetLayout) $
             layout
         , DynamicLog.ppTitle = const mempty
         , DynamicLog.ppWsSep = mempty
@@ -1672,24 +1698,6 @@ polybarLogHook opts polybarInterface = do
         , DynamicLog.ppExtras = [modeLogger]
         , DynamicLog.ppWsSep = mempty
         }
-
-    windowFlags ∷ XMonad.X String
-    windowFlags =
-      XMonad.gets (W.peek . XMonad.windowset) >>= \case
-        Nothing → pure ""
-        Just window → do
-          isSticky ← TagWindows.hasTag stickyWindowTag window
-          isFloating ← isWindowFloating window
-          pure . intercalate " + " . mconcat $
-            [ [ pbLMB (xMonadActionToAtomString ToggleStickyWindow)
-              $ pbFgBg _cFgUrgent _cBgUrgent (pbPad' "Sticky")
-              | isSticky
-              ]
-            , [ pbLMB (xMonadActionToAtomString ToggleFloatingWindow)
-              $ pbFgBg _cFgActive _cBgActive (pbPad' "Floating")
-              | isFloating
-              ]
-            ]
 
     screenIdToInt ∷ XMonad.ScreenId → Int
     screenIdToInt (XMonad.S i) = i
@@ -1710,27 +1718,29 @@ polybarLogHook opts polybarInterface = do
     modeLogger =
       Modal.logMode >>=
         pure . Just . maybe "Normal"
-          ( pbLMB (xMonadActionToAtomString ResetMode)
+          ( pbLMB et (xMonadActionToAtomString ResetMode)
           . pbFgBg _cFgUrgent _cBgUrgent
           . pbPad'
           )
 
-    pbAction ∷ Word → String → String → String
-    pbAction button ctlCommand text = mconcat
-      [ "%{A", show button, ":"
-      , xmonadExecutable opts.options_executableType, " ctl ", ctlCommand
-      , ":}", text, "%{A}"
-      ]
+    et = opts.options_executableType
 
-    -- Left mouse button
-    pbLMB ∷ String → String → String
-    pbLMB = pbAction 1
-    {-# INLINE pbLMB #-}
+pbAction ∷ Word → XMonadExecutableType → String → String → String
+pbAction button executableType ctlCommand text = mconcat
+  [ "%{A", show button, ":"
+  , xmonadExecutable executableType, " ctl ", ctlCommand
+  , ":}", text, "%{A}"
+  ]
 
-    -- Right mouse button
-    pbRMB ∷ String → String → String
-    pbRMB = pbAction 3
-    {-# INLINE pbRMB #-}
+-- Left mouse button
+pbLMB ∷ XMonadExecutableType → String → String → String
+pbLMB = pbAction 1
+{-# INLINE pbLMB #-}
+
+-- Right mouse button
+pbRMB ∷ XMonadExecutableType → String → String → String
+pbRMB = pbAction 3
+{-# INLINE pbRMB #-}
 
 -- Duplicating colors from Polybar config.
 _cBg, _cFg, _cBorder
