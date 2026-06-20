@@ -764,8 +764,12 @@ defaultModeKeys
       -- Next/previous workspace switching keys
       [ ((m, XMonad.xK_z), CycleWS.moveTo CycleWS.Prev CycleWS.hiddenWS)
       , ((m, XMonad.xK_x), CycleWS.moveTo CycleWS.Next CycleWS.hiddenWS)
-      , ((m .|. a, XMonad.xK_z), CycleWS.shiftTo CycleWS.Prev CycleWS.hiddenWS)
-      , ((m .|. a, XMonad.xK_x), CycleWS.shiftTo CycleWS.Next CycleWS.hiddenWS)
+      -- Greedy / stealing variants
+      , ((m .|. a, XMonad.xK_z), CycleWS.moveTo CycleWS.Prev CycleWS.anyWS)
+      , ((m .|. a, XMonad.xK_x), CycleWS.moveTo CycleWS.Next CycleWS.anyWS)
+      -- Moving windows to workspaces
+      , ((m .|. s, XMonad.xK_z), CycleWS.shiftTo CycleWS.Prev CycleWS.hiddenWS)
+      , ((m .|. s, XMonad.xK_x), CycleWS.shiftTo CycleWS.Next CycleWS.hiddenWS)
 
       -- Moving workspaces between displays
       , ((m, XMonad.xK_comma), CycleWS.swapPrevScreen >> CycleWS.prevScreen)
