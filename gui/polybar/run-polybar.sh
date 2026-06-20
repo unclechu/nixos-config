@@ -132,12 +132,15 @@ handle-ipc-reports() {
 			module_name=${BASH_REMATCH[1]}
 			hook_idx=${BASH_REMATCH[2]}
 
+			notifyPids=()
 			for pid in "${polybar_pids[@]}"; do
 				(
 					set -o xtrace
 					</dev/null 1>&2 polybar-msg -p "$pid" action "$module_name" hook "$hook_idx"
-				) || true
+				) &
+				notifyPids+=($!)
 			done
+			wait -- "${notifyPids[@]}"
 		else
 			>&2 printf 'Unrecognized IPC report: “%s”\n' "$line"
 		fi
