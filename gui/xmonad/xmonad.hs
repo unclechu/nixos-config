@@ -77,7 +77,7 @@ import Data.List (partition, intercalate)
 import Data.Maybe (listToMaybe, fromMaybe)
 import XMonad.Hooks.TaffybarPagerHints (pagerHints)
 import qualified Data.List.NonEmpty as NE
-import System.Environment (getEnvironment, lookupEnv, unsetEnv)
+import System.Environment (getEnvironment, lookupEnv, unsetEnv, getArgs)
 import Text.Read (readMaybe)
 import qualified System.Process.Typed as ProcT
 import Network.HostName (getHostName)
@@ -100,29 +100,67 @@ import qualified System.Directory as Dir
 import qualified System.Posix.Process as PosixProc
 import qualified System.Posix.Files as PosixFiles
 import qualified Data.Time.Clock.POSIX as POSIX
+import qualified Graphics.X11 as X11
+import qualified Graphics.X11.Xlib.Extras as X11Extras
+import GHC.Internal.System.Environment (getProgName)
+import qualified XMonad.Hooks.ServerMode as ServerMode
 
 main ∷ IO ()
 main = do
-  writeFile "/tmp/xmonad.log" "XMonad initializes\n"
-  xdgRuntimeDir ← mkXdgRuntimeDir
-  let polybarStateFiles = mkPolybarStateFiles xdgRuntimeDir
+  getArgs >>= \case
+    subCommand : xs
+      | subCommand == ctlSubcommand &&
+        ( xs == []
+        || (case xs of [x] → x `elem` ["help", "--help", "-h", "-?"]; _ → False)
+        ) → do
+          progName ← getProgName
+          SysIO.hPutStr SysIO.stderr (ctlHelp progName)
+      | otherwise → ctl xs
+    _ → startXMonad
 
-  polybarRunScript ← do
-    let envVarName = "POLYBAR_RUN_SCRIPT"
-    !x ← fromMaybe "run-polybar" <$> getEnv envVarName
-    x <$ unsetEnv envVarName
+  where
+    ctl commandXs =
+      case parseXMonadAction (unwords commandXs) of
+        Nothing → fail $ "Unrecognized command: " <> show commandXs
+        Just x → sendXMonadActionToX11 x
 
-  withPolybar polybarStateFiles polybarRunScript $ \polybarInterface → do
-    opts ← mkOptions
+    ctlSubcommand = "ctl" ∷ String
 
-    let
-      myStartupHook = do
-        autoStartScript xdgRuntimeDir opts
-        XMonad.io polybarInterface.polybar_release
+    ctlHelp ∷ String → String
+    ctlHelp progName
+      = unlines
+      . (["Command examples:"] <>)
+      . fmap (("  " <> progName <> " " <> ctlSubcommand <> " ") <>)
+      . fmap xMonadActionToAtomString
+      $ [ ToggleStickyWindow
+        , ToggleFloatingWindow
+        , CycleLayout
+        , ResetLayout
+        , ResetMode
+        , (SwitchWorkspace . fromMaybe mempty . listToMaybe) myWorkspaces
+        ]
 
-    writeFile "/tmp/xmonad.log" "XMonad starts\n"
-    XMonad.xmonad $
-      configCustomizations opts polybarInterface myStartupHook XMonad.def
+    startXMonad ∷ IO ()
+    startXMonad = do
+      writeFile "/tmp/xmonad.log" "XMonad initializes\n"
+      xdgRuntimeDir ← mkXdgRuntimeDir
+      let polybarStateFiles = mkPolybarStateFiles xdgRuntimeDir
+
+      polybarRunScript ← do
+        let envVarName = "POLYBAR_RUN_SCRIPT"
+        !x ← fromMaybe "run-polybar" <$> getEnv envVarName
+        x <$ unsetEnv envVarName
+
+      withPolybar polybarStateFiles polybarRunScript $ \polybarInterface → do
+        opts ← mkOptions
+
+        let
+          myStartupHook = do
+            autoStartScript xdgRuntimeDir opts
+            XMonad.io polybarInterface.polybar_release
+
+        writeFile "/tmp/xmonad.log" "XMonad starts\n"
+        XMonad.xmonad $ completeConfig opts polybarInterface myStartupHook
 
 data Options = Options
   { options_startMode ∷ XMonadStartMode
@@ -157,6 +195,65 @@ isSavingMoreSpaceNeeded =
     -- need as much usable space as I can get.
     "wenzel-rusty-chunk" → True
     _ → False
+
+xmonadActionXMessageType ∷ String
+xmonadActionXMessageType = "XMONAD_ACTION"
+
+data XMonadAction
+  = ToggleStickyWindow
+  | ToggleFloatingWindow
+  | CycleLayout
+  | ResetLayout
+  | ResetMode
+  | SwitchWorkspace String -- The @String@ should not contain spaces
+  deriving (Eq, Show)
+
+xMonadActionToAtomString ∷ XMonadAction → String
+xMonadActionToAtomString = \case
+  ToggleStickyWindow → "toggle-sticky-window"
+  ToggleFloatingWindow → "toggle-floating-window"
+  CycleLayout → "cycle-layout"
+  ResetLayout → "reset-layout"
+  ResetMode → "reset-mode"
+  -- Note that @ws@ here must be an element of @myWorkspaces@
+  SwitchWorkspace ws → unwords ["switch-workspace", ws]
+
+parseXMonadAction ∷ String → Maybe XMonadAction
+parseXMonadAction x
+  | x == f ToggleStickyWindow = Just ToggleStickyWindow
+  | x == f ToggleFloatingWindow = Just ToggleFloatingWindow
+  | x == f CycleLayout = Just CycleLayout
+  | x == f ResetLayout = Just ResetLayout
+  | x == f ResetMode = Just ResetMode
+  | otherwise = case words x of
+      ["switch-workspace", ws] | ws `elem` myWorkspaces → Just (SwitchWorkspace ws)
+      _ → Nothing
+  where f = xMonadActionToAtomString
+
+-- | Send an Atom message to X root window (that XMonad can catch and handle)
+--
+-- For the `ctl` calls.
+sendXMonadActionToX11 ∷ XMonadAction → IO ()
+sendXMonadActionToX11 (xMonadActionToAtomString → action) = do
+  display ← X11.openDisplay ""
+  rootWnd ← X11.rootWindow display (X11.defaultScreen display)
+
+  -- These Atoms live forever within one X11 session.
+  -- But if the specified string already exists in the Atom table
+  -- then the atom is reused, so the old Atom ID is found and returned.
+  -- Just make sure that the commands that are sent are predictable and limited
+  -- to a somewhat known set.
+  messageTypeAtom ← X11.internAtom display xmonadActionXMessageType False
+  commandAtom ← X11.internAtom display action False
+
+  X11.allocaXEvent $ \eventPtr → do
+    X11Extras.setEventType eventPtr X11.clientMessage
+    X11Extras.setClientMessageEvent
+      eventPtr rootWnd messageTypeAtom 32 commandAtom 0
+    X11.sendEvent display rootWnd False X11.structureNotifyMask eventPtr
+    X11.sync display False
+
+  X11.closeDisplay display
 
 -- | Startup script that is provided by my NixOS configuration.
 --
@@ -464,9 +561,9 @@ displayNToNum = \case D1 → 1 ; D2 → 2 ; D3 → 3 ; D4 → 4
 
 -- * XMonad configuration
 
--- | All the configuration customizations together
-configCustomizations ∷ Options → PolybarInterface → XMonad.X () → XConfig _layoutA → XConfig _layoutB
-configCustomizations opts polybarInterface myStartupHook
+-- | Complete XMonad configuration
+completeConfig ∷ Options → PolybarInterface → XMonad.X () → XConfig _layout
+completeConfig opts polybarInterface myStartupHook
   -- Real fullscreen instead of bounding the fullscreen to the window dimentions.
   -- But I personally prefer to keep windows inside their tiles even when they are fullscreened.
   -- N.B. Note that this one must come above “ewmh”.
@@ -478,12 +575,15 @@ configCustomizations opts polybarInterface myStartupHook
   . UrgencyHook.withUrgencyHook UrgencyHook.NoUrgencyHook
   . pagerHints
   . withKeysModes
-  . myConfig opts polybarInterface myStartupHook
+  $ myConfig opts polybarInterface myStartupHook
 
-myConfig ∷ Options → PolybarInterface → XMonad.X () → XConfig _layoutA → XConfig _layoutB
-myConfig opts polybarInterface myStartupHook config = config
+myWorkspaces ∷ [WorkspaceLabel]
+myWorkspaces = show <$> [1 .. 10 ∷ Word]
+
+myConfig ∷ Options → PolybarInterface → XMonad.X () → XConfig _layout
+myConfig opts polybarInterface myStartupHook = XMonad.def
   { modMask = XMonad.mod4Mask -- Super/Meta/Windows key
-  , workspaces = show <$> [1 .. 10 ∷ Word]
+  , workspaces = myWorkspaces
 
   , terminal = "alacritty" -- I don’t really use this value, I have some custom key bindings instead
   , normalBorderColor = "#222222"
@@ -499,16 +599,19 @@ myConfig opts polybarInterface myStartupHook config = config
   -- Hooks:
 
   , startupHook = myStartupHook
-
-  , layoutHook
+  , layoutHook = layout
+  , manageHook = myManageHook
+  , logHook = polybarLogHook polybarInterface
+  , handleEventHook =
+      ServerMode.serverModeEventHookF
+        xmonadActionXMessageType
+        (handleXMonadAction layout)
+  }
+  where
+    layout
       -- Workspace 8 has my audio x-over setup
       = onWorkspace "8" (myLayout opts { options_tallMasters = 3 })
       $ myLayout opts
-
-  , manageHook = myManageHook
-
-  , logHook = polybarLogHook polybarInterface
-  }
 
 tabsLayoutName, fullscreenLayoutName ∷ String
 tabsLayoutName = "Tabs"
@@ -669,7 +772,7 @@ navigationBetweenWorkspacesKeys ws (switchMask, moveMask) = Map.fromList
   [ ((mask, key), XMonad.windows $ operation workspace)
   | (workspace, key) ← zip ws $ [XMonad.xK_1 .. XMonad.xK_9] <> [XMonad.xK_0]
   , (mask, operation) ←
-      [ (switchMask, W.greedyView) -- %! Switch to workspace
+      [ (switchMask, switchToWorkspace) -- %! Switch to workspace
       , (moveMask, W.shift) -- %! Move focused window to workspace
       ]
   ]
@@ -1459,6 +1562,34 @@ swapLast = W.modify' $ \c → case c of
   W.Stack t ls (NE.nonEmpty → fmap NE.reverse → Just (lastWindow NE.:| rs)) →
     W.Stack t (rs <> (lastWindow : ls)) []
   _ → c -- Already last
+
+-- Either @W.view@ or @W.greedyView@
+switchToWorkspace
+  ∷ (Eq s, Eq workspaceLabel)
+  ⇒ workspaceLabel
+  → W.StackSet workspaceLabel l a s sd
+  → W.StackSet workspaceLabel l a s sd
+switchToWorkspace = W.greedyView
+{-# INLINE switchToWorkspace #-}
+
+handleXMonadAction
+  ∷ (Read (layout XMonad.Window), XMonad.LayoutClass layout XMonad.Window)
+  ⇒ layout XMonad.Window
+  → String
+  → XMonad.X ()
+handleXMonadAction layout actionStr =
+  case parseXMonadAction actionStr of
+    Nothing →
+      XMonad.io . writeFile "/tmp/xmonad-action-handler.log" . (<> "\n") $
+        "Unrecognized XMonad action: " <> show actionStr
+    Just action →
+      case action of
+        ToggleStickyWindow → toggleStickyWindow
+        ToggleFloatingWindow → XMonad.withFocused toggleFloatWindow
+        CycleLayout → XMonad.sendMessage XMonad.NextLayout
+        ResetLayout → XMonad.setLayout (XMonad.Layout layout)
+        ResetMode → Modal.exitMode
+        SwitchWorkspace ws → XMonad.windows (switchToWorkspace ws)
 
 polybarLogHook ∷ PolybarInterface → XMonad.X ()
 polybarLogHook polybarInterface = do
