@@ -166,6 +166,7 @@ data Options = Options
   { options_startMode ∷ XMonadStartMode
   , options_saveMoreSpace ∷ Bool
   , options_tallMasters ∷ Int
+  , options_executableType ∷ XMonadExecutableType
   }
 
 mkOptions ∷ IO Options
@@ -174,6 +175,13 @@ mkOptions =
     <$> getRestartMode
     <*> isSavingMoreSpaceNeeded
     <*> pure 1
+    <*> isDevXMonad
+  where
+    isDevXMonad = do
+      let envVarName = "XMONAD_DEV"
+      !isDev ← getEnv envVarName <&> \case Just "1" → True; _ → False
+      unsetEnv envVarName
+      pure $ if isDev then Dev else Normal
 
 getRestartMode ∷ IO XMonadStartMode
 getRestartMode = do
@@ -601,7 +609,7 @@ myConfig opts polybarInterface myStartupHook = XMonad.def
   , startupHook = myStartupHook
   , layoutHook = layout
   , manageHook = myManageHook
-  , logHook = polybarLogHook polybarInterface
+  , logHook = polybarLogHook opts polybarInterface
   , handleEventHook =
       ServerMode.serverModeEventHookF
         xmonadActionXMessageType
@@ -654,17 +662,17 @@ myLayout opts = go where
 
   myTabTheme ∷ Tabbed.Theme
   myTabTheme = XMonad.def
-    { Tabbed.activeColor = "#285577"
-    , Tabbed.activeTextColor = "#ffffff"
-    , Tabbed.activeBorderColor = "#4c7899"
+    { Tabbed.inactiveColor = _cBg
+    , Tabbed.inactiveTextColor = _cFg
+    , Tabbed.inactiveBorderColor = _cBorder
 
-    , Tabbed.inactiveColor = "#222222"
-    , Tabbed.inactiveTextColor = "#888888"
-    , Tabbed.inactiveBorderColor = "#333333"
+    , Tabbed.activeColor = _cBgActive
+    , Tabbed.activeTextColor = _cFgActive
+    , Tabbed.activeBorderColor = _cBorderActive
 
-    , Tabbed.urgentColor = "#900000"
-    , Tabbed.urgentTextColor = "#ffffff"
-    , Tabbed.urgentBorderColor = "#2f343a"
+    , Tabbed.urgentColor = _cBgUrgent
+    , Tabbed.urgentTextColor = _cFgUrgent
+    , Tabbed.urgentBorderColor = _cBorderUrgent
 
     , Tabbed.fontName = "xft:Hack:size=10"
     , Tabbed.decoHeight = 20
@@ -1467,6 +1475,12 @@ data XMonadExecutableType
   | Dev
   deriving (Show, Read, Eq, Enum, Bounded)
 
+xmonadExecutable ∷ XMonadExecutableType → String
+xmonadExecutable = \case
+  Normal → "xmonad"
+  Dev → "/etc/nixos/gui/xmonad/xmonad-dev.sh"
+{-# INLINE xmonadExecutable #-}
+
 -- | Customized "XMonad.Operations.restart" that also passes “start mode” environment variable
 --
 -- See "startModeMarkerEnvName" for environment variable name.
@@ -1478,13 +1492,9 @@ restartXMonad xmonadExecutableType mode resume = do
   when resume XMonad.writeStateToFile
   XMonad.catchIO $ do
     env ← (<> [startModeMarker]) . filter ((/= startModeMarkerEnvName) . fst) <$> getEnvironment
-    executeFile xmonadExecutable True [] (Just env)
+    executeFile (xmonadExecutable xmonadExecutableType) True [] (Just env)
   where
     startModeMarker = (startModeMarkerEnvName, show mode)
-    xmonadExecutable =
-      case xmonadExecutableType of
-        Normal → "xmonad"
-        Dev → "/etc/nixos/gui/xmonad/xmonad-dev.sh"
 
 -- | Environment variable name
 startModeMarkerEnvName ∷ String
@@ -1591,8 +1601,8 @@ handleXMonadAction layout actionStr =
         ResetMode → Modal.exitMode
         SwitchWorkspace ws → XMonad.windows (switchToWorkspace ws)
 
-polybarLogHook ∷ PolybarInterface → XMonad.X ()
-polybarLogHook polybarInterface = do
+polybarLogHook ∷ Options → PolybarInterface → XMonad.X ()
+polybarLogHook opts polybarInterface = do
   workspacesPP
     >>= DynamicLog.dynamicLogString
     >>= XMonad.io . polybarInterface.polybar_reportWorkspaces
@@ -1614,14 +1624,19 @@ polybarLogHook polybarInterface = do
 
       pure $ XMonad.def
         { DynamicLog.ppCurrent = \w →
+            pbLMB (xMonadActionToAtomString $ SwitchWorkspace w) $
             pbWorkspace (Just _cFgActive) (Just _cBgActive) (f w)
         , DynamicLog.ppVisible = \w →
+            pbLMB (xMonadActionToAtomString $ SwitchWorkspace w) $
             pbWorkspace Nothing (Just _cBorderUrgent) (f w)
         , DynamicLog.ppHidden = \w →
+            pbLMB (xMonadActionToAtomString $ SwitchWorkspace w) $
             pbWorkspace Nothing Nothing (f w)
         , DynamicLog.ppHiddenNoWindows = \w →
+            pbLMB (xMonadActionToAtomString $ SwitchWorkspace w) $
             pbWorkspace (Just _cFgDisabled) Nothing (f w)
         , DynamicLog.ppUrgent = \w ->
+            pbLMB (xMonadActionToAtomString $ SwitchWorkspace w) $
             pbWorkspace (Just _cFgUrgent) (Just _cBgUrgent) (f w)
         , DynamicLog.ppLayout = const mempty
         , DynamicLog.ppTitle = const mempty
@@ -1636,7 +1651,10 @@ polybarLogHook polybarInterface = do
         , DynamicLog.ppHidden = const mempty
         , DynamicLog.ppHiddenNoWindows = const mempty
         , DynamicLog.ppUrgent = const mempty
-        , DynamicLog.ppLayout = \layout → layout
+        , DynamicLog.ppLayout = \layout →
+            pbLMB (xMonadActionToAtomString CycleLayout) $
+            pbRMB (xMonadActionToAtomString ResetLayout) $
+            layout
         , DynamicLog.ppTitle = const mempty
         , DynamicLog.ppWsSep = mempty
         }
@@ -1663,8 +1681,14 @@ polybarLogHook polybarInterface = do
           isSticky ← TagWindows.hasTag stickyWindowTag window
           isFloating ← isWindowFloating window
           pure . intercalate " + " . mconcat $
-            [ [pbFgBg _cFgUrgent _cBgUrgent (pbPad' "Sticky") | isSticky]
-            , [pbFgBg _cFgActive _cBgActive (pbPad' "Floating") | isFloating]
+            [ [ pbLMB (xMonadActionToAtomString ToggleStickyWindow)
+              $ pbFgBg _cFgUrgent _cBgUrgent (pbPad' "Sticky")
+              | isSticky
+              ]
+            , [ pbLMB (xMonadActionToAtomString ToggleFloatingWindow)
+              $ pbFgBg _cFgActive _cBgActive (pbPad' "Floating")
+              | isFloating
+              ]
             ]
 
     screenIdToInt ∷ XMonad.ScreenId → Int
@@ -1685,45 +1709,82 @@ polybarLogHook polybarInterface = do
     modeLogger ∷ Logger
     modeLogger =
       Modal.logMode >>=
-        pure . Just . maybe "Normal" (pbFgBg _cFgUrgent _cBgUrgent . pbPad')
+        pure . Just . maybe "Normal"
+          ( pbLMB (xMonadActionToAtomString ResetMode)
+          . pbFgBg _cFgUrgent _cBgUrgent
+          . pbPad'
+          )
 
-    -- Duplicating colors from Polybar config.
-    -- Normal
-    _cBg = "#222" ∷ String
-    _cFg = "#888" ∷ String
-    _cBorder = "#333" ∷ String
-    -- Active
-    _cBgActive = "#285577" ∷ String
-    _cFgActive = "#ffffff" ∷ String
-    _cBorderActive = "#4c7899" ∷ String
-    -- Urgent
-    _cBgUrgent = "#900000" ∷ String
-    _cFgUrgent = "#fff" ∷ String
-    _cBorderUrgent = "#2f343a" ∷ String
-    -- Disabled
-    _cFgDisabled = "#555" ∷ String
+    pbAction ∷ Word → String → String → String
+    pbAction button ctlCommand text = mconcat
+      [ "%{A", show button, ":"
+      , xmonadExecutable opts.options_executableType, " ctl ", ctlCommand
+      , ":}", text, "%{A}"
+      ]
 
-    pbFg ∷ String → String → String
-    pbFg color text = "%{F" <> color <> "}" <> text <> "%{F-}"
+    -- Left mouse button
+    pbLMB ∷ String → String → String
+    pbLMB = pbAction 1
+    {-# INLINE pbLMB #-}
 
-    pbBg ∷ String → String → String
-    pbBg color text = "%{B" <> color <> "}" <> text <> "%{B-}"
+    -- Right mouse button
+    pbRMB ∷ String → String → String
+    pbRMB = pbAction 3
+    {-# INLINE pbRMB #-}
 
-    pbFgBg ∷ String → String → String → String
-    pbFgBg fg bg text = "%{F" <> fg <> "}%{B" <> bg <> "}" <> text <> "%{B-}%{F-}"
+-- Duplicating colors from Polybar config.
+_cBg, _cFg, _cBorder
+  , _cBgActive, _cFgActive, _cBorderActive
+  , _cBgUrgent, _cFgUrgent, _cBorderUrgent
+  , _cFgDisabled
+  ∷ String
+-- Normal
+_cBg = "#222"
+_cFg = "#888"
+_cBorder = "#333"
+-- Active
+_cBgActive = "#285577"
+_cFgActive = "#ffffff"
+_cBorderActive = "#4c7899"
+-- Urgent
+_cBgUrgent = "#900000"
+_cFgUrgent = "#fff"
+_cBorderUrgent = "#2f343a"
+-- Disabled
+_cFgDisabled = "#555"
+{-# INLINE _cBg #-}
+{-# INLINE _cFg #-}
+{-# INLINE _cBorder #-}
+{-# INLINE _cBgActive #-}
+{-# INLINE _cFgActive #-}
+{-# INLINE _cBorderActive #-}
+{-# INLINE _cBgUrgent #-}
+{-# INLINE _cFgUrgent #-}
+{-# INLINE _cBorderUrgent #-}
+{-# INLINE _cFgDisabled #-}
 
-    pbPad ∷ String → String → String
-    pbPad amount text = "%{O" <> amount <> "}" <> text <> "%{O" <> amount <> "}"
+pbFg ∷ String → String → String
+pbFg color text = mconcat ["%{F", color, "}", text, "%{F-}"]
 
-    pbPad' ∷ String → String
-    pbPad' = pbPad "8px"
+pbBg ∷ String → String → String
+pbBg color text = mconcat ["%{B", color, "}", text, "%{B-}"]
 
-    pbWorkspace ∷ Maybe String → Maybe String → String → String
-    pbWorkspace mFg mBg name = applyFgBg (pbPad' name)
-      where
-        applyFgBg =
-          case (mFg, mBg) of
-            (Just fg, Just bg) → pbFgBg fg bg
-            (Just fg, Nothing) → pbFg fg
-            (Nothing, Just bg) → pbBg bg
-            (Nothing, Nothing) → id
+pbFgBg ∷ String → String → String → String
+pbFgBg fg bg text = mconcat ["%{F", fg, "}%{B", bg, "}", text, "%{B-}%{F-}"]
+
+pbPad ∷ String → String → String
+pbPad amount text = mconcat ["%{O", amount, "}", text, "%{O", amount, "}"]
+
+pbPad' ∷ String → String
+pbPad' = pbPad "8px"
+{-# INLINE pbPad' #-}
+
+pbWorkspace ∷ Maybe String → Maybe String → String → String
+pbWorkspace mFg mBg name = applyFgBg (pbPad' name)
+  where
+    applyFgBg =
+      case (mFg, mBg) of
+        (Just fg, Just bg) → pbFgBg fg bg
+        (Just fg, Nothing) → pbFg fg
+        (Nothing, Just bg) → pbBg bg
+        (Nothing, Nothing) → id
