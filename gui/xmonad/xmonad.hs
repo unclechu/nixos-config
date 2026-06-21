@@ -273,7 +273,7 @@ sendXMonadActionToX11 (xMonadActionToAtomString → action) = do
 -- | Startup script that is provided by my NixOS configuration.
 --
 -- Blocking! Waits for the script to finish.
-autoStartScript ∷ Options → XMonad.X ()
+autoStartScript ∷ (XMonad.MonadIO m, MonadFinally m) ⇒ Options → m ()
 autoStartScript opts = do
   case options_startMode opts of
     Shallow → pure ()
@@ -306,7 +306,6 @@ autoStartScript opts = do
             report $
               "autostart-setup script failed with unexpected FIFO report: "
               <> show x
-
   where
     report = writeFile "/tmp/xmonad-autostart-setup.log" . (<> "\n")
 
@@ -1460,7 +1459,7 @@ exitXMonad ∷ XMonad.MonadIO io ⇒ io ()
 exitXMonad = XMonad.io $
   PosixProc.getProcessID >>= PosixSignals.signalProcess PosixSignals.sigTERM
 
-terminationPrompt ∷ XdgRuntimeDir → X ()
+terminationPrompt ∷ (XMonad.MonadIO m, MonadFinally m) ⇒ XdgRuntimeDir → m ()
 terminationPrompt xdgRuntimeDir = do
   withFifoResponse xdgRuntimeDir "termination-prompt" $ \fifoPath getFifoLine → do
     XMonad.spawn [qmb|
@@ -1849,14 +1848,14 @@ shellQuote str = "'" <> concatMap (\case '\'' → "'\\''"; c → [c]) str <> "'"
 
 type Microseconds = Int
 
-type WithReadFifoLine b
+type WithReadFifoLine m b
   = Maybe Microseconds
   -- ^ Optional timeout (to prevent a read blocking indefinitely)
   → (Either E.SomeException String → IO b)
   -- ^ FIFO line read result handler
   --   (you can check "E.SomeException" for "FifoResponseTimedOut" if you
   --   set the timeout)
-  → X b
+  → m b
 
 -- | Seconds to "Microseconds"
 _seconds ∷ Int → Microseconds
@@ -1885,15 +1884,16 @@ _ms = (* 1_000)
 -- Note that if your sub-process/script fails to report to the FIFO the reader
 -- function will block indefinitely. It is up to you how to handle this.
 withFifoResponse
-  ∷ XdgRuntimeDir
+  ∷ (XMonad.MonadIO m, MonadFinally m)
+  ⇒ XdgRuntimeDir
   → String
-  → (FilePath → WithReadFifoLine b → X a)
+  → (FilePath → WithReadFifoLine m b → m a)
   -- ^ FIFO file path and "WithReadFifoLine" callback which
   --   blocks and waits for line to be written to FIFO
-  → X a
+  → m a
 withFifoResponse xdgRuntimeDir fifoNameSuffix m = do
   fifoPath ← XMonad.io mkFifoPath
-  flip finallyX (XMonad.io $ removeFileIfExists fifoPath) $ do
+  flip finally' (XMonad.io $ removeFileIfExists fifoPath) $ do
     XMonad.io (mkRuntimeFifo fifoPath)
     m fifoPath (\timeoutMay → XMonad.io . withReadFifoLine fifoPath timeoutMay)
   where
@@ -1973,3 +1973,7 @@ finallyX m final = do
 
   XMonad.put stFinal
   either (XMonad.io . E.throwIO) pure result
+
+class MonadFinally m where finally' ∷ m a → m b → m a
+instance MonadFinally IO where finally' = E.finally
+instance MonadFinally X where finally' = finallyX
