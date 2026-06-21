@@ -137,7 +137,9 @@ main = do
       . (["Command examples:"] <>)
       . fmap (("  " <> progName <> " " <> ctlSubcommand <> " ") <>)
       . fmap xMonadActionToAtomString
-      $ [ ToggleStickyWindow
+      $ [ ExitXMonad
+        , ShowTerminationPrompt
+        , ToggleStickyWindow
         , ToggleFloatingWindow
         , CycleLayout
         , ResetLayout
@@ -156,8 +158,21 @@ main = do
         !x ← fromMaybe "run-polybar" <$> getEnv envVarName
         x <$ unsetEnv envVarName
 
-      withPolybar polybarStateFiles polybarRunScript $ \polybarInterface → do
-        opts ← mkOptions xdgRuntimeDir
+      executableType ← do
+        let envVarName = "XMONAD_DEV"
+        !isDev ← getEnv envVarName <&> \case Just "1" → True; _ → False
+        unsetEnv envVarName
+        pure $ if isDev then Dev else Normal
+
+      let
+        polybarCmd =
+          "env" NE.:|
+            [ "XMONAD_EXECUTABLE=" <> xmonadExecutable executableType
+            , polybarRunScript
+            ]
+
+      withPolybar polybarStateFiles polybarCmd $ \polybarInterface → do
+        opts ← mkOptions executableType xdgRuntimeDir
 
         let
           myStartupHook = do
@@ -175,20 +190,14 @@ data Options = Options
   , options_xdgRuntimeDir ∷ XdgRuntimeDir
   }
 
-mkOptions ∷ XdgRuntimeDir → IO Options
-mkOptions xdgRuntimeDir =
+mkOptions ∷ XMonadExecutableType → XdgRuntimeDir → IO Options
+mkOptions executableType xdgRuntimeDir =
   Options
     <$> getRestartMode
     <*> isSavingMoreSpaceNeeded
     <*> pure 1
-    <*> isDevXMonad
+    <*> pure executableType
     <*> pure xdgRuntimeDir
-  where
-    isDevXMonad = do
-      let envVarName = "XMONAD_DEV"
-      !isDev ← getEnv envVarName <&> \case Just "1" → True; _ → False
-      unsetEnv envVarName
-      pure $ if isDev then Dev else Normal
 
 getRestartMode ∷ IO XMonadStartMode
 getRestartMode = do
@@ -215,7 +224,9 @@ xmonadActionXMessageType ∷ String
 xmonadActionXMessageType = "XMONAD_ACTION"
 
 data XMonadAction
-  = ToggleStickyWindow
+  = ExitXMonad
+  | ShowTerminationPrompt
+  | ToggleStickyWindow
   | ToggleFloatingWindow
   | CycleLayout
   | ResetLayout
@@ -225,6 +236,8 @@ data XMonadAction
 
 xMonadActionToAtomString ∷ XMonadAction → String
 xMonadActionToAtomString = \case
+  ExitXMonad → "exit-xmonad"
+  ShowTerminationPrompt → "show-termination-prompt"
   ToggleStickyWindow → "toggle-sticky-window"
   ToggleFloatingWindow → "toggle-floating-window"
   CycleLayout → "cycle-layout"
@@ -235,6 +248,8 @@ xMonadActionToAtomString = \case
 
 parseXMonadAction ∷ String → Maybe XMonadAction
 parseXMonadAction x
+  | x == f ExitXMonad = Just ExitXMonad
+  | x == f ShowTerminationPrompt = Just ShowTerminationPrompt
   | x == f ToggleStickyWindow = Just ToggleStickyWindow
   | x == f ToggleFloatingWindow = Just ToggleFloatingWindow
   | x == f CycleLayout = Just CycleLayout
@@ -345,8 +360,8 @@ data PolybarInterface = PolybarInterface
   , polybar_reportWindowFlags ∷ String → IO ()
   }
 
-withPolybar ∷ PolybarStateFiles → FilePath → (PolybarInterface → IO ()) → IO ()
-withPolybar stateFiles polybarRunScript runXMonad = do
+withPolybar ∷ PolybarStateFiles → NE.NonEmpty String → (PolybarInterface → IO ()) → IO ()
+withPolybar stateFiles runPolybarCmd runXMonad = do
   startPolybarLatch ← MVar.newEmptyMVar @()
 
   -- Writing handle + writing lock wrapper
@@ -375,7 +390,7 @@ withPolybar stateFiles polybarRunScript runXMonad = do
       = ProcT.setStdout ProcT.nullStream
       . ProcT.setStderr ProcT.inherit
       . ProcT.setStdin ProcT.createPipe
-      $ ProcT.proc polybarRunScript []
+      $ ProcT.proc (NE.head runPolybarCmd) (NE.tail runPolybarCmd)
 
     startPolybar ∷ MVar.MVar () → IO ()
     startPolybar = void . flip MVar.tryPutMVar ()
@@ -390,7 +405,7 @@ withPolybar stateFiles polybarRunScript runXMonad = do
       -- Wait for startupHook to call the startPolybar
       MVar.takeMVar startPolybarLatch
 
-      report $ "Starting Polybar script " <> show polybarRunScript
+      report $ "Starting Polybar script " <> show runPolybarCmd
 
       let
         start =
@@ -405,14 +420,14 @@ withPolybar stateFiles polybarRunScript runXMonad = do
             exitCode ← ProcT.waitExitCode procHandle
             report $
               "Polybar script "
-                <> show polybarRunScript
+                <> show runPolybarCmd
                 <> " finished with: "
                 <> show exitCode
 
       start `E.catch` \(e :: E.SomeException) ->
         report $
           "Polybar script "
-            <> show polybarRunScript
+            <> show runPolybarCmd
             <> " failed: "
             <> E.displayException e
 
@@ -1653,6 +1668,8 @@ handleXMonadAction opts polybarInterface layout actionStr =
         "Unrecognized XMonad action: " <> show actionStr
     Just action →
       case action of
+        ExitXMonad → exitXMonad
+        ShowTerminationPrompt → terminationPrompt opts.options_xdgRuntimeDir
         ToggleStickyWindow → do
           toggleStickyWindow
           -- Report the flags, otherwise toggled sticky status
