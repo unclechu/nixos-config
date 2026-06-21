@@ -1447,7 +1447,7 @@ rofiCmd theme mode =
         RofiModeDRun → ["-show", "drun"]
         RofiModeWindow → ["-show", "window"]
         RofiModeDMenu opts → mconcat
-          [ ["-dmenu"]
+          [ ["-dmenu", "-matching", "fuzzy", "-case-smart"]
           , if opts.rofiDmenu_strict then ["-no-custom"] else mempty
           , maybe mempty (\x → ["-select-row", show x]) opts.rofiDmenu_selectRow
           , ["-p", shellQuote opts.rofiDmenu_prompt]
@@ -1456,7 +1456,7 @@ rofiCmd theme mode =
 
 exitXMonadPrompt ∷ XdgRuntimeDir → X ()
 exitXMonadPrompt xdgRuntimeDir = do
-  withFifoResponse xdgRuntimeDir "exit-monad-action" $ \fifoPath getFifoLine → do
+  withFifoResponse xdgRuntimeDir "exit-monad-prompt" $ \fifoPath getFifoLine → do
     XMonad.spawn [qmb|
       yes='Yes, terminate XMonad'
       options="$yes"$'\nCancel\n'
