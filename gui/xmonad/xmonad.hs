@@ -1481,6 +1481,8 @@ terminationPrompt xdgRuntimeDir = do
       options={
         shellQuote terminateXMonadActionTitle
       }$'\n'{
+        shellQuote rebootActionTitle
+      }$'\n'{
         shellQuote powerOffActionTitle
       }$'\nCancel'
 
@@ -1493,6 +1495,8 @@ terminationPrompt xdgRuntimeDir = do
 
       if [[ "$answer" == {shellQuote terminateXMonadActionTitle} ]]; then
         printf '%s\n' {shellQuote terminateXMonadAction} >> {shellQuote fifoPath}
+      elif [[ "$answer" == {shellQuote rebootActionTitle} ]]; then
+        printf '%s\n' {shellQuote rebootAction} >> {shellQuote fifoPath}
       elif [[ "$answer" == {shellQuote powerOffActionTitle} ]]; then
         printf '%s\n' {shellQuote powerOffAction} >> {shellQuote fifoPath}
       fi
@@ -1503,12 +1507,15 @@ terminationPrompt xdgRuntimeDir = do
     getFifoLine Nothing $ \case
       Right action
         | action == terminateXMonadAction → exitXMonad
+        | action == rebootAction → XMonad.spawn "reboot"
         | action == powerOffAction → XMonad.spawn "poweroff"
       _ → pure ()
 
   where
     (terminateXMonadAction, terminateXMonadActionTitle) =
       ("terminate-xmonad", "Terminate XMonad (end X session)")
+    (rebootAction, rebootActionTitle) =
+      ("reboot", "Reboot the machine")
     (powerOffAction, powerOffActionTitle) =
       ("power-off", "Power off the machine")
     prompt =
