@@ -1622,7 +1622,7 @@ polybarWindowFlags executableType =
       let disabled = pbBg _cBorderUrgent
       pure $ intercalate (pbPad "4px" "")
         [ pbLMB executableType (xMonadActionToAtomString ToggleStickyWindow) $
-          (if isSticky then pbFgBg _cFgUrgent _cBgUrgent else disabled)
+          (if isSticky then pbFgBg _cFgActive _cBgExtraActive else disabled)
           (pbPad' (if isSticky then "\984067" else "\985393"))
         , pbLMB executableType (xMonadActionToAtomString ToggleFloatingWindow) $
           (if isFloating then pbFgBg _cFgActive _cBgActive else disabled)
@@ -1776,6 +1776,7 @@ _cBg, _cFg, _cBorder
   , _cBgActive, _cFgActive, _cBorderActive
   , _cBgUrgent, _cFgUrgent, _cBorderUrgent
   , _cFgDisabled
+  , _cBgExtraActive
   ∷ String
 -- Normal
 _cBg = "#222"
@@ -1791,6 +1792,8 @@ _cFgUrgent = "#fff"
 _cBorderUrgent = "#2f343a"
 -- Disabled
 _cFgDisabled = "#555"
+-- Extra
+_cBgExtraActive = "#27753d"
 {-# INLINE _cBg #-}
 {-# INLINE _cFg #-}
 {-# INLINE _cBorder #-}
@@ -1801,6 +1804,7 @@ _cFgDisabled = "#555"
 {-# INLINE _cFgUrgent #-}
 {-# INLINE _cBorderUrgent #-}
 {-# INLINE _cFgDisabled #-}
+{-# INLINE _cBgExtraActive #-}
 
 pbFg ∷ String → String → String
 pbFg color text = mconcat ["%{F", color, "}", text, "%{F-}"]
