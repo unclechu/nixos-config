@@ -105,7 +105,6 @@ import qualified Graphics.X11.Xlib.Extras as X11Extras
 import GHC.Internal.System.Environment (getProgName)
 import qualified XMonad.Hooks.ServerMode as ServerMode
 import qualified System.Timeout as Timeout
-import Data.Bool (bool)
 import qualified System.Posix.Signals as PosixSignals
 
 main ∷ IO ()
@@ -1207,9 +1206,9 @@ doKeysMode ∷ XdgRuntimeDir → Modal.Mode
     , ((m, XMonad.xK_t), Modal.exitMode >> restartXMonad Normal Shallow True)
     -- For dev testing
     , ((m .|. s, XMonad.xK_t), Modal.exitMode >> restartXMonad Dev Shallow True)
-    -- Exit XMonad. Log out from the X session.
+    -- Show termination action prompt.
     -- Mnemonic: ‘e’ is for ‘Exit’.
-    , ((m, XMonad.xK_e), exitXMonadPrompt xdgRuntimeDir >> Modal.exitMode)
+    , ((m, XMonad.xK_e), terminationPrompt xdgRuntimeDir >> Modal.exitMode)
 
     -- Mnemonic: ‘a’ is for ‘Autostart’
     , ((m, XMonad.xK_a), XMonad.spawn "autostart-setup" >> Modal.exitMode)
@@ -1457,41 +1456,53 @@ rofiCmd theme mode =
           ]
     ]
 
-exitXMonadPrompt ∷ XdgRuntimeDir → X ()
-exitXMonadPrompt xdgRuntimeDir = do
-  withFifoResponse xdgRuntimeDir "exit-monad-prompt" $ \fifoPath getFifoLine → do
+exitXMonad ∷ XMonad.MonadIO io ⇒ io ()
+exitXMonad = XMonad.io $
+  PosixProc.getProcessID >>= PosixSignals.signalProcess PosixSignals.sigTERM
+
+terminationPrompt ∷ XdgRuntimeDir → X ()
+terminationPrompt xdgRuntimeDir = do
+  withFifoResponse xdgRuntimeDir "termination-prompt" $ \fifoPath getFifoLine → do
     XMonad.spawn [qmb|
-      yes='Yes, terminate XMonad'
-      options="$yes"$'\nCancel\n'
+      options={
+        shellQuote terminateXMonadActionTitle
+      }$'\n'{
+        shellQuote powerOffActionTitle
+      }$'\nCancel'
+
       answer=$(<<<"$options" {prompt}) || true
 
-      # Report NO response.
-      # It’s okay if this comes after YES, it won’t change the outcome.
+      # Report action cancellation.
+      # It’s okay if this comes after actual action, it won’t change the outcome.
       finish() \{ echo >> {shellQuote fifoPath}; }
       trap finish EXIT
 
-      if [[ "$answer" == "$yes" ]]; then
-        echo 1 >> {shellQuote fifoPath}
+      if [[ "$answer" == {shellQuote terminateXMonadActionTitle} ]]; then
+        printf '%s\n' {shellQuote terminateXMonadAction} >> {shellQuote fifoPath}
+      elif [[ "$answer" == {shellQuote powerOffActionTitle} ]]; then
+        printf '%s\n' {shellQuote powerOffAction} >> {shellQuote fifoPath}
       fi
     |]
 
     -- Do not set a timeout, because the prompt window can be shown
-    -- for undefined time.
-    getFifoLine Nothing (pure . \case Right "1" → True;  _ → False) >>=
-      bool (pure ()) exitXMonad
+    -- for undefined amount of time.
+    getFifoLine Nothing $ \case
+      Right action
+        | action == terminateXMonadAction → exitXMonad
+        | action == powerOffAction → XMonad.spawn "poweroff"
+      _ → pure ()
 
   where
+    (terminateXMonadAction, terminateXMonadActionTitle) =
+      ("terminate-xmonad", "Terminate XMonad (end X session)")
+    (powerOffAction, powerOffActionTitle) =
+      ("power-off", "Power off the machine")
     prompt =
       rofiCmd RofiThemeDark . RofiModeDMenu $ RofiDmenuOptions
-        { rofiDmenu_prompt =
-            "Do you really want to terminate XMonad? This will end your X session!"
+        { rofiDmenu_prompt = "What action do you want to take?"
         , rofiDmenu_strict = True
         , rofiDmenu_selectRow = Just 1
         }
-
-exitXMonad ∷ XMonad.MonadIO io ⇒ io ()
-exitXMonad = XMonad.io $
-  PosixProc.getProcessID >>= PosixSignals.signalProcess PosixSignals.sigTERM
 
 data XMonadStartMode
   = Full -- ^ Regular full (re)start of XMonad ((re)load fresh config)
