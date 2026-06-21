@@ -73,7 +73,7 @@ import qualified XMonad.Actions.FloatKeys as FloatKeys
 import qualified XMonad.Actions.FlexibleResize as FlexibleResize
 import qualified XMonad.Actions.CycleWS as CycleWS
 import qualified XMonad.Hooks.InsertPosition as InsertPosition
-import Data.List (partition, intercalate)
+import Data.List (partition, intercalate, find)
 import Data.Maybe (listToMaybe, fromMaybe)
 import XMonad.Hooks.TaffybarPagerHints (pagerHints)
 import qualified Data.List.NonEmpty as NE
@@ -144,8 +144,9 @@ main = do
         , CycleLayout
         , ResetLayout
         , ResetMode
-        , (SwitchWorkspace . fromMaybe mempty . listToMaybe) myWorkspaces
         ]
+        <> fmap RestartXMonad [minBound .. maxBound ∷ XMonadStartMode]
+        <> fmap SwitchWorkspace myWorkspaces
 
     startXMonad ∷ IO ()
     startXMonad = do
@@ -231,6 +232,7 @@ data XMonadAction
   | CycleLayout
   | ResetLayout
   | ResetMode
+  | RestartXMonad XMonadStartMode
   | SwitchWorkspace String -- The @String@ should not contain spaces
   deriving (Eq, Show)
 
@@ -243,8 +245,13 @@ xMonadActionToAtomString = \case
   CycleLayout → "cycle-layout"
   ResetLayout → "reset-layout"
   ResetMode → "reset-mode"
+  RestartXMonad startMode →
+    unwords ["restart-xmonad", startModeToAtomStringPiece startMode]
   -- Note that @ws@ here must be an element of @myWorkspaces@
   SwitchWorkspace ws → unwords ["switch-workspace", ws]
+
+startModeToAtomStringPiece ∷ XMonadStartMode → String
+startModeToAtomStringPiece = \case Full → "full"; Shallow → "shallow"
 
 parseXMonadAction ∷ String → Maybe XMonadAction
 parseXMonadAction x
@@ -256,9 +263,13 @@ parseXMonadAction x
   | x == f ResetLayout = Just ResetLayout
   | x == f ResetMode = Just ResetMode
   | otherwise = case words x of
+      ["restart-xmonad", findStartMode → Just startMode] → Just (RestartXMonad startMode)
       ["switch-workspace", ws] | ws `elem` myWorkspaces → Just (SwitchWorkspace ws)
       _ → Nothing
-  where f = xMonadActionToAtomString
+  where
+    f = xMonadActionToAtomString
+    findStartMode y =
+      find ((y ==) . startModeToAtomStringPiece) [minBound .. maxBound]
 
 -- | Send an Atom message to X root window (that XMonad can catch and handle)
 --
@@ -1688,6 +1699,8 @@ handleXMonadAction opts polybarInterface layout actionStr =
         CycleLayout → XMonad.sendMessage XMonad.NextLayout
         ResetLayout → XMonad.setLayout (XMonad.Layout layout)
         ResetMode → Modal.exitMode
+        RestartXMonad startMode →
+          restartXMonad opts.options_executableType startMode True
         SwitchWorkspace ws → XMonad.windows (switchToWorkspace ws)
 
 polybarLogHook ∷ Options → PolybarInterface → XMonad.X ()
