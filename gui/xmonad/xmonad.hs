@@ -104,6 +104,9 @@ import qualified Graphics.X11 as X11
 import qualified Graphics.X11.Xlib.Extras as X11Extras
 import GHC.Internal.System.Environment (getProgName)
 import qualified XMonad.Hooks.ServerMode as ServerMode
+import qualified System.Timeout as Timeout
+import Data.Bool (bool)
+import qualified System.Posix.Signals as PosixSignals
 
 main ∷ IO ()
 main = do
@@ -152,11 +155,11 @@ main = do
         x <$ unsetEnv envVarName
 
       withPolybar polybarStateFiles polybarRunScript $ \polybarInterface → do
-        opts ← mkOptions
+        opts ← mkOptions xdgRuntimeDir
 
         let
           myStartupHook = do
-            autoStartScript xdgRuntimeDir opts
+            autoStartScript opts
             XMonad.io polybarInterface.polybar_release
 
         writeFile "/tmp/xmonad.log" "XMonad starts\n"
@@ -167,15 +170,17 @@ data Options = Options
   , options_saveMoreSpace ∷ Bool
   , options_tallMasters ∷ Int
   , options_executableType ∷ XMonadExecutableType
+  , options_xdgRuntimeDir ∷ XdgRuntimeDir
   }
 
-mkOptions ∷ IO Options
-mkOptions =
+mkOptions ∷ XdgRuntimeDir → IO Options
+mkOptions xdgRuntimeDir =
   Options
     <$> getRestartMode
     <*> isSavingMoreSpaceNeeded
     <*> pure 1
     <*> isDevXMonad
+    <*> pure xdgRuntimeDir
   where
     isDevXMonad = do
       let envVarName = "XMONAD_DEV"
@@ -266,69 +271,42 @@ sendXMonadActionToX11 (xMonadActionToAtomString → action) = do
 -- | Startup script that is provided by my NixOS configuration.
 --
 -- Blocking! Waits for the script to finish.
-autoStartScript ∷ XdgRuntimeDir → Options → XMonad.X ()
-autoStartScript xdgRuntimeDir opts = do
+autoStartScript ∷ Options → XMonad.X ()
+autoStartScript opts = do
   case options_startMode opts of
     Shallow → pure ()
     Full → do
       XMonad.io $ report "Creating FIFO for autostart-setup script"
-      fifoPath ← XMonad.io mkRuntimeFifo
+      withFifoResponse opts.options_xdgRuntimeDir "autostart-wait" $ \fifoPath getFifoLine → do
+        XMonad.io $ report "Starting autostart-setup script"
+        XMonad.spawn [qmb|
+          autostart-setup 1>&2
+          status=$?
+          printf '%s\n' "$status" > {shellQuote fifoPath}
+          exit "$status"
+        |]
 
-      XMonad.io $ report "Starting autostart-setup script"
-      XMonad.spawn [qmb|
-        autostart-setup 1>&2
-        status=$?
-        printf '%s\n' "$status" > {shellQuote fifoPath}
-        exit "$status"
-      |]
+        XMonad.io $ report "Waiting for autostart-setup script FIFO report"
+        getFifoLine (Just $ _seconds 5) $ \case
+          Left (e ∷ E.SomeException) →
+            report $
+              "autostart-setup script FIFO read failed: "
+              <> E.displayException e
 
-      XMonad.io $ do
-        report "Waiting for autostart-setup script FIFO report"
-        flip E.finally (removeFileIfExists fifoPath) $
-          E.try (SysIO.withFile fifoPath SysIO.ReadWriteMode SysIO.hGetLine) >>= \case
-            Left (e ∷ E.SomeException) →
-              report $
-                "autostart-setup script FIFO read failed: "
-                <> E.displayException e
+          Right (readMaybe → Just (exitCode ∷ Int)) →
+            case exitCode of
+              0 → report "autostart-setup script finished successfully"
+              n →
+                report $
+                  "autostart-setup script failed with exit code: " <> show n
 
-            Right (readMaybe → Just (exitCode ∷ Int)) →
-              case exitCode of
-                0 → report "autostart-setup script finished successfully"
-                n →
-                  report $
-                    "autostart-setup script failed with exit code: " <> show n
-
-            Right x →
-              report $
-                "autostart-setup script failed with unexpected FIFO report: "
-                <> show x
+          Right x →
+            report $
+              "autostart-setup script failed with unexpected FIFO report: "
+              <> show x
 
   where
     report = writeFile "/tmp/xmonad-autostart-setup.log" . (<> "\n")
-
-    shellQuote ∷ String → String
-    shellQuote str = "'" <> concatMap (\case '\'' → "'\\''"; c → [c]) str <> "'"
-
-    removeFileIfExists ∷ FilePath → IO ()
-    removeFileIfExists path = do
-      E.catch (Dir.removeFile path) $ \(e ∷ IOError.IOError) →
-        if IOError.isDoesNotExistError e then pure () else E.throwIO e
-
-    mkRuntimeFifo ∷ IO FilePath
-    mkRuntimeFifo = do
-      fifoPath ← do
-        -- XMonad PID stays the same between restarts, so using time.
-        time ∷ Word ← round . (* 1_000_000_000) <$> POSIX.getPOSIXTime
-
-        PosixProc.getProcessID <&> \pid →
-          xdgRuntimeDir.unXdgRuntimeDir </>
-            ("xmonad-" <> show pid <> "-" <> show time <> "-autostart-wait.fifo")
-
-      -- Should not exist because name is unique,
-      -- but this makes retries harmless.
-      removeFileIfExists fifoPath
-
-      fifoPath <$ PosixFiles.createNamedPipe fifoPath PosixFiles.ownerModes
 
 newtype XdgRuntimeDir = XdgRuntimeDir { unXdgRuntimeDir ∷ String }
   deriving (Eq, Show)
@@ -533,14 +511,14 @@ cmdResumeRecursive = [qns|
 -- App/command GUI runners
 
 cmdRunDark, cmdRunLight, cmdDRunDark, cmdDRunLight ∷ String
-cmdRunDark = rofiCmd RofiModeRun RofiThemeDark
-cmdRunLight = rofiCmd RofiModeRun RofiThemeLight
-cmdDRunDark = rofiCmd RofiModeDRun RofiThemeDark
-cmdDRunLight = rofiCmd RofiModeDRun RofiThemeLight
+cmdRunDark = rofiCmd RofiThemeDark RofiModeRun
+cmdRunLight = rofiCmd RofiThemeLight RofiModeRun
+cmdDRunDark = rofiCmd RofiThemeDark RofiModeDRun
+cmdDRunLight = rofiCmd RofiThemeLight RofiModeDRun
 
 cmdSelectWindowDark, cmdSelectWindowLight ∷ String
-cmdSelectWindowDark = rofiCmd RofiModeWindow RofiThemeDark
-cmdSelectWindowLight = rofiCmd RofiModeWindow RofiThemeLight
+cmdSelectWindowDark = rofiCmd RofiThemeDark RofiModeWindow
+cmdSelectWindowLight = rofiCmd RofiThemeLight RofiModeWindow
 
 cmdCursorToDisplay ∷ DisplayN → String
 cmdCursorToDisplay dn = [qms| place-cursor-at rb {displayNToNum dn ∷ Word} |]
@@ -582,7 +560,7 @@ completeConfig opts polybarInterface myStartupHook
   . EwmhDesktops.ewmh
   . UrgencyHook.withUrgencyHook UrgencyHook.NoUrgencyHook
   . pagerHints
-  . withKeysModes
+  . withKeysModes opts
   $ myConfig opts polybarInterface myStartupHook
 
 myWorkspaces ∷ [WorkspaceLabel]
@@ -1166,10 +1144,10 @@ stickyWindowTag ∷ String
 stickyWindowTag = "sticky-window"
 
 doKeysModeLabel ∷ String
-doKeysMode ∷ Modal.Mode
+doKeysMode ∷ XdgRuntimeDir → Modal.Mode
 (doKeysModeLabel, doKeysMode) = (label, mode) where
   label = "Do"
-  mode = Modal.mode label $ \XConfig { XMonad.modMask = m } →
+  mode xdgRuntimeDir = Modal.mode label $ \XConfig { XMonad.modMask = m } →
     let
       leaveMode = (>> Modal.exitMode)
 
@@ -1228,15 +1206,7 @@ doKeysMode ∷ Modal.Mode
     , ((m .|. s, XMonad.xK_t), Modal.exitMode >> restartXMonad Dev Shallow True)
     -- Exit XMonad. Log out from the X session.
     -- Mnemonic: ‘e’ is for ‘Exit’.
-    -- TODO: Come up with a solution to trigger “io exitSuccess” instead when YES is pressed.
-    , ( (m, XMonad.xK_e)
-      , XMonad.spawn [qns|
-          i3-nagbar
-            -t warning
-            -m 'Do you really want to terminate XMonad? This will end your X session!'
-            -B 'Yes, terminate XMonad' 'kill -TERM -- $(pidof xmonad)'
-        |] >> Modal.exitMode
-      )
+    , ((m, XMonad.xK_e), exitXMonadPrompt xdgRuntimeDir >> Modal.exitMode)
 
     -- Mnemonic: ‘a’ is for ‘Autostart’
     , ((m, XMonad.xK_a), XMonad.spawn "autostart-setup" >> Modal.exitMode)
@@ -1381,9 +1351,9 @@ mouseCursorKeysMode ∷ Modal.Mode
     <> mouseButtonsKeys
 
 -- | Add all modes to the XMonad config
-withKeysModes ∷ XConfig layout → XConfig layout
-withKeysModes = HModal.modal . mconcat $
-  [ [doKeysMode, workspaceKeysMode, mouseCursorKeysMode]
+withKeysModes ∷ Options → XConfig layout → XConfig layout
+withKeysModes opts = HModal.modal . mconcat $
+  [ [doKeysMode opts.options_xdgRuntimeDir, workspaceKeysMode, mouseCursorKeysMode]
   , [resizeKeysMode x | x ← [minBound .. maxBound]]
   , [positioningKeysMode x | x ← [minBound .. maxBound]]
   ]
@@ -1452,16 +1422,73 @@ myManageHook = XMonad.composeAll
 
 -- * Helpers
 
-data RofiMode = RofiModeRun | RofiModeDRun | RofiModeWindow
-rofiModeForCmd ∷ RofiMode → String
-rofiModeForCmd = \case RofiModeRun → "run" ; RofiModeDRun → "drun" ; RofiModeWindow → "window"
+data RofiMode
+  = RofiModeRun
+  | RofiModeDRun
+  | RofiModeWindow
+  | RofiModeDMenu RofiDmenuOptions
+
+data RofiDmenuOptions = RofiDmenuOptions
+  { rofiDmenu_prompt ∷ String
+  , rofiDmenu_strict ∷ Bool -- Do not allow arbitrary text (only provided options)
+  , rofiDmenu_selectRow ∷ Maybe Word
+  }
 
 data RofiTheme = RofiThemeDark | RofiThemeLight
 rofiThemeForCmd ∷ RofiTheme → String
 rofiThemeForCmd = \case RofiThemeDark → "gruvbox-dark" ; RofiThemeLight → "gruvbox-light-soft"
 
-rofiCmd ∷ RofiMode → RofiTheme → String
-rofiCmd mode theme = unwords [ "rofi -show", rofiModeForCmd mode, "-theme", rofiThemeForCmd theme ]
+rofiCmd ∷ RofiTheme → RofiMode → String
+rofiCmd theme mode =
+  unwords . mconcat $
+    [ ["rofi", "-theme", rofiThemeForCmd theme]
+    , case mode of
+        RofiModeRun → ["-show", "run"]
+        RofiModeDRun → ["-show", "drun"]
+        RofiModeWindow → ["-show", "window"]
+        RofiModeDMenu opts → mconcat
+          [ ["-dmenu"]
+          , if opts.rofiDmenu_strict then ["-no-custom"] else mempty
+          , maybe mempty (\x → ["-select-row", show x]) opts.rofiDmenu_selectRow
+          , ["-p", shellQuote opts.rofiDmenu_prompt]
+          ]
+    ]
+
+exitXMonadPrompt ∷ XdgRuntimeDir → X ()
+exitXMonadPrompt xdgRuntimeDir = do
+  withFifoResponse xdgRuntimeDir "exit-monad-action" $ \fifoPath getFifoLine → do
+    XMonad.spawn [qmb|
+      yes='Yes, terminate XMonad'
+      options="$yes"$'\nCancel\n'
+      answer=$(<<<"$options" {prompt}) || true
+
+      # Report NO response.
+      # It’s okay if this comes after YES, it won’t change the outcome.
+      finish() \{ echo >> {shellQuote fifoPath}; }
+      trap finish EXIT
+
+      if [[ "$answer" == "$yes" ]]; then
+        echo 1 >> {shellQuote fifoPath}
+      fi
+    |]
+
+    -- Do not set a timeout, because the prompt window can be shown
+    -- for undefined time.
+    getFifoLine Nothing (pure . \case Right "1" → True;  _ → False) >>=
+      bool (pure ()) exitXMonad
+
+  where
+    prompt =
+      rofiCmd RofiThemeDark . RofiModeDMenu $ RofiDmenuOptions
+        { rofiDmenu_prompt =
+            "Do you really want to terminate XMonad? This will end your X session!"
+        , rofiDmenu_strict = True
+        , rofiDmenu_selectRow = Just 1
+        }
+
+exitXMonad ∷ XMonad.MonadIO io ⇒ io ()
+exitXMonad = XMonad.io $
+  PosixProc.getProcessID >>= PosixSignals.signalProcess PosixSignals.sigTERM
 
 data XMonadStartMode
   = Full -- ^ Regular full (re)start of XMonad ((re)load fresh config)
@@ -1797,3 +1824,134 @@ pbWorkspace mFg mBg name = applyFgBg (pbPad' name)
         (Just fg, Nothing) → pbFg fg
         (Nothing, Just bg) → pbBg bg
         (Nothing, Nothing) → id
+
+shellQuote ∷ String → String
+shellQuote str = "'" <> concatMap (\case '\'' → "'\\''"; c → [c]) str <> "'"
+{-# INLINE shellQuote #-}
+
+type Microseconds = Int
+
+type WithReadFifoLine b
+  = Maybe Microseconds
+  -- ^ Optional timeout (to prevent a read blocking indefinitely)
+  → (Either E.SomeException String → IO b)
+  -- ^ FIFO line read result handler
+  --   (you can check "E.SomeException" for "FifoResponseTimedOut" if you
+  --   set the timeout)
+  → X b
+
+-- | Seconds to "Microseconds"
+_seconds ∷ Int → Microseconds
+_seconds = (* 1_000_000)
+{-# INLINE _seconds #-}
+
+-- | Milliseconds to "Microseconds"
+_ms ∷ Int → Microseconds
+_ms = (* 1_000)
+{-# INLINE _ms #-}
+
+-- | Create a FIFO file and provide its path to the callback and a function to
+--   read a line from that FIFO file in blocking mode
+--
+-- XMonad does something weird to the sub-processes (maybe `waitpid(-1, …)` or
+-- something like that). Sometimes sub-processes you create can fail due to
+-- that during normal operation. So trying to create a process and read from it
+-- can give you issues. This helper can help with that using an alternative
+-- approach. If you need to wait for a script to finish you "XMonad.spawn" and
+-- forget a shell script giving it the path to the created FIFO to report when
+-- it’s done. And then you wait for that report from the FIFO by using provided
+-- callback to read a line from FIFO. Thus you don’t need to track the
+-- sub-process life time directly, you don’t have to wait for its termination,
+-- etc.
+--
+-- Note that if your sub-process/script fails to report to the FIFO the reader
+-- function will block indefinitely. It is up to you how to handle this.
+withFifoResponse
+  ∷ XdgRuntimeDir
+  → String
+  → (FilePath → WithReadFifoLine b → X a)
+  -- ^ FIFO file path and "WithReadFifoLine" callback which
+  --   blocks and waits for line to be written to FIFO
+  → X a
+withFifoResponse xdgRuntimeDir fifoNameSuffix m = do
+  fifoPath ← XMonad.io mkFifoPath
+  flip finallyX (XMonad.io $ removeFileIfExists fifoPath) $ do
+    XMonad.io (mkRuntimeFifo fifoPath)
+    m fifoPath (\timeoutMay → XMonad.io . withReadFifoLine fifoPath timeoutMay)
+  where
+    -- Note that "SysIO.ReadWriteMode" is intentional instead of
+    -- "SysIO.ReadMode" (otherwise it’s failing).
+    readFifoLine fifoPath =
+      SysIO.withFile fifoPath SysIO.ReadWriteMode SysIO.hGetLine
+
+    withReadFifoLine fifoPath timeoutMay =
+      (E.try (timeout fifoPath timeoutMay $ readFifoLine fifoPath) >>=)
+
+    timeout fifoPath =
+      maybe id $ \t m' →
+        Timeout.timeout t m' >>=
+          maybe (E.throwIO $ FifoResponseTimedOut fifoPath t) pure
+
+    removeFileIfExists ∷ FilePath → IO ()
+    removeFileIfExists path = do
+      E.catch (Dir.removeFile path) $ \(e ∷ IOError.IOError) →
+        if IOError.isDoesNotExistError e then pure () else E.throwIO e
+
+    mkFifoPath ∷ IO FilePath
+    mkFifoPath = do
+      -- XMonad PID stays the same between restarts, so using time.
+      time ∷ Word ← round . (* 1_000_000_000) <$> POSIX.getPOSIXTime
+      PosixProc.getProcessID <&> \pid →
+        xdgRuntimeDir.unXdgRuntimeDir </> mconcat
+          ["xmonad-", show pid, "-", show time, "-", fifoNameSuffix, ".fifo"]
+
+    mkRuntimeFifo ∷ FilePath → IO ()
+    mkRuntimeFifo fifoPath = do
+      -- Should not exist because name is unique,
+      -- but this makes retries harmless.
+      removeFileIfExists fifoPath
+      PosixFiles.createNamedPipe fifoPath PosixFiles.ownerModes
+
+data FifoResponseTimedOut = FifoResponseTimedOut
+  { fifoResponsePath ∷ FilePath
+  , fifoResponseTimeout ∷ Microseconds
+  }
+  deriving (Eq, Show)
+
+instance E.Exception FifoResponseTimedOut where
+  displayException (FifoResponseTimedOut path t) = unwords
+    [ "Timed out waiting for FIFO response from"
+    , show path, "after", show t, "μs"
+    ]
+
+-- | Async-exception safer "E.finally" for "X" monad using only public XMonad API
+--
+-- The main action runs with async exceptions restored.
+-- Cleanup runs under mask.
+-- If cleanup throws, cleanup's exception wins, like "E.finally".
+finallyX ∷ X a → X b → X a
+finallyX m final = do
+  st0 ← XMonad.get
+  c ← XMonad.ask
+
+  (result, stFinal) ← XMonad.io $
+    E.mask $ \restore →
+      E.try @E.SomeException (restore $ XMonad.runX c st0 m) >>= \case
+        Right (x, st1) →
+          E.try @E.SomeException (XMonad.runX c st1 final) <&> \case
+            Right (_, st2) → (Right x, st2)
+            -- Main succeeded, cleanup failed:
+            -- throw cleanup exception, state remains after main action.
+            Left finalException → (Left finalException, st1)
+
+        Left mainException →
+          E.try @E.SomeException (XMonad.runX c st0 final) <&> \case
+            -- Main failed, cleanup succeeded: rethrow original exception,
+            -- but commit cleanup state.
+            Right (_, st2) → (Left mainException, st2)
+            -- Main failed, cleanup failed:
+            -- cleanup exception wins, original state remains.
+            Left finalException → (Left finalException, st0)
+
+  XMonad.put stFinal
+  either (XMonad.io . E.throwIO) pure result

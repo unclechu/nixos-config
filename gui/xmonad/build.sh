@@ -3,7 +3,7 @@ set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 
 CMD=(
 	ghc -O0 xmonad.hs
-	-o xmonad-x86_64-linux
+	-o xmonad
 	# Keep up-to-date with `services.xserver.windowManager.xmonad.ghcArgs`
 	-threaded
 	-rtsopts
