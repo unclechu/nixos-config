@@ -112,22 +112,25 @@ main ∷ IO ()
 main = do
   getArgs >>= \case
     subCommand : xs
-      | subCommand == ctlSubcommand &&
-        ( xs == []
-        || (case xs of [x] → x `elem` ["help", "--help", "-h", "-?"]; _ → False)
-        ) → do
+      | subCommand == ctlSubcommand && isCtlHelp xs → do
           progName ← getProgName
           SysIO.hPutStr SysIO.stderr (ctlHelp progName)
-      | otherwise → ctl xs
+      | subCommand == ctlSubcommand → ctl xs
     _ → startXMonad
 
   where
     ctl commandXs =
       case parseXMonadAction (unwords commandXs) of
-        Nothing → fail $ "Unrecognized command: " <> show commandXs
+        Nothing → fail $ "Unrecognized ctl command: " <> show commandXs
         Just x → sendXMonadActionToX11 x
 
     ctlSubcommand = "ctl" ∷ String
+
+    isCtlHelp ∷ [String] → Bool
+    isCtlHelp xs =
+      xs == [] || case xs of
+        [x] → x `elem` ["help", "--help", "-h", "-?"]
+        _ → False
 
     ctlHelp ∷ String → String
     ctlHelp progName
