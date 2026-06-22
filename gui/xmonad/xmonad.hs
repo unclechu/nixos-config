@@ -496,12 +496,36 @@ withPolybarReporter polybarIpcHandle file@(moduleName, statusStateFile) run = do
 
 -- * Commands
 
--- Calling terminals
-tmuxedTerminalNew, tmuxedTerminalAttach, tmuxedTerminalNuke, tmuxedTerminalNewPrompt ∷ String
-tmuxedTerminalNew = "tmuxed-alacritty-jetbrains-font-dark-new"
-tmuxedTerminalAttach = "tmuxed-alacritty-jetbrains-font-dark-attach"
-tmuxedTerminalNuke = "tmuxed-alacritty-jetbrains-font-dark-nuke"
-tmuxedTerminalNewPrompt = "tmuxed-alacritty-jetbrains-font-dark-new-prompt"
+data TerminalCommands t = TerminalCommands
+  { tmuxedTerminalNew ∷ t
+  , tmuxedTerminalAttach ∷ t
+  , tmuxedTerminalNuke ∷ t
+  , tmuxedTerminalNewPrompt ∷ t
+  }
+
+terminalCommands ∷ TerminalCommands String
+terminalCommands =
+  f "dark" "jetbrains"
+  where
+    f theme font =
+      TerminalCommands
+        { tmuxedTerminalNew =
+            "tmuxed-alacritty-" <> font <> "-font-" <> theme <> "-new"
+        , tmuxedTerminalAttach =
+            "tmuxed-alacritty-" <> font <> "-font-" <> theme <> "-attach"
+        , tmuxedTerminalNuke =
+            "tmuxed-alacritty-" <> font <> "-font-" <> theme <> "-nuke"
+        , tmuxedTerminalNewPrompt =
+            "tmuxed-alacritty-" <> font <> "-font-" <> theme <> "-new-prompt"
+        }
+
+terminalCommandsX ∷ TerminalCommands (X ())
+terminalCommandsX = TerminalCommands
+  { tmuxedTerminalNew = XMonad.spawn terminalCommands.tmuxedTerminalNew
+  , tmuxedTerminalAttach = XMonad.spawn terminalCommands.tmuxedTerminalAttach
+  , tmuxedTerminalNuke = XMonad.spawn terminalCommands.tmuxedTerminalNuke
+  , tmuxedTerminalNewPrompt = XMonad.spawn terminalCommands.tmuxedTerminalNewPrompt
+  }
 
 -- Some SIGsomething sending commands
 cmdExterminate, cmdPause, cmdPauseRecursive, cmdResume, cmdResumeRecursive ∷ String
@@ -598,7 +622,9 @@ myConfig opts polybarInterface myStartupHook = XMonad.def
   { modMask = XMonad.mod4Mask -- Super/Meta/Windows key
   , workspaces = myWorkspaces
 
-  , terminal = "alacritty" -- I don’t really use this value, I have some custom key bindings instead
+  -- I don’t really use this value, I have some custom key bindings instead
+  , terminal = "alacritty-dark"
+
   , normalBorderColor = "#222222"
   , focusedBorderColor = "#ff0000"
   , focusFollowsMouse = False
@@ -853,7 +879,7 @@ musicPlayerControls =
       , mpPrevCmd = "mpvc prev"
       , mpNextCmd = "mpvc next"
       , mpStopCmd = "mpvc stop"
-      , mpSpawnServer = tmuxedTerminalNew <> " music mpvc-tui -T"
+      , mpSpawnServer = terminalCommands.tmuxedTerminalNew <> " music mpvc-tui -T"
       }
 
 musicPlayerControlsX ∷ MusicPlayerControls (X ())
@@ -984,9 +1010,9 @@ defaultModeKeys
 
     commandSpawningKeys = Map.fromList
       -- Terminals
-      [ ((m, XMonad.xK_Return), XMonad.spawn tmuxedTerminalNew)
-      , ((m .|. a, XMonad.xK_Return), XMonad.spawn tmuxedTerminalAttach)
-      , ((m .|. s, XMonad.xK_Return), XMonad.spawn tmuxedTerminalNewPrompt)
+      [ ((m, XMonad.xK_Return), terminalCommandsX.tmuxedTerminalNew)
+      , ((m .|. a, XMonad.xK_Return), terminalCommandsX.tmuxedTerminalAttach)
+      , ((m .|. s, XMonad.xK_Return), terminalCommandsX.tmuxedTerminalNewPrompt)
 
       -- App/command GUI runners
       , ((m, XMonad.xK_semicolon), XMonad.spawn cmdRunDark)
@@ -1233,7 +1259,7 @@ doKeysMode ∷ XdgRuntimeDir → Modal.Mode
     Map.fromList
     [ ((0, XMonad.xK_Escape), Modal.exitMode)
 
-    , ((m, XMonad.xK_Return), XMonad.spawn tmuxedTerminalNuke >> Modal.exitMode)
+    , ((m, XMonad.xK_Return), terminalCommandsX.tmuxedTerminalNuke >> Modal.exitMode)
 
     -- Restart XMonad applying the new configuration.
     -- Mnemonic: ‘r’ is for ‘Restart’.
