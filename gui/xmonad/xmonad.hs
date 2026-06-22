@@ -561,15 +561,34 @@ cmdResumeRecursive = [qns|
 
 -- App/command GUI runners
 
-cmdRunDark, cmdRunLight, cmdDRunDark, cmdDRunLight ∷ String
-cmdRunDark = rofiCmd RofiThemeDark RofiModeRun
-cmdRunLight = rofiCmd RofiThemeLight RofiModeRun
-cmdDRunDark = rofiCmd RofiThemeDark RofiModeDRun
-cmdDRunLight = rofiCmd RofiThemeLight RofiModeDRun
+data RunnerCommands t = RunnerCommands
+  { runCommandDark ∷ t
+  , runCommandLight ∷ t
+  , runApplicationDark ∷ t
+  , runApplicationLight ∷ t
+  , selectWindowDark ∷ t
+  , selectWindowLight ∷ t
+  }
 
-cmdSelectWindowDark, cmdSelectWindowLight ∷ String
-cmdSelectWindowDark = rofiCmd RofiThemeDark RofiModeWindow
-cmdSelectWindowLight = rofiCmd RofiThemeLight RofiModeWindow
+runnerCommands ∷ RunnerCommands String
+runnerCommands = RunnerCommands
+  { runCommandDark = rofiCmd RofiThemeDark RofiModeRun
+  , runCommandLight = rofiCmd RofiThemeLight RofiModeRun
+  , runApplicationDark = rofiCmd RofiThemeDark RofiModeDRun
+  , runApplicationLight = rofiCmd RofiThemeLight RofiModeDRun
+  , selectWindowDark = rofiCmd RofiThemeDark RofiModeWindow
+  , selectWindowLight = rofiCmd RofiThemeLight RofiModeWindow
+  }
+
+runnerCommandsX ∷ RunnerCommands (X ())
+runnerCommandsX = RunnerCommands
+  { runCommandDark = XMonad.spawn runnerCommands.runCommandDark
+  , runCommandLight = XMonad.spawn runnerCommands.runCommandLight
+  , runApplicationDark = XMonad.spawn runnerCommands.runApplicationDark
+  , runApplicationLight = XMonad.spawn runnerCommands.runApplicationLight
+  , selectWindowDark = XMonad.spawn runnerCommands.selectWindowDark
+  , selectWindowLight = XMonad.spawn runnerCommands.selectWindowLight
+  }
 
 cmdCursorToDisplay ∷ DisplayN → String
 cmdCursorToDisplay dn = [qms| place-cursor-at rb {displayNToNum dn ∷ Word} |]
@@ -623,7 +642,7 @@ myConfig opts polybarInterface myStartupHook = XMonad.def
   , workspaces = myWorkspaces
 
   -- I don’t really use this value, I have some custom key bindings instead
-  , terminal = "alacritty-dark"
+  , terminal = "uxterm"
 
   , normalBorderColor = "#222222"
   , focusedBorderColor = "#ff0000"
@@ -1015,14 +1034,14 @@ defaultModeKeys
       , ((m .|. s, XMonad.xK_Return), terminalCommandsX.tmuxedTerminalNewPrompt)
 
       -- App/command GUI runners
-      , ((m, XMonad.xK_semicolon), XMonad.spawn cmdRunDark)
-      , ((m .|. a, XMonad.xK_semicolon), XMonad.spawn cmdRunLight)
-      , ((m .|. s, XMonad.xK_semicolon), XMonad.spawn cmdDRunDark)
-      , ((m .|. s .|. a, XMonad.xK_semicolon), XMonad.spawn cmdDRunLight)
+      , ((m, XMonad.xK_semicolon), runnerCommandsX.runCommandDark)
+      , ((m .|. a, XMonad.xK_semicolon), runnerCommandsX.runCommandLight)
+      , ((m .|. s, XMonad.xK_semicolon), runnerCommandsX.runApplicationDark)
+      , ((m .|. s .|. a, XMonad.xK_semicolon), runnerCommandsX.runApplicationLight)
 
       -- Window selection GUI
-      , ((m, XMonad.xK_slash), XMonad.spawn cmdSelectWindowDark)
-      , ((m .|. a, XMonad.xK_slash), XMonad.spawn cmdSelectWindowLight)
+      , ((m, XMonad.xK_slash), runnerCommandsX.selectWindowDark)
+      , ((m .|. a, XMonad.xK_slash), runnerCommandsX.selectWindowLight)
 
       -- Clipboard management tool
       , ((m, XMonad.xK_apostrophe), XMonad.spawn "gpaste-gui")
