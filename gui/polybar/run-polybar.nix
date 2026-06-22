@@ -7,8 +7,10 @@
 # Just rely on the presence of “run-polybar” in the “PATH”.
 
 { lib
-, symlinkJoin
-, makeWrapper
+, callPackage
+, stdenvNoCC
+, makeBinaryWrapper
+, shellcheck
 , writeTextFile
 , writeText
 , bash
@@ -17,17 +19,14 @@
 , coreutils
 , inotify-tools
 , diffutils
+
+, executable-dependencies ?
+    callPackage ../../utils/executable-dependencies.nix {}
 }:
 
 let
-  esc = lib.escapeShellArg;
-
-  # Mapping between executable file name and a package that provides it.
-  dependencies = {
+  e = executable-dependencies {
     bash = bash;
-
-    # Keep below dependencies up to date with “Guard dependencies” section in the script.
-
     polybar = polybar;
     polybar-msg = polybar;
     inotifywait = inotify-tools;
@@ -36,54 +35,44 @@ let
     diff = diffutils;
   };
 
-  # Take dependency executable path
-  d = e: lib.makeBinPath [dependencies.${e}] + "/" + e;
+  polybar-config-file =
+    writeText "polybar-config-file" (builtins.readFile ./config.ini);
 
-  # Check one executable dependency
-  checkDep = e: ''
-    if [[ ! -f ${esc (d e)} || ! -r ${esc (d e)} || ! -x ${esc (d e)} ]]; then (
-      set -o xtrace
-      [[ -f ${esc (d e)} ]]
-      [[ -r ${esc (d e)} ]]
-      [[ -x ${esc (d e)} ]]
-    ) fi
-  '';
-
-  polybar-config-file = writeText "polybar-config-file" (builtins.readFile ./config.ini);
-
-  run-polybar = writeTextFile rec {
+  run-polybar = stdenvNoCC.mkDerivation rec {
     name = "run-polybar";
-    destination = "/bin/${name}";
-    executable = true;
-    text = ''
-      #! ${d "bash"}
-      POLYBAR_CONFIG_FILE=${esc polybar-config-file}
-      ${builtins.readFile ./run-polybar.sh}
-    '';
-    checkPhase = lib.pipe dependencies [
-      builtins.attrNames
-      (map checkDep)
-      (builtins.concatStringsSep "\n")
-    ];
-  };
+    src = ./run-polybar.sh;
 
-  # A wrapper with attached dependecies
-  run-polybar-wrap = symlinkJoin {
-    name = "run-polybar-wrap";
-    nativeBuildInputs = [ makeWrapper ];
-    paths = [ run-polybar ];
-    postBuild = ''
-      wrapProgram "$out"/bin/${esc (lib.getName run-polybar)} \
-        --prefix PATH : ${esc (lib.makeBinPath (builtins.attrValues dependencies))}
+    nativeBuildInputs = [
+      makeBinaryWrapper
+      shellcheck
+    ];
+
+    dontUnpack = true;
+    doCheck = true;
+
+    checkPhase = ''
+      runHook preCheck
+      shellcheck -- "$src"
+      ${e.checkPhase}
+      runHook postCheck
+    '';
+
+    installPhase = ''
+      runHook preInstall
+
+      BIN_PATH="$out/bin/"${lib.escapeShellArg name}
+      install -Dm755 -- "$src" "$BIN_PATH"
+
+      CMD=(
+        wrapProgram "$BIN_PATH"
+        --prefix PATH : ${e.scriptDependenciesBinPath src}
+        --set POLYBAR_CONFIG_FILE ${lib.escapeShellArg polybar-config-file}
+      )
+      "''${CMD[@]}"
+
+      runHook postInstall
     '';
   };
 in
 
-run-polybar-wrap
-//
-{
-  inherit
-    polybar-config-file
-    run-polybar
-    ;
-}
+run-polybar // { inherit polybar-config-file; }
