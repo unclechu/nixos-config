@@ -22,14 +22,17 @@ cd -- "$SCRIPT_DIR" # Change working directory to the directory of this script
 
 : "${POLYBAR_CONFIG_FILE:=$PWD/config.ini}"
 
-MONITOR_PRIMARY=$(polybar --list-monitors | grep -F '(primary)' | cut -d : -f 1)
 MONITORS_STR=$(polybar --list-monitors)
 readarray -t MONITORS <<< "$MONITORS_STR"
 
 # A mapping between display name (e.g. “HDMI1”) and window title max length.
+declare -a MONITOR_NAMES
+# Also populating a list of monitor names (preserving the order).
 declare -A MONITORS_MAP
 for monitor in "${MONITORS[@]}"; do
 	name=$(<<<"$monitor" cut -d : -f 1)
+	MONITOR_NAMES+=("$name")
+
 	width=$(<<<"$monitor" cut -d : -f 2 | cut -d x -f 1)
 	width=${width// /} # Remove spaces at the beginning
 
@@ -39,6 +42,23 @@ for monitor in "${MONITORS[@]}"; do
 	# N.B. This is a dirty hack to overcome years old Polybar’s limitations.
 	MONITORS_MAP["$name"]=$(( (width / 8) - 113 ))
 done
+
+MONITOR_PRIMARY=
+PSEUDO_PRIMARY_FILE=$HOME/.pseudo-primary-display
+if [[ -f $PSEUDO_PRIMARY_FILE ]]; then
+	PSEUDO_PRIMARY_NUM=$(<"$PSEUDO_PRIMARY_FILE")
+	echo "$PSEUDO_PRIMARY_NUM"
+	for (( n=1; n<="${#MONITOR_NAMES[@]}"; ++n )); do
+		if (( n == PSEUDO_PRIMARY_NUM )); then
+			MONITOR_PRIMARY=${MONITOR_NAMES[$(( PSEUDO_PRIMARY_NUM - 1 ))]}
+			break
+		fi
+	done
+else
+	MONITOR_PRIMARY=$(polybar --list-monitors | grep -F '(primary)' | cut -d : -f 1)
+fi
+
+>&2 printf 'Picking “%s” display as primary\n' "$MONITOR_PRIMARY"
 
 POLYBAR_CMD=(polybar --config="$POLYBAR_CONFIG_FILE")
 

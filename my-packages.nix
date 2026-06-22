@@ -86,6 +86,7 @@ let
   render-kicad-schematic-pdf-to-png = pkgs.callPackage scripts/render-kicad-schematic-pdf-to-png {};
   scream = pkgs.callPackage scripts/scream.nix {};
   home-audio-setup = pkgs.callPackage scripts/home-audio-setup {};
+  pseudo-primary-display = pkgs.callPackage scripts/pseudo-primary-display {};
 
   clunky-toml-json-converter = pkgs.callPackage apps/clunky-toml-json-converter {};
 
@@ -416,6 +417,7 @@ in
       home-audio-setup.home-audio-lh-xover
       home-audio-setup.home-audio-setup
       home-audio-setup.home-audio-mic
+      pseudo-primary-display
     ] ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
   };
 }

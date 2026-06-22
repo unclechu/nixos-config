@@ -1,6 +1,6 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 let
   inherit (import ../constants.nix) wenzelUserName;
   firefox = pkgs.callPackage ../apps/firefox.nix {};
@@ -45,5 +45,20 @@ in
         };
       };
     };
+
+    systemd.user.services.dunst.Service.ExecStart = lib.mkForce ''
+      ${pkgs.writeShellScript "dunst-with-runtime-config" ''
+        set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+        exec ${lib.escapeShellArg (lib.getExe pkgs.dunst)} -conf <(
+          MAIN_CONF="$HOME/.config/dunst/dunstrc"
+          PSEUDO_PRIMARY_DISPLAY_CONF="$XDG_RUNTIME_DIR/dunst-pseudo-primary-display.conf"
+          CMD=(cat -- "$MAIN_CONF")
+          if [[ -f "$PSEUDO_PRIMARY_DISPLAY_CONF" ]]; then
+            CMD+=("$PSEUDO_PRIMARY_DISPLAY_CONF")
+          fi
+          "''${CMD[@]}"
+        )
+      ''}
+    '';
   };
 }
