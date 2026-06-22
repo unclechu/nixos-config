@@ -144,9 +144,13 @@ main = do
         , CycleLayout
         , ResetLayout
         , ResetMode
+        , OpenTerminal
+        , ShowCommandRunner
+        , ShowApplicationRunner
         ]
         <> fmap RestartXMonad [minBound .. maxBound ∷ XMonadStartMode]
         <> fmap SwitchWorkspace myWorkspaces
+        <> fmap MusicPlayerAction [minBound .. maxBound ∷ XMonadMusicPlayerAction]
 
     startXMonad ∷ IO ()
     startXMonad = do
@@ -232,8 +236,12 @@ data XMonadAction
   | CycleLayout
   | ResetLayout
   | ResetMode
+  | OpenTerminal
+  | ShowCommandRunner
+  | ShowApplicationRunner
   | RestartXMonad XMonadStartMode
   | SwitchWorkspace String -- The @String@ should not contain spaces
+  | MusicPlayerAction XMonadMusicPlayerAction
   deriving (Eq, Show)
 
 xMonadActionToAtomString ∷ XMonadAction → String
@@ -245,13 +253,36 @@ xMonadActionToAtomString = \case
   CycleLayout → "cycle-layout"
   ResetLayout → "reset-layout"
   ResetMode → "reset-mode"
+  OpenTerminal → "open-terminal"
+  ShowCommandRunner → "show-command-runner"
+  ShowApplicationRunner → "show-application-runner"
   RestartXMonad startMode →
     unwords ["restart-xmonad", startModeToAtomStringPiece startMode]
   -- Note that @ws@ here must be an element of @myWorkspaces@
   SwitchWorkspace ws → unwords ["switch-workspace", ws]
+  MusicPlayerAction musicPlayerAction →
+    unwords ["music-player", xMonadMusicPlayerActionToAtomString musicPlayerAction]
 
 startModeToAtomStringPiece ∷ XMonadStartMode → String
 startModeToAtomStringPiece = \case Full → "full"; Shallow → "shallow"
+
+data XMonadMusicPlayerAction
+  = MusicPlayerPlay
+  | MusicPlayerToggle
+  | MusicPlayerPrev
+  | MusicPlayerNext
+  | MusicPlayerStop
+  | MusicPlayerSpawnServer
+  deriving (Eq, Show, Bounded, Enum)
+
+xMonadMusicPlayerActionToAtomString ∷ XMonadMusicPlayerAction → String
+xMonadMusicPlayerActionToAtomString = \case
+  MusicPlayerPlay → "play"
+  MusicPlayerToggle → "toggle"
+  MusicPlayerPrev → "prev"
+  MusicPlayerNext → "next"
+  MusicPlayerStop → "stop"
+  MusicPlayerSpawnServer → "spawn-server"
 
 parseXMonadAction ∷ String → Maybe XMonadAction
 parseXMonadAction x
@@ -262,14 +293,23 @@ parseXMonadAction x
   | x == f CycleLayout = Just CycleLayout
   | x == f ResetLayout = Just ResetLayout
   | x == f ResetMode = Just ResetMode
+  | x == f OpenTerminal = Just OpenTerminal
+  | x == f ShowCommandRunner = Just ShowCommandRunner
+  | x == f ShowApplicationRunner = Just ShowApplicationRunner
   | otherwise = case words x of
-      ["restart-xmonad", findStartMode → Just startMode] → Just (RestartXMonad startMode)
-      ["switch-workspace", ws] | ws `elem` myWorkspaces → Just (SwitchWorkspace ws)
+      ["restart-xmonad", findStartMode → Just startMode] →
+        Just (RestartXMonad startMode)
+      ["switch-workspace", ws] | ws `elem` myWorkspaces →
+        Just (SwitchWorkspace ws)
+      ["music-player", findMusicPlayerAction → Just musicPlayerAction] →
+        Just (MusicPlayerAction musicPlayerAction)
       _ → Nothing
   where
     f = xMonadActionToAtomString
     findStartMode y =
       find ((y ==) . startModeToAtomStringPiece) [minBound .. maxBound]
+    findMusicPlayerAction y =
+      find ((y ==) . xMonadMusicPlayerActionToAtomString) [minBound .. maxBound]
 
 -- | Send an Atom message to X root window (that XMonad can catch and handle)
 --
@@ -1758,9 +1798,20 @@ handleXMonadAction opts polybarInterface layout actionStr =
         CycleLayout → XMonad.sendMessage XMonad.NextLayout
         ResetLayout → XMonad.setLayout (XMonad.Layout layout)
         ResetMode → Modal.exitMode
+        OpenTerminal → terminalCommandsX.tmuxedTerminalNew
+        ShowCommandRunner → runnerCommandsX.runCommandDark
+        ShowApplicationRunner → runnerCommandsX.runApplicationDark
         RestartXMonad startMode →
           restartXMonad opts.options_executableType startMode True
         SwitchWorkspace ws → XMonad.windows (switchToWorkspace ws)
+        MusicPlayerAction musicPlayerAction →
+          case musicPlayerAction of
+            MusicPlayerPlay → musicPlayerControlsX.mpPlayCmd
+            MusicPlayerToggle → musicPlayerControlsX.mpPlayToggleCmd
+            MusicPlayerPrev → musicPlayerControlsX.mpPrevCmd
+            MusicPlayerNext → musicPlayerControlsX.mpNextCmd
+            MusicPlayerStop → musicPlayerControlsX.mpStopCmd
+            MusicPlayerSpawnServer → musicPlayerControlsX.mpSpawnServer
 
 polybarLogHook ∷ Options → PolybarInterface → XMonad.X ()
 polybarLogHook opts polybarInterface = do
