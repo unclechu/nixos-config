@@ -822,44 +822,58 @@ navigationBetweenDisplaysKeys (jumpMask, jumpMouseCursorMask, moveToMask) = Map.
     forWsOnDisplay ∷ (DisplayN → XMonad.WorkspaceId → X ()) → DisplayN → X ()
     forWsOnDisplay f n = XMonad.screenWorkspace (displayNToScreenIndex n) >>= traverse_ (f n)
 
-data MusicPlayerControls = MusicPlayerControls
-  { mpPlayCmd ∷ String
-  , mpPlayToggleCmd ∷ String
-  , mpPrevCmd ∷ String
-  , mpNextCmd ∷ String
-  , mpStopCmd ∷ String
-  , mpSpawnServer ∷ String
+data MusicPlayerControls t = MusicPlayerControls
+  { mpPlayCmd ∷ t
+  , mpPlayToggleCmd ∷ t
+  , mpPrevCmd ∷ t
+  , mpNextCmd ∷ t
+  , mpStopCmd ∷ t
+  , mpSpawnServer ∷ t
   }
   deriving (Eq, Show)
 
-_audaciousMusicPlayerControls ∷ MusicPlayerControls
-_audaciousMusicPlayerControls = MusicPlayerControls
-  { mpPlayCmd = "audacious --play"
-  , mpPlayToggleCmd = "audacious --play-pause"
-  , mpPrevCmd = "audacious --rew"
-  , mpNextCmd = "audacious --fwd"
-  , mpStopCmd = "audacious --stop"
-  , mpSpawnServer = "audacious"
+musicPlayerControls ∷ MusicPlayerControls String
+musicPlayerControls =
+  _mpvc
+  where
+    _audacious ∷ MusicPlayerControls String
+    _audacious = MusicPlayerControls
+      { mpPlayCmd = "audacious --play"
+      , mpPlayToggleCmd = "audacious --play-pause"
+      , mpPrevCmd = "audacious --rew"
+      , mpNextCmd = "audacious --fwd"
+      , mpStopCmd = "audacious --stop"
+      , mpSpawnServer = "audacious"
+      }
+
+    _mpvc ∷ MusicPlayerControls String
+    _mpvc = MusicPlayerControls
+      { mpPlayCmd = "mpvc play"
+      , mpPlayToggleCmd = "mpvc toggle"
+      , mpPrevCmd = "mpvc prev"
+      , mpNextCmd = "mpvc next"
+      , mpStopCmd = "mpvc stop"
+      , mpSpawnServer = tmuxedTerminalNew <> " music mpvc-tui -T"
+      }
+
+musicPlayerControlsX ∷ MusicPlayerControls (X ())
+musicPlayerControlsX = MusicPlayerControls
+  { mpPlayCmd = XMonad.spawn musicPlayerControls.mpPlayCmd
+  , mpPlayToggleCmd = XMonad.spawn musicPlayerControls.mpPlayToggleCmd
+  , mpPrevCmd = XMonad.spawn musicPlayerControls.mpPrevCmd
+  , mpNextCmd = XMonad.spawn musicPlayerControls.mpNextCmd
+  , mpStopCmd = XMonad.spawn musicPlayerControls.mpStopCmd
+  , mpSpawnServer = XMonad.spawn musicPlayerControls.mpSpawnServer
   }
 
-mpvcMusicPlayerControls ∷ MusicPlayerControls
-mpvcMusicPlayerControls = MusicPlayerControls
-  { mpPlayCmd = "mpvc play"
-  , mpPlayToggleCmd = "mpvc toggle"
-  , mpPrevCmd = "mpvc prev"
-  , mpNextCmd = "mpvc next"
-  , mpStopCmd = "mpvc stop"
-  , mpSpawnServer = tmuxedTerminalNew <> " music mpvc-tui -T"
-  }
-
-musicPlayerControlsToKeyBindings ∷ XMonad.KeyMask → MusicPlayerControls → Keys
-musicPlayerControlsToKeyBindings m x = Map.fromList
-  [ ((m, XF86.xF86XK_AudioPlay), XMonad.spawn x.mpPlayCmd)
-  , ((0, XF86.xF86XK_AudioPlay), XMonad.spawn x.mpPlayToggleCmd)
-  , ((0, XF86.xF86XK_AudioPrev), XMonad.spawn x.mpPrevCmd)
-  , ((0, XF86.xF86XK_AudioNext), XMonad.spawn x.mpNextCmd)
-  , ((0, XF86.xF86XK_AudioStop), XMonad.spawn x.mpStopCmd)
-  , ((s, XF86.xF86XK_AudioPlay), XMonad.spawn x.mpSpawnServer)
+musicPlayerControlsKeyBindings ∷ XMonad.KeyMask → Keys
+musicPlayerControlsKeyBindings m = Map.fromList
+  [ ((m, XF86.xF86XK_AudioPlay), musicPlayerControlsX.mpPlayCmd)
+  , ((0, XF86.xF86XK_AudioPlay), musicPlayerControlsX.mpPlayToggleCmd)
+  , ((0, XF86.xF86XK_AudioPrev), musicPlayerControlsX.mpPrevCmd)
+  , ((0, XF86.xF86XK_AudioNext), musicPlayerControlsX.mpNextCmd)
+  , ((0, XF86.xF86XK_AudioStop), musicPlayerControlsX.mpStopCmd)
+  , ((s, XF86.xF86XK_AudioPlay), musicPlayerControlsX.mpSpawnServer)
   ]
 
 defaultModeKeys ∷ XConfig XMonad.Layout → Keys
@@ -998,7 +1012,7 @@ defaultModeKeys
     mediaKeys = mconcat
       [ makingScreenshots
       , calculator
-      , musicPlayerControlsToKeyBindings m mpvcMusicPlayerControls
+      , musicPlayerControlsKeyBindings m
       , audioControl
       , screenBacklightControl
       ]
