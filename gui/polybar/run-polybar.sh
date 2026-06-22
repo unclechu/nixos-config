@@ -60,6 +60,20 @@ fi
 
 >&2 printf 'Picking “%s” display as primary\n' "$MONITOR_PRIMARY"
 
+for hwmon_dir in /sys/devices/platform/coretemp.0/hwmon/hwmon*; do
+	if [[ -r "$hwmon_dir/name" ]] \
+	&& [[ "$(<"$hwmon_dir/name")" == coretemp ]] \
+	&& [[ -r "$hwmon_dir/temp1_input" ]] \
+	&& [[ -r "$hwmon_dir/temp1_label" ]]
+	then
+		if [[ "$(<"$hwmon_dir/temp1_label")" == Package\ id* ]] \
+		|| [[ "$(<"$hwmon_dir/temp1_label")" == Physical\ id* ]]
+		then
+			CPU_TEMP_HWMON_PATH=$hwmon_dir/temp1_input
+		fi
+	fi
+done
+
 POLYBAR_CMD=(polybar --config="$POLYBAR_CONFIG_FILE")
 
 # A hacky detector if backlight is available on this hardware.
@@ -97,12 +111,19 @@ run-per-monitor-polybars() {
 		if [[ $monitor != "$MONITOR_PRIMARY" ]]; then bar=secondary; fi
 		if backlight-module; then barsub=${barsub}bl; fi
 		if battery-module; then barsub=${barsub}bt; fi
-
-		MONITOR="$monitor" \
-			WINDOW_TITLE_MAX_LEN="${MONITORS_MAP["$monitor"]}" \
-			"${POLYBAR_CMD[@]}" \
-			"${bar}${barsub:+-}${barsub}" &
-
+		(
+			export MONITOR="$monitor"
+			export WINDOW_TITLE_MAX_LEN="${MONITORS_MAP["$monitor"]}"
+			if [[ -v CPU_TEMP_HWMON_PATH ]]; then
+				export CPU_TEMP_HWMON_PATH
+			else
+				# Avoid default value. The fallback is not CPU temperature.
+				# Can cause confusion if the path is not found.
+				# Dummy value just disables the temperature module.
+				export CPU_TEMP_HWMON_PATH=--DISABLED--
+			fi
+			exec -a polybar "${POLYBAR_CMD[@]}" "${bar}${barsub:+-}${barsub}"
+		) &
 		pids+=($!)
 	done
 }
