@@ -14,8 +14,8 @@ in
 
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
-, __xbindkeys ? callPackage ../../apps/wenzels-xbindkeys.nix { inherit __nix-utils; }
-, __xlib-keys-hack-starter ? callPackage ../../apps/wenzels-xlib-keys-hack { inherit __nix-utils; }
+, __xbindkeys ? callPackage ../../apps/wenzels-xbindkeys.nix {}
+, __xlib-keys-hack-starter ? callPackage ../../apps/wenzels-xlib-keys-hack {}
 
 # Build options
 , __srcScript ? ./main.raku
@@ -48,7 +48,7 @@ let
     numlockx = numlockx;
     pkill = procps;
 
-    ${__xbindkeys.name} = __xbindkeys;
+    xbindkeys = __xbindkeys;
     ${__xlib-keys-hack-starter.name} = __xlib-keys-hack-starter;
   };
 
@@ -68,7 +68,7 @@ writeCheckedExecutable name checkPhase ''
       (builtins.attrValues (builtins.mapAttrs (n: v: "my Str:D \\${n} := q<${v}>;") executables))
   }
 
-  my Str:D \xbindkeys := ${__xbindkeys.name};
+  my Str:D \xbindkeys := ${baseNameOf executables.xbindkeys};
   my Str:D \xlib-keys-hack-starter := ${__xlib-keys-hack-starter.name};
 
   my Str:D \keyRepeatDelay := q<${toString keyRepeatDelay}>;

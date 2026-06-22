@@ -12,7 +12,7 @@ let sources = import ../../nix/sources.nix; in
 , clunky-toml-json-converter ? callPackage ../clunky-toml-json-converter {}
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
+, executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
 
 # Build options
 # Main configuration of Alacritty
@@ -23,27 +23,25 @@ let sources = import ../../nix/sources.nix; in
 , __lightColorsConfigSrc ? ./colors-light.toml # A derivation or a path
 }:
 let
-  inherit (__nix-utils) shellCheckers;
   esc = lib.escapeShellArg;
-  name = "alacritty";
 
-  # Executable dependencies mapping (name → full executable path)
-  e = {
-    bash = "${bash}/bin/bash";
-    alacritty = "${alacritty}/bin/alacritty";
-    clunky-toml-json-converter =
-      "${clunky-toml-json-converter}/bin/clunky-toml-json-converter";
-    jq = "${jq}/bin/jq";
+  e = executable-dependencies {
+    bash = bash;
+    alacritty = alacritty;
+    clunky-toml-json-converter = clunky-toml-json-converter;
+    jq = jq;
   };
 
-  # Executables mapping with string shell-escaping for the executable paths
-  es = builtins.mapAttrs (lib.const lib.escapeShellArg) e;
+  shAssertions = {
+    readablePredicate = x: '' [[ -f ${esc x} && -r ${esc x} ]] '';
+    check = predicate: x: '' if ! (${predicate x}); then (set -x; ${predicate x}) fi '';
+  };
 
   basicCheckPhase = ''
-    ${builtins.concatStringsSep "\n" (map shellCheckers.fileIsExecutable (builtins.attrValues e))}
-    ${shellCheckers.fileIsReadable "${__configSrc}"}
-    ${shellCheckers.fileIsReadable "${__darkColorsConfigSrc}"}
-    ${shellCheckers.fileIsReadable "${__lightColorsConfigSrc}"}
+    ${e.checkPhase}
+    ${shAssertions.check shAssertions.readablePredicate "${__configSrc}"}
+    ${shAssertions.check shAssertions.readablePredicate "${__darkColorsConfigSrc}"}
+    ${shAssertions.check shAssertions.readablePredicate "${__lightColorsConfigSrc}"}
   '';
 
   colorAssertion = color: builtins.elem color [ "dark" "light" ];
@@ -94,18 +92,16 @@ let
     text = assert colorAssertion color; let
       # Dynamic generation of the TOML configuration deep-merging it with the main configuration
       tomlConfigMergedWithLocalConfigs = ''
-        ${es.jq} -n \
+        ${e.s.jq} -n \
         --argjson mainConfig "$MAIN_CFG_JSON" \
         --argjson localMainExtraConfig "$LOCAL_CFG_JSON" \
         --argjson localColorsExtraConfig "$LOCAL_COLORS_CFG_JSON" \
         '$mainConfig * $localMainExtraConfig * $localColorsExtraConfig' \
-        | ${es.clunky-toml-json-converter} json2toml
+        | ${e.s.clunky-toml-json-converter} json2toml
       '';
     in ''
-      #! ${e.bash}
-      set -o errexit || exit
-      set -o nounset
-      set -o pipefail
+      #! ${e.b.bash}
+      set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 
       MAIN_CFG_JSON=$(<${esc jsonConfig})
 
@@ -116,21 +112,21 @@ let
       LOCAL_COLORS_CFG_JSON='{}' # File contents (JSON object)
       if [[ -f $LOCAL_CFG_TOML_FILE ]]; then
         LOCAL_CFG_JSON=$(
-          <"$LOCAL_CFG_TOML_FILE" ${es.clunky-toml-json-converter} toml2json
+          <"$LOCAL_CFG_TOML_FILE" ${e.s.clunky-toml-json-converter} toml2json
         )
       fi
       if [[ -f $LOCAL_COLORS_CFG_TOML_FILE ]]; then
         LOCAL_COLORS_CFG_JSON=$(
-          <"$LOCAL_COLORS_CFG_TOML_FILE" ${es.clunky-toml-json-converter} toml2json
+          <"$LOCAL_COLORS_CFG_TOML_FILE" ${e.s.clunky-toml-json-converter} toml2json
         )
       fi
 
-      exec ${es.alacritty} --config-file=<(${tomlConfigMergedWithLocalConfigs}) "$@"
+      exec ${e.s.alacritty} --config-file=<(${tomlConfigMergedWithLocalConfigs}) "$@"
     '';
 
     checkPhase = ''
       ${basicCheckPhase}
-      ${shellCheckers.fileIsReadable jsonConfig}
+      ${shAssertions.check shAssertions.readablePredicate jsonConfig}
     '';
   } // { inherit jsonConfig; };
 
@@ -162,16 +158,15 @@ let
       # If set to null will result into variable being undefined
       customFontFamily = fontFamily;
     } ''
-      set -o nounset
-      set -o pipefail
+      set -o nounset; set -o pipefail
 
       # Convert the configs first from TOML to JSON for “jq” use
-      MAIN_CONFIG_JSON=$(${es.clunky-toml-json-converter} toml2json <<< ${esc mainConfig})
-      COLORS_CONFIG_JSON=$(${es.clunky-toml-json-converter} toml2json <<< ${esc colorsConfig})
+      MAIN_CONFIG_JSON=$(${e.s.clunky-toml-json-converter} toml2json <<< ${esc mainConfig})
+      COLORS_CONFIG_JSON=$(${e.s.clunky-toml-json-converter} toml2json <<< ${esc colorsConfig})
 
       # Merge main config with color scheme-related config
       MERGE_CONFIGS_CMD=(
-        ${es.jq} -n
+        ${e.s.jq} -n
         --argjson mainConfig "$MAIN_CONFIG_JSON"
         --argjson colorsConfig "$COLORS_CONFIG_JSON"
         '$mainConfig * $colorsConfig'
@@ -181,7 +176,7 @@ let
       if [[ -v customFontFamily ]]; then
         PRODUCED_CONFIG=$(
           <<< "$MERGED_CONFIG_JSON" \
-          ${es.jq} \
+          ${e.s.jq} \
           --arg fontFamily "$customFontFamily" \
           '.font.normal.family = $fontFamily'
         )
@@ -202,7 +197,7 @@ let
   customize =
     {
     # Name for the “default” color scheme executable
-    defaultName ? name
+    defaultName ? "alacritty"
     # Name for the “dark” color scheme executable
     , darkName ? "${defaultName}-dark"
     # Name for the “light” color scheme executable

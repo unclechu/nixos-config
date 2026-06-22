@@ -8,7 +8,7 @@ symlinkJoin {
   nativeBuildInputs = [ makeBinaryWrapper ];
   paths = [ neovide ];
   postBuild = ''
-    # Make the the font size scale predictably regardless of screen DPI.
+    # Make the the font size scale predictable regardless of screen DPI.
     wrapProgram "$out/bin/neovide" --set WINIT_X11_SCALE_FACTOR 1.0
   '';
 }

@@ -162,9 +162,19 @@ executablesMap: rec {
   #   ''
   #
   # Type ∷ path → string
-  scriptDependenciesBinPath = scriptSrc:
+  scriptDependenciesBinPath =
+    scriptSrc: scriptDependenciesBinPathWithIgnore scriptSrc [];
+
+  # `scriptDependenciesBinPath` but allowing to ignore some dependencies.
+  #
+  # Some dependencies must come from system dependencies, not directly from nixpkgs.
+  # Like “sudo” or any root-sticky-bit ones. So those can be just ignored.
+  #
+  # Type ∷ [string] → path → string
+  scriptDependenciesBinPathWithIgnore = scriptSrc: ignoreDeps:
     lib.makeBinPath (lib.pipe scriptSrc [
       scriptDependencies
+      (builtins.filter (x: ! builtins.elem x ignoreDeps))
       scriptDependenciesToDerivations
     ]);
 }

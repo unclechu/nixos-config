@@ -20,8 +20,7 @@
 , inotify-tools
 , diffutils
 
-, executable-dependencies ?
-    callPackage ../../utils/executable-dependencies.nix {}
+, executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
 }:
 
 let

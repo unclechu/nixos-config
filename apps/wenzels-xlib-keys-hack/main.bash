@@ -2,6 +2,12 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
+# Guard dependencies
+>/dev/null type grant-access-to-input-devices
+>/dev/null type xlib-keys-hack
+
+exec <&- # Close stdin
+
 # A list of available modes (for arguments validation)
 declare -A MODES && MODES=([gaming]=1 [no-numbers-shift]=1)
 

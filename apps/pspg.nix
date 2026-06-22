@@ -5,7 +5,7 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{ lib, symlinkJoin, makeWrapper, pspg }:
+{ lib, symlinkJoin, makeBinaryWrapper, pspg }:
 
 let
   theme = 16; # “Simple theme” (a dark theme, black and white palette)
@@ -13,7 +13,7 @@ in
 
 symlinkJoin {
   name = "${lib.getName pspg}-pre-configured";
-  nativeBuildInputs = [ makeWrapper ];
+  nativeBuildInputs = [ makeBinaryWrapper ];
   paths = [ pspg ];
   postBuild = ''
     wrapProgram "$out/bin/pspg" --add-flags --style=${lib.escapeShellArg (toString theme)}

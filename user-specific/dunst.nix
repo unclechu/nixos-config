@@ -19,7 +19,7 @@ in
           word_wrap = "no";
           stack_duplicates = "yes";
           show_indicators = "yes";
-          browser = firefox.executable;
+          browser = lib.getExe firefox;
           transparency = "25";
           separator_height = "2";
           padding = "8";

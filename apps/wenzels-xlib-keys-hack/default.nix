@@ -3,37 +3,67 @@
 let sources = import ../../nix/sources.nix; in
 { lib
 , callPackage
+, stdenvNoCC
+, makeBinaryWrapper
+, shellcheck
 , bash
 
 # Overridable dependencies
-, __nix-utils      ? callPackage sources.nix-utils      {}
 , __xlib-keys-hack ? callPackage sources.xlib-keys-hack {}
+, executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
 
 # Build options
 , __srcScript ? ./main.bash
 }:
 assert lib.isDerivation __xlib-keys-hack;
 let
-  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir shellCheckers;
-  name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
+  esc = lib.escapeShellArg;
   src = builtins.readFile __srcScript;
-  bash-exe = "${bash}/bin/bash";
-  xlib-keys-hack-exe = "${__xlib-keys-hack}/bin/xlib-keys-hack";
+
+  e = executable-dependencies {
+    bash = bash;
+    xlib-keys-hack = __xlib-keys-hack;
+  };
 
   checkPhase = ''
-    ${shellCheckers.fileIsExecutable bash-exe}
-    ${shellCheckers.fileIsExecutable xlib-keys-hack-exe}
+    ${e.checkPhase}
   '';
 in
-writeCheckedExecutable name checkPhase ''
-  #! ${bash-exe}
-  set -Eeuo pipefail || exit
-  exec <&-
-  PATH=${esc __xlib-keys-hack}/bin:$PATH
 
-  # Guard dependencies
-  >/dev/null type -P grant-access-to-input-devices
-  >/dev/null type -P ${baseNameOf xlib-keys-hack-exe}
+stdenvNoCC.mkDerivation rec {
+  name = "wenzels-xlib-keys-hack";
+  src = __srcScript;
 
-  ${src}
-''
+  nativeBuildInputs = [
+    makeBinaryWrapper
+    shellcheck
+  ];
+
+  dontUnpack = true;
+  doCheck = true;
+
+  checkPhase = ''
+    runHook preCheck
+    shellcheck -- "$src"
+    ${e.checkPhase}
+    runHook postCheck
+  '';
+
+  installPhase = ''
+    runHook preInstall
+
+    BIN_PATH="$out/bin/"${lib.escapeShellArg name}
+    install -Dm755 -- "$src" "$BIN_PATH"
+
+    CMD=(
+      wrapProgram "$BIN_PATH"
+      --prefix PATH : ${e.scriptDependenciesBinPathWithIgnore src [
+        # It must have root sticky bit, thus coming from system dependencies.
+        "grant-access-to-input-devices"
+      ]}
+    )
+    "''${CMD[@]}"
+
+    runHook postInstall
+  '';
+}

@@ -3,19 +3,16 @@
 let sources = import ../nix/sources.nix; in
 { callPackage
 , lib
+, symlinkJoin
+, makeBinaryWrapper
 , firefox
-
-# Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
 }:
-let
-  inherit (__nix-utils) wrapExecutable;
-  binPath = "/bin/firefox";
-
-  my-firefox = wrapExecutable "${firefox}${binPath}" {
-    env = {
-      MOZ_USE_XINPUT2 = 1; # support touchscreen scrolling
-    };
-  };
-in
-my-firefox // { executable = "${my-firefox}${binPath}"; }
+symlinkJoin rec {
+  name = lib.getName firefox;
+  meta.mainProgram = name;
+  nativeBuildInputs = [ makeBinaryWrapper ];
+  paths = [ firefox ];
+  postBuild = ''
+    wrapProgram "$out/bin/firefox" --set MOZ_USE_XINPUT2 1
+  '';
+}

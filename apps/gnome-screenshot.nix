@@ -2,25 +2,27 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../nix/sources.nix; in
 { callPackage
+, writeTextFile
 , dash
 , gnome-screenshot
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
+, executable-dependencies ? callPackage ../utils/executable-dependencies.nix {}
 }:
 let
-  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
-  name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  dash-exe = "${dash}/bin/dash";
-  gnome-screenshot-exe = "${gnome-screenshot}/bin/${name}";
-
-  checkPhase = ''
-    ${shellCheckers.fileIsExecutable dash-exe}
-    ${shellCheckers.fileIsExecutable gnome-screenshot-exe}
-  '';
+  e = executable-dependencies {
+    dash = dash;
+    gnome-screenshot = gnome-screenshot;
+  };
 in
-writeCheckedExecutable name checkPhase ''
-  #! ${dash-exe}
-  DATE=$(date +'%Y-%m-%d %H-%M-%S') || exit
-  ${esc gnome-screenshot-exe} --file="$HOME/Pictures/Screenshots/$DATE.png" "$@"
-''
+writeTextFile rec {
+  name = "gnome-screenshot";
+  executable = true;
+  destination = "/bin/${name}";
+  inherit (e) checkPhase;
+  text = ''
+    #! ${e.b.dash}
+    DATE=$(date +'%Y-%m-%d %H-%M-%S') || exit
+    ${e.s.gnome-screenshot} --file="$HOME/Pictures/Screenshots/$DATE.png" "$@"
+  '';
+}

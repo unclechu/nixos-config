@@ -1,7 +1,10 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../nix/sources.nix; in
-{ callPackage
+{ lib
+, callPackage
+, symlinkJoin
+, makeBinaryWrapper
 , runCommand
 , writeText
 , coreutils
@@ -10,14 +13,13 @@ let sources = import ../nix/sources.nix; in
 , xbindkeys
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
+, executable-dependencies ? callPackage ../utils/executable-dependencies.nix {}
 }:
 let
-  inherit (__nix-utils) nameOfModuleFile wrapExecutable esc shellCheckers;
-  name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
+  name = "wenzels-xbindkeys";
+  esc = lib.escapeShellArg;
 
-  # Name is executable name and value is a derivation that provides that executable
-  dependencies = {
+  executablesMap = {
     mkdir = coreutils;
     cp = coreutils;
     chmod = coreutils;
@@ -27,63 +29,75 @@ let
     xbindkeys_show = xbindkeys;
   };
 
-  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
+  e = executable-dependencies executablesMap;
 
-  # previously i was confused with some weird behavior like layouts were rotating not sequentially.
-  # but i realized its LShift+RShift for rotating forward and RShift+LShift for backward rotation
+  # Previously I was confused with some weird behavior like layouts were rotating not sequentially.
+  # But I realized it’s LShift+RShift for rotating forward and RShift+LShift for backward rotation
   # which is a lot more convenient.
   #
-  # old hooks for one-direction rotation:
+  # Old hooks for one-direction rotation:
   #
-  #   "${executables.xkb-switch} -n"
+  #   "${e.b.xkb-switch} -n"
   #     shift + c:50
-  #   "${executables.xkb-switch} -n"
+  #   "${e.b.xkb-switch} -n"
   #     shift + c:62
-  #
-  # ${shellCheckers.fileIsExecutable executables.xkb-switch}
 
   xbindkeysrc = writeText "wenezels-xbindkeysrc" ''
-    "${executables.xautolock} -locknow"
+    "${e.b.xautolock} -locknow"
       XF86Eject
 
-    # recursive dependency, can't use store path
+    # Can't use nix-store path for “locktop” (recursive dependency).
     "locktop"
       shift + XF86Eject
   '';
 
+  shAssertions = {
+    readablePredicate = x: '' [[ -f ${esc x} && -r ${esc x} ]] '';
+    check = predicate: x: '' if ! (${predicate x}); then (set -x; ${predicate x}) fi '';
+  };
+
   checkPhase = ''
-    ${
-      builtins.concatStringsSep "\n"
-        (map shellCheckers.fileIsExecutable (builtins.attrValues executables))
-    }
-    ${shellCheckers.fileIsReadable xbindkeysrc}
+    ${e.checkPhase}
+    ${shAssertions.check shAssertions.readablePredicate xbindkeysrc}
   '';
 
   configArgs = [ "-f" xbindkeysrc ];
 
-  wenzels-xbindkeys = wrapExecutable executables.xbindkeys {
-    inherit name checkPhase;
-    args = configArgs;
+  wenzels-xbindkeys = symlinkJoin {
+    inherit name;
+    nativeBuildInputs = [ makeBinaryWrapper ];
+    paths = [ e.executables.xbindkeys ];
+    inherit (e) checkPhase;
+    postBuild = ''
+      wrapProgram "$out"/bin/${esc (baseNameOf e.b.xbindkeys)} \
+        --add-flags ${esc (lib.escapeShellArgs configArgs)}
+    '';
   };
 
-  wenzels-xbindkeys_show = wrapExecutable executables.xbindkeys_show {
-    inherit checkPhase;
+  wenzels-xbindkeys_show = symlinkJoin {
     name = "${name}_show";
-    args = configArgs;
+    nativeBuildInputs = [ makeBinaryWrapper ];
+    paths = [ e.executables.xbindkeys_show ];
+    inherit (e) checkPhase;
+    postBuild = ''
+      wrapProgram "$out"/bin/${esc (baseNameOf e.b.xbindkeys_show)} \
+        --add-flags ${esc (lib.escapeShellArgs configArgs)}
+    '';
   };
+
+  eFinal = executable-dependencies (executablesMap // {
+    xbindkeys = wenzels-xbindkeys;
+    xbindkeys_show = wenzels-xbindkeys_show;
+  });
 in
 runCommand name {} ''
-  set -Eeuo pipefail || exit
-  ${esc executables.mkdir} -p -- "$out/bin"
-
-  ${esc executables.cp} -- \
-    ${esc wenzels-xbindkeys}/bin/${esc wenzels-xbindkeys.name} \
-    ${esc wenzels-xbindkeys_show}/bin/${esc wenzels-xbindkeys_show.name} \
-    "$out"/bin/
-
-  ${esc executables.chmod} +x -- \
-    "$out"/bin/${esc wenzels-xbindkeys.name} \
-    "$out"/bin/${esc wenzels-xbindkeys_show.name}
+  set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+  ${eFinal.checkPhase}
+  ${eFinal.s.mkdir} -p -- "$out/bin"
+  ${eFinal.s.cp} -- ${eFinal.s.xbindkeys} ${eFinal.s.xbindkeys_show} "$out/bin/"
+  ${eFinal.s.chmod} +x -- \
+    "$out"/bin/${esc (baseNameOf eFinal.b.xbindkeys)} \
+    "$out"/bin/${esc (baseNameOf eFinal.b.xbindkeys_show)}
 '' // {
   xbindkeys = wenzels-xbindkeys;
   xbindkeys_show = wenzels-xbindkeys_show;
