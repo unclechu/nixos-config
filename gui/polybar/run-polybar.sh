@@ -1,13 +1,11 @@
 #! /usr/bin/env bash
-
-# Polybar runner script.
-#
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+set -o errexit || exit; set -o errtrace; set -o nounset set -o pipefail
 
-set -o errexit || exit
-set -o nounset
-set -o pipefail
+# Polybar instances (one per display) runner script and IPC listener.
+#
+# Listens for commands from standard input (see `handle-ipc-reports`).
 
 # Guard dependencies
 >/dev/null type polybar

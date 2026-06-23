@@ -1,10 +1,6 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-{ lib
-, callPackage
-, stdenvNoCC
-, makeBinaryWrapper
-, shellcheck
+{ callPackage
 , coreutils
 , ghostscript # For PDF → PNG conversion using ImageMagick
 , imagemagick

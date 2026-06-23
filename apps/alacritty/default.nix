@@ -1,10 +1,10 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../../nix/sources.nix; in
-{ callPackage
-, writeTextFile
+{ lib
+, callPackage
 , runCommand
-, lib
+, writeText
 
 , bash
 , alacritty
@@ -13,6 +13,7 @@ let sources = import ../../nix/sources.nix; in
 
 # Overridable dependencies
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
 
 # Build options
 # Main configuration of Alacritty
@@ -84,51 +85,53 @@ let
   #   (created by “buildConfig” function)
   #
   # Returns a derivation of the Alacritty executable wrapper with attached configuration file.
-  buildExecutable = name: color: jsonConfig: writeTextFile {
-    name = assert builtins.isString name; name;
-    executable = true;
-    destination = "/bin/${name}";
-
-    text = assert colorAssertion color; let
+  buildExecutable = name: color: jsonConfig:
+    let
       # Dynamic generation of the TOML configuration deep-merging it with the main configuration
       tomlConfigMergedWithLocalConfigs = ''
         ${e.s.jq} -n \
-        --argjson mainConfig "$MAIN_CFG_JSON" \
-        --argjson localMainExtraConfig "$LOCAL_CFG_JSON" \
-        --argjson localColorsExtraConfig "$LOCAL_COLORS_CFG_JSON" \
-        '$mainConfig * $localMainExtraConfig * $localColorsExtraConfig' \
-        | ${e.s.clunky-toml-json-converter} json2toml
+          --argjson mainConfig "$MAIN_CFG_JSON" \
+          --argjson localMainExtraConfig "$LOCAL_CFG_JSON" \
+          --argjson localColorsExtraConfig "$LOCAL_COLORS_CFG_JSON" \
+          '$mainConfig * $localMainExtraConfig * $localColorsExtraConfig' \
+          | ${e.s.clunky-toml-json-converter} json2toml
       '';
-    in ''
-      #! ${e.b.bash}
-      set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 
-      MAIN_CFG_JSON=$(<${esc jsonConfig})
+      src = assert colorAssertion color; writeText "${name}-source" ''
+        #! /usr/bin/env bash
+        set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 
-      LOCAL_CFG_TOML_FILE=$HOME/${esc (localConfigFileName null)}
-      LOCAL_COLORS_CFG_TOML_FILE=$HOME/${esc (localConfigFileName color)}
+        MAIN_CFG_JSON=$(<${esc jsonConfig})
 
-      LOCAL_CFG_JSON='{}' # File contents (JSON object)
-      LOCAL_COLORS_CFG_JSON='{}' # File contents (JSON object)
-      if [[ -f $LOCAL_CFG_TOML_FILE ]]; then
-        LOCAL_CFG_JSON=$(
-          <"$LOCAL_CFG_TOML_FILE" ${e.s.clunky-toml-json-converter} toml2json
-        )
-      fi
-      if [[ -f $LOCAL_COLORS_CFG_TOML_FILE ]]; then
-        LOCAL_COLORS_CFG_JSON=$(
-          <"$LOCAL_COLORS_CFG_TOML_FILE" ${e.s.clunky-toml-json-converter} toml2json
-        )
-      fi
+        LOCAL_CFG_TOML_FILE=$HOME/${esc (localConfigFileName null)}
+        LOCAL_COLORS_CFG_TOML_FILE=$HOME/${esc (localConfigFileName color)}
 
-      exec ${e.s.alacritty} --config-file=<(${tomlConfigMergedWithLocalConfigs}) "$@"
-    '';
+        LOCAL_CFG_JSON='{}' # File contents (JSON object)
+        LOCAL_COLORS_CFG_JSON='{}' # File contents (JSON object)
+        if [[ -f $LOCAL_CFG_TOML_FILE ]]; then
+          LOCAL_CFG_JSON=$(
+            <"$LOCAL_CFG_TOML_FILE" ${e.s.clunky-toml-json-converter} toml2json
+          )
+        fi
+        if [[ -f $LOCAL_COLORS_CFG_TOML_FILE ]]; then
+          LOCAL_COLORS_CFG_JSON=$(
+            <"$LOCAL_COLORS_CFG_TOML_FILE" ${e.s.clunky-toml-json-converter} toml2json
+          )
+        fi
 
-    checkPhase = ''
-      ${basicCheckPhase}
-      ${shAssertions.check shAssertions.readablePredicate jsonConfig}
-    '';
-  } // { inherit jsonConfig; };
+        exec ${e.s.alacritty} --config-file=<(${tomlConfigMergedWithLocalConfigs}) "$@"
+      '';
+    in
+    mk-generic-script {
+      inherit src e;
+      name = assert builtins.isString name; name;
+      dontAddDependencies = true;
+      cutOffRuntimeDependenciesCheckPhase = null;
+      checkPhase = ''
+        ${basicCheckPhase}
+        ${shAssertions.check shAssertions.readablePredicate jsonConfig}
+      '';
+    } // { inherit jsonConfig; };
 
   # Build Alacritty configuration JSON file (not TOML) derivation.
   #
@@ -158,7 +161,7 @@ let
       # If set to null will result into variable being undefined
       customFontFamily = fontFamily;
     } ''
-      set -o nounset; set -o pipefail
+      set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 
       # Convert the configs first from TOML to JSON for “jq” use
       MAIN_CONFIG_JSON=$(${e.s.clunky-toml-json-converter} toml2json <<< ${esc mainConfig})

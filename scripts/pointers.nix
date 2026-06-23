@@ -4,10 +4,6 @@
 , callPackage
 , writeText
 
-# Dependencies for check phase of “writeShellApplication”
-, stdenv
-, shellcheck
-
 , rakudo
 , xinput
 

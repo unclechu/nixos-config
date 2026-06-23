@@ -6,12 +6,7 @@
 # It helps to not care about the script location.
 # Just rely on the presence of “run-polybar” in the “PATH”.
 
-{ lib
-, callPackage
-, stdenvNoCC
-, makeBinaryWrapper
-, shellcheck
-, writeTextFile
+{ callPackage
 , writeText
 , bash
 , polybar # Intended to be provided by “./polybar.nix”
@@ -21,6 +16,7 @@
 , diffutils
 
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
 }:
 
 let
@@ -37,40 +33,14 @@ let
   polybar-config-file =
     writeText "polybar-config-file" (builtins.readFile ./config.ini);
 
-  run-polybar = stdenvNoCC.mkDerivation rec {
+  run-polybar = mk-generic-script {
     name = "run-polybar";
     src = ./run-polybar.sh;
+    inherit e;
 
-    nativeBuildInputs = [
-      makeBinaryWrapper
-      shellcheck
+    wrapProgramArgs = [
+      "--set" "POLYBAR_CONFIG_FILE" polybar-config-file
     ];
-
-    dontUnpack = true;
-    doCheck = true;
-
-    checkPhase = ''
-      runHook preCheck
-      shellcheck -- "$src"
-      ${e.checkPhase}
-      runHook postCheck
-    '';
-
-    installPhase = ''
-      runHook preInstall
-
-      BIN_PATH="$out/bin/"${lib.escapeShellArg name}
-      install -Dm755 -- "$src" "$BIN_PATH"
-
-      CMD=(
-        wrapProgram "$BIN_PATH"
-        --prefix PATH : ${e.scriptDependenciesBinPath src}
-        --set POLYBAR_CONFIG_FILE ${lib.escapeShellArg polybar-config-file}
-      )
-      "''${CMD[@]}"
-
-      runHook postInstall
-    '';
   };
 in
 

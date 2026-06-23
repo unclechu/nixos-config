@@ -6,13 +6,14 @@
 
 { pkgs ? import <nixpkgs> {}
 , lib ? pkgs.lib
+, writeText ? pkgs.writeText
 
 , haskellPackages ? pkgs.haskellPackages
 
-, writeText ? pkgs.writeText
-, writeShellApplication ? pkgs.writeShellApplication
-
 , __config ? builtins.readFile ./config.hs
+
+, mk-generic-script ? pkgs.callPackage ../../utils/mk-generic-script.nix {}
+, executable-dependencies ? pkgs.callPackage ../../utils/executable-dependencies.nix {}
 
 , inNixShell ? false
 }:
@@ -60,34 +61,45 @@ let
       :set prompt "${colorize (if color == "red" then 31 else 32) "λ"} "
     '';
 
-  ghciCmd = [
-    "ghci"
+  configNormalPrompt = colorizedGhciScript "green";
+  configRootPrompt = colorizedGhciScript "red";
+
+  e = executable-dependencies {
+    dash = pkgs.dash;
+    ghc = ghc;
+    ghci = ghc;
+    id = pkgs.coreutils;
+  };
+
+  ghciArgs = [
     "-ignore-dot-ghci"
     "-ghci-script"
     # Path to the configuration file here
   ];
 
-  configNormalPrompt = colorizedGhciScript "green";
-  configRootPrompt = colorizedGhciScript "red";
+  name = "hell";
 
-  dependencies = [ghc];
+  src = writeText "${name}-source" ''
+    #! /usr/bin/env dash
+    set -o errexit || exit; set -o nounset; set -o pipefail
 
-  hell = writeShellApplication {
-    name = "hell";
-    runtimeInputs = dependencies;
+    UID=$(${e.s.id} -u)
+    if [ "$UID" = 0 ]
+    then file=${esc configRootPrompt}
+    else file=${esc configNormalPrompt}
+    fi
 
-    text = ''
-      if (( UID == 0 ))
-      then file=${esc configRootPrompt}
-      else file=${esc configNormalPrompt}
-      fi
+    exec ${e.s.ghci} ${lib.escapeShellArgs ghciArgs} "$file" "$@"
+  '';
 
-      exec ${lib.escapeShellArgs ghciCmd} "$file" "$@"
-    '';
+  hell = mk-generic-script {
+    inherit name src e;
+    buildInputs = [ e.executables.dash ];
+    dontAddDependencies = true;
+    cutOffRuntimeDependenciesCheckPhase = null;
 
     checkPhase = ''(
-      set -o nounset; set -o pipefail
-      export PATH=${esc (lib.makeBinPath dependencies)}:"$PATH"
+      set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 
       # Required for the unicode to work properly,
       # there is plenty of unicode in the config file.
@@ -97,12 +109,13 @@ let
       TEST_HELL_CMD='æøinproc ["echo", "hel" ‰ "lo", "world"] & stdout'
 
       OUTPUT=$(
-        ${lib.escapeShellArgs ghciCmd} ${esc configNormalPrompt} 2>&1 \
+        ${e.s.ghci} ${lib.escapeShellArgs ghciArgs} ${esc configNormalPrompt} 2>&1 \
           <<< "$TEST_HELL_CMD"
       )
 
       if >/dev/null grep -i error <<< "$OUTPUT"; then
-        >&2 printf 'There are errors in the %s configuration:\n%s\n' ${esc configNormalPrompt} "$OUTPUT"
+        >&2 printf 'There are errors in the %s configuration:\n%s\n' \
+          ${esc configNormalPrompt} "$OUTPUT"
         exit 1
       fi
 
@@ -115,7 +128,7 @@ let
     )'';
   };
 
-  shell = pkgs.mkShell { buildInputs = dependencies; };
+  shell = pkgs.mkShell { buildInputs = builtins.attrValues e.executables; };
 in
 
 (if inNixShell then shell else hell) // { inherit hell shell; }
