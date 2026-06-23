@@ -20,7 +20,7 @@
 #     diff = pkgs.diffutils;
 #   };
 #
-executablesMap: rec {
+executablesMap: lib.makeExtensible (final: {
   # Just forwarding the map just in case.
   executables = executablesMap;
 
@@ -57,7 +57,7 @@ executablesMap: rec {
   # interpolate as-is.
   #
   # Type ∷ { string = string; }
-  s = builtins.mapAttrs (n: v: lib.escapeShellArg v) b;
+  s = builtins.mapAttrs (n: v: lib.escapeShellArg v) final.b;
 
   # A check phase for all of the executables from `executablesMap`.
   #
@@ -66,7 +66,7 @@ executablesMap: rec {
   # Type ∷ string
   checkPhase =
     builtins.concatStringsSep "\n" (
-      map (x: ">/dev/null type -- ${x}") (builtins.attrValues s)
+      map (x: ">/dev/null type -- ${x}") (builtins.attrValues final.s)
     );
 
   # Get shell script executable dependencies list (executable names).
@@ -85,7 +85,7 @@ executablesMap: rec {
   #
   # Type ∷ path → [string]
   scriptDependencies = scriptSrc:
-    dependencies
+    final.dependencies
       "^# Guard dependencies$"
       # Allow comments at the end of line
       "^>/dev/null type ([^[:space:]]+)([[:space:]]*[#].*)?$"
@@ -164,7 +164,7 @@ executablesMap: rec {
   #
   # Type ∷ path → string
   scriptDependenciesBinPath =
-    scriptSrc: scriptDependenciesBinPathWithIgnore scriptSrc [];
+    scriptSrc: final.scriptDependenciesBinPathWithIgnore scriptSrc [];
 
   # `scriptDependenciesBinPath` but allowing to ignore some dependencies.
   #
@@ -173,9 +173,10 @@ executablesMap: rec {
   #
   # Type ∷ [string] → path → string
   scriptDependenciesBinPathWithIgnore = scriptSrc: ignoreDeps:
-    lib.makeBinPath (lib.pipe scriptSrc [
-      scriptDependencies
+    lib.pipe scriptSrc [
+      final.scriptDependencies
       (builtins.filter (x: ! builtins.elem x ignoreDeps))
-      scriptDependenciesToDerivations
-    ]);
-}
+      final.scriptDependenciesToDerivations
+      lib.makeBinPath
+    ];
+})
