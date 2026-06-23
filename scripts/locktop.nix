@@ -10,7 +10,7 @@ let sources = import ../nix/sources.nix; in
 
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
-, __dzen-box ? callPackage ./dzen-box { inherit __nix-utils; }
+, __dzen-box ? callPackage ./dzen-box {}
 , wenzels-keyboard ? callPackage ./wenzels-keyboard { inherit __nix-utils; }
 }:
 assert lib.isDerivation __dzen-box;

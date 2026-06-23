@@ -5,6 +5,7 @@ let sources = import ../../nix/sources.nix; in
 
 { lib
 , stdenvNoCC
+, writeTextFile
 , makeBinaryWrapper
 , shellcheck
 , coreutils
@@ -13,6 +14,7 @@ let sources = import ../../nix/sources.nix; in
 , dunst
 , procps
 , systemd
+, dash
 }:
 
 let
@@ -24,7 +26,9 @@ let
     pidof = procps;
     awk = gawk;
     rm = coreutils;
+    cp = coreutils;
     systemctl = systemd;
+    dash = dash;
   };
 
   # Full paths to the executables.
@@ -64,9 +68,11 @@ let
       lib.unique
     ];
 
+  scriptSrc = ./pseudo-primary-display.sh;
+
   pseudo-primary-display = stdenvNoCC.mkDerivation rec {
     name = "pseudo-primary-display";
-    src = ./pseudo-primary-display.sh;
+    src = scriptSrc;
 
     nativeBuildInputs = [
       makeBinaryWrapper
@@ -101,6 +107,36 @@ let
       runHook postInstall
     '';
   };
+
+  getLineByPrefix = prefix:
+    lib.pipe scriptSrc [
+      builtins.readFile
+      (lib.splitString "\n")
+      (builtins.filter (line: lib.hasPrefix prefix line))
+      # Must find exactly one line
+      (x: assert builtins.length x == 1; x)
+      builtins.head
+    ];
+
+  # Copy selected pseudo primary display number to `$XDG_RUNTIME_DIR` for faster access.
+  copyToRuntimeScript = writeTextFile rec {
+    name = "copy-pseudo-primary-display-selection-to-runtime";
+    executable = true;
+    destination = "/bin/${name}";
+
+    text = ''
+      #! ${executables.dash}
+      set -o errexit || exit; set -o nounset; set -o pipefail
+      ${getLineByPrefix "DISPLAY_NUM_FILE="}
+      ${getLineByPrefix "DISPLAY_NUM_RUNTIME_FILE="}
+      set -o xtrace
+      ${es.cp} -vf -- "$DISPLAY_NUM_FILE" "$DISPLAY_NUM_RUNTIME_FILE"
+    '';
+
+    checkPhase = ''
+      ${executablesCheckPhase}
+    '';
+  };
 in
 
-pseudo-primary-display
+pseudo-primary-display // { inherit copyToRuntimeScript; }

@@ -7,7 +7,7 @@ let sources = import ../nix/sources.nix; in
 
 # Overridable dependencies
 , __nix-utils ? callPackage sources.nix-utils {}
-, __dzen-box ? callPackage ./dzen-box { inherit __nix-utils; }
+, __dzen-box ? callPackage ./dzen-box {}
 }:
 let
   inherit (__nix-utils) esc shellCheckers;

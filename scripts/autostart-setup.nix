@@ -15,6 +15,7 @@ let sources = import ../nix/sources.nix; in
 , __autolock ? callPackage ./autolock.nix { inherit __nix-utils; }
 , __wenzels-picom ? callPackage ./wenzels-picom { inherit __nix-utils systemConfig; }
 , __screen-saver ? callPackage ./screen-saver {}
+, __pseudo-primary-display ? callPackage ./pseudo-primary-display {}
 
 # Build options
 , # System config (e.g. self-reference) to extract machine host name.
@@ -63,6 +64,7 @@ writeCheckedExecutable name checkPhase ''
   if [[ -f $SCREENLAYOUT && -x $SCREENLAYOUT ]]; then
     if "$SCREENLAYOUT"; then sleep 1s; fi
   fi
+  ${esc (lib.getExe __pseudo-primary-display.copyToRuntimeScript)}
   ${
     # Disable autostart of Picom on some of the machines
     if hostName != wenzel-rusty-chunk.networking.hostName

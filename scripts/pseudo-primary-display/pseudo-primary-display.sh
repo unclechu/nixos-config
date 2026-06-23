@@ -31,9 +31,19 @@ set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 >/dev/null type pidof
 >/dev/null type awk
 >/dev/null type rm
+>/dev/null type cp
 >/dev/null type systemctl
 
 DISPLAY_NUM_FILE=$HOME/.pseudo-primary-display
+
+# Some applications need to be very responsive.
+# Reading the file from the disk is theoretically more expensive/slower
+# than from `$XDG_RUNTIME_DIR` which is typically mounted as tmpfs (in RAM).
+#
+# WARNING! Make sure your X11 session auto-start script
+# copies `$DISPLAY_NUM_FILE` to `$DISPLAY_NUM_RUNTIME_FILE`!
+# See for `copyToRuntimeScript` helper in `default.nix`.
+DISPLAY_NUM_RUNTIME_FILE=$XDG_RUNTIME_DIR/pseudo-primary-display
 
 DISPLAYS_COUNT=$(
 	xrandr --listmonitors | awk '$2 ~ /^\+/ { count++ } END { print count }'
@@ -65,10 +75,17 @@ fi
 
 if (( DISPLAY_NUM == 0 )); then
 	>&2 echo 'Resetting the pseudo-primary display…'
-	(set -o xtrace; rm -vf -- "$DISPLAY_NUM_FILE" "$DUNST_CONF")
+	(
+		set -o xtrace
+		rm -vf -- "$DISPLAY_NUM_FILE" "$DISPLAY_NUM_RUNTIME_FILE" "$DUNST_CONF"
+	)
 else
 	>&2 printf 'Setting display %d as pseudo-primary…\n' "$DISPLAY_NUM"
 	printf %d "$DISPLAY_NUM" > "$DISPLAY_NUM_FILE"
+
+	# WARNING! Make sure your X11 session autostart script does the same!
+	# See for `copyToRuntimeScript` helper in `default.nix`.
+	cp -vf -- "$DISPLAY_NUM_FILE" "$DISPLAY_NUM_RUNTIME_FILE"
 
 	printf '
 	[global]

@@ -30,6 +30,12 @@ if ((${#TEXT} <= 2)); then FONT_SIZE=70; fi
 if ((${#TEXT} == 3)); then FONT_SIZE=42; fi
 if ((${#TEXT} == 4)); then FONT_SIZE=32; fi
 
+XS_NUM_ARGS=()
+DISPLAY_NUM_FILE=$XDG_RUNTIME_DIR/pseudo-primary-display
+if [[ -f "$DISPLAY_NUM_FILE" ]]; then
+  XS_NUM_ARGS=(-xs "$(<"$DISPLAY_NUM_FILE")")
+fi
+
 font_str() {
   local font_size=$1
   printf -- '-*-%s-%s-*-*-*-%s-*-*-*-*-*-*-*' \
@@ -74,6 +80,16 @@ Y=-100 ; ((Y<0)) && Y=$((Y-H))
 
   killer & timeout_pid=$!
 
+  DZEN_CMD=(
+    dzen2
+    "${XS_NUM_ARGS[@]}"
+    -ta c
+    -title-name "$WM_TITLE"
+    -w "$W" -h "$H" -x "$X" -y "$Y"
+    -bg "$BG_COLOR" -fg "$FG_DEFAULT_COLOR"
+    -fn "$(font_str 9)"
+  )
+
   while true; do
     if [[ ! -f $BUS ]]; then exit 1; fi
 
@@ -91,12 +107,7 @@ Y=-100 ; ((Y<0)) && Y=$((Y-H))
     done
 
     inotifywait -qq -- "$BUS" 2>/dev/null
-  done | dzen2 \
-    -ta c \
-    -title-name "$WM_TITLE" \
-    -w "$W" -h "$H" -x "$X" -y "$Y" \
-    -bg "$BG_COLOR" -fg "$FG_DEFAULT_COLOR" \
-    -fn "$(font_str 9)" 1>&- 2>&-
+  done | "${DZEN_CMD[@]}" 1>&- 2>&-
 } 2>/dev/null &
 
 # vim: se et sw=2 ts=2 sts=2 :
