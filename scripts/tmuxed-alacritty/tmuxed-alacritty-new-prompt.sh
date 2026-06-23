@@ -11,6 +11,16 @@ set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 : "${TMUXED_ALACRITTY_EXE:=./tmuxed-alacritty-new.sh}"
 
 # Guard dependencies
+>/dev/null type bash
+>/dev/null type sed
+>/dev/null type xprop
+>/dev/null type xdotool
+>/dev/null type realpath
+>/dev/null type nohup
+>/dev/null type dirname
+>/dev/null type basename
+
+# Guard runtime-determined dependencies
 (X=$ALACRITTY_EXE; if ! &>/dev/null type -P -- "$X" && ! [[ -r $X && -x $X ]]; then
 	>&2 printf '[FAIL] Missing ALACRITTY_EXE “%s” dependency\n' "$X"
 	exit 1
@@ -19,7 +29,6 @@ fi)
 	>&2 printf '[FAIL] Missing TMUXED_ALACRITTY_EXE “%s” dependency\n' "$X"
 	exit 1
 fi)
->/dev/null type bash sed xprop xdotool realpath nohup dirname basename
 
 BASH_EXE=$(type -P bash)
 NOHUP_EXE=$(type -P nohup)

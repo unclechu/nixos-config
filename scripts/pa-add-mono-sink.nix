@@ -2,36 +2,37 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../nix/sources.nix; in
 { callPackage
+, writeText
 , dash
 , pulseaudio
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
+, executable-dependencies ? callPackage ../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../utils/mk-generic-script.nix {}
 }:
-let
-  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
-  name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
 
-  # Name is executable name and value is a derivation that provides that executable
-  dependencies = {
+let
+  name = "pa-add-mono-sink";
+
+  e = executable-dependencies {
     dash = dash;
     pacmd = pulseaudio;
   };
 
-  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
+  src = writeText "${name}-source" ''
+    #! /usr/bin/env dash
+    # TODO choose sound device, maybe implement a TUI, for instance using "whiptail"
+    MASTER='alsa_output.pci-0000_0b_00.3.analog-stereo'
 
-  checkPhase =
-    builtins.concatStringsSep "\n"
-      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
+    ${e.s.pacmd} load-module module-remap-sink \
+      master="$MASTER" \
+      sink_name=mono sink_properties="device.description='Mono'" \
+      channels=2 channel_map=mono,mono
+  '';
 in
-writeCheckedExecutable name checkPhase ''
-  #! ${executables.dash}
 
-  # TODO choose sound device, maybe implement a TUI, for instance using "whiptail"
-  MASTER='alsa_output.pci-0000_0b_00.3.analog-stereo'
-
-  ${esc executables.pacmd} load-module module-remap-sink \
-    master="$MASTER" \
-    sink_name=mono sink_properties="device.description='Mono'" \
-    channels=2 channel_map=mono,mono
-''
+mk-generic-script {
+  inherit name src e;
+  dontAddDependencies = true;
+  buildInputs = [ e.executables.dash ];
+}

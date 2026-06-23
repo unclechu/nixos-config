@@ -70,7 +70,7 @@ let
   dzen-box = pkgs.callPackage scripts/dzen-box {};
   screen-backlight = pkgs.callPackage scripts/screen-backlight.nix {};
   locktop = pkgs.callPackage scripts/locktop.nix {};
-  pamng = pkgs.callPackage scripts/pamng.nix {};
+  pamng = pkgs.callPackage scripts/pamng {};
   pa-add-mono-sink = pkgs.callPackage scripts/pa-add-mono-sink.nix {};
   autostart-setup = pkgs.callPackage scripts/autostart-setup.nix { inherit systemConfig; };
   pointers-setup = pkgs.callPackage scripts/pointers-setup.nix {};

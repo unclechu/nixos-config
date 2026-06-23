@@ -1,11 +1,13 @@
 #! /usr/bin/env bash
-set -o errexit || exit; set -o nounset; set -o pipefail
+set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 exec <&- # Close standard input
 
 # Guard dependencies
 >/dev/null type sleep
 >/dev/null type pkill
 >/dev/null type sh # For Feh run
+
+# Runtime environment dependencies guarding
 [[ -v USER ]] || (set -o xtrace; [[ -v USER ]])
 
 # Terminate possibly running Picom

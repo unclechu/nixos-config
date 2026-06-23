@@ -9,12 +9,9 @@
 let sources = import ../../nix/sources.nix; in
 
 { lib
+, callPackage
 , runCommand
-, stdenvNoCC
-, makeBinaryWrapper
-, shellcheck
 , coreutils
-, bash
 , gnused
 , bc
 , pulseaudio
@@ -22,8 +19,11 @@ let sources = import ../../nix/sources.nix; in
 , jack-example-tools
 , jalv
 , calf
-, lsp-plugins
+, lsp-plugins # TODO: Add to LV_PATH
 , xmlstarlet
+
+, executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
 }:
 
 let
@@ -94,13 +94,10 @@ let
         };
     };
 
-  # Executable dependencies map.
-  # Executable name = Package where the executable comes from.
   executablesMap = {
     sleep = coreutils;
     dirname = coreutils;
 
-    bash = bash;
     sed = gnused;
     bc = bc;
     pactl = pulseaudio;
@@ -115,30 +112,12 @@ let
     xmlstarlet = xmlstarlet;
   };
 
-  # Full paths to the executables.
-  # Executable name = Full absolute path to the executable.
-  executables =
-    builtins.mapAttrs
-      (n: v: "${executablesMap.${n}}/bin/${n}")
-      executablesMap;
-
-  # `executables` but with shell escaped paths.
-  es = builtins.mapAttrs (n: v: lib.escapeShellArg v) executables;
-
-  executablesCheckPhase =
-    let
-      executableFileCheck = x: "[[ -f ${x} || -r ${x} || -x ${x} ]]";
-    in
-      ''
-        ${builtins.concatStringsSep "\n" (map (x: ''
-          if ! ${executableFileCheck x}; then (set -o xtrace; ${executableFileCheck x}); fi
-        '') (builtins.attrValues es))}
-      '';
+  e = executable-dependencies executablesMap;
 
   # Convert decibels to gain coefficient
   dbToCoeff = value: assert builtins.isFloat value; ''(
     # 6 remainder digits precision is enough
-    value=$(<<< ${lib.escapeShellArg "scale=6; e(l(10) * ${toString value} / 20)"} ${es.bc} -l)
+    value=$(<<< ${lib.escapeShellArg "scale=6; e(l(10) * ${toString value} / 20)"} ${e.s.bc} -l)
     case "$value" in .*) value="0$value" ;; esac # add leading zero if missing
     printf %s "$value"
   )'';
@@ -148,7 +127,7 @@ let
       replaceValue = symbol: value:
         assert builtins.isFloat value || builtins.isInt value;
         ''(
-          ${es.sed} '
+          ${e.s.sed} '
             /lv2:symbol "${symbol}"/{
               n
               s/\(pset:value\) [0-9]\+\(\.[0-9]\+\)\?$/\1 ${toString value}/
@@ -156,8 +135,8 @@ let
           '
         )'';
     in
-    runCommand "home-audio-setup-lsp-lh-xover-jalv-preset" {} ''(
-      set -o nounset; set -o pipefail
+    runCommand "home-audio-setup-lsp-lh-xover-jalv-preset" {} ''
+      set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
       mkdir -- "$out"
       cp -- ${lib.escapeShellArg "${presets/lsp-lh-xover-jalv/manifest.ttl}"} "$out/manifest.ttl"
 
@@ -167,7 +146,7 @@ let
         } | ${let f = x: x.sub.xOver.freqHz; in replaceValue (f paramsPaths) (f params)
         } | ${let f = x: x.sub.xOver.slope; in replaceValue (f paramsPaths) (f params)
         } > "$out/state.ttl"
-    )'';
+    '';
 
   calfPreset =
     let
@@ -175,7 +154,7 @@ let
         INPUT=$(</dev/stdin)
 
         CHECK_CMD=(
-          ${es.xmlstarlet} sel
+          ${e.s.xmlstarlet} sel
           -t -v ${lib.escapeShellArg "count(${path})"}
         )
         COUNT=$(<<<"$INPUT" "''${CHECK_CMD[@]}")
@@ -190,7 +169,7 @@ let
         }
 
         UPDATE_CMD=(
-          ${es.xmlstarlet} ed
+          ${e.s.xmlstarlet} ed
           -u ${lib.escapeShellArg path}
           -v "$VALUE"
         )
@@ -199,14 +178,14 @@ let
         <<<"$INPUT" "''${UPDATE_CMD[@]}"
       )'';
     in
-    runCommand "home-audio-setup-calfjackhost-preset.xml" {} ''(
-      set -o nounset; set -o pipefail
+    runCommand "home-audio-setup-calfjackhost-preset.xml" {} ''
+      set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 
       PRESET=$(
         <${lib.escapeShellArg "${presets/calfjackhost.xml}"
         # The file is actually compatible with 1.0 but `xmlstarlet`
         # is being noisy about unsupported 1.1 XML version.
-        } ${es.sed} 's/xml version="1.1"/xml version="1.0"/'
+        } ${e.s.sed} 's/xml version="1.1"/xml version="1.0"/'
       )
 
       ${'' printf %s "$PRESET" ''
@@ -219,152 +198,41 @@ let
         } | ${let f = x: x.sub.balanceIn; in replaceValue (f paramsPaths) (f params)
         } | ${let f = x: x.sub.balanceOut; in replaceValue (f paramsPaths) (f params)
         } > "$out"
-    )'';
+    '';
 
-  getScriptDependencies =
-    lib.flip lib.pipe [
-      builtins.readFile
-      (lib.splitString "\n")
-      (builtins.foldl' (
-        acc: line:
-          if builtins.isAttrs acc then acc else
-          if acc != null then (
-            if builtins.isList acc then (
-              let match = builtins.match "^>/dev/null type ([^[:space:]]+)$" line; in
-              if isNull match then { result = acc; } else acc ++ [(builtins.elemAt match 0)]
-            ) else acc
-          ) else if line == "# Guard dependencies" then [] else acc
-      ) null)
-      (x: assert builtins.isAttrs x; x)
-      (x: assert builtins.length x.result > 0; x.result)
-    ];
-
-  scriptDependenciesToDerivations =
-    lib.flip lib.pipe [
-      (map (x: executablesMap.${x}))
-      lib.unique
-    ];
-
-  home-audio-lh-xover = stdenvNoCC.mkDerivation rec {
+  home-audio-lh-xover = mk-generic-script {
     name = "home-audio-lh-xover";
     src = ./home-audio-lh-xover.sh;
-
-    nativeBuildInputs = [
-      makeBinaryWrapper
-      shellcheck
+    inherit e;
+    wrapProgramArgs = [
+      "--set" "JALV_LSP_XOVER_PRESET" lspXOverPreset
+      "--set" "CALFJACKHOST_PRESET" calfPreset
     ];
-
-    dontUnpack = true;
-    doCheck = true;
-
-    checkPhase = ''
-      runHook preCheck
-      shellcheck -- "$src"
-      ${executablesCheckPhase}
-      runHook postCheck
-    '';
-
-    installPhase = ''
-      runHook preInstall
-
-      BIN_PATH="$out/bin/"${lib.escapeShellArg name}
-      install -Dm755 -- "$src" "$BIN_PATH"
-
-      CMD=(
-        wrapProgram "$BIN_PATH"
-        --prefix PATH : ${lib.makeBinPath (lib.pipe src [
-          getScriptDependencies
-          scriptDependenciesToDerivations
-        ])}
-        --set JALV_LSP_XOVER_PRESET ${lib.escapeShellArg lspXOverPreset}
-        --set CALFJACKHOST_PRESET ${lib.escapeShellArg calfPreset}
-      )
-      "''${CMD[@]}"
-
-      runHook postInstall
-    '';
   };
 
-  home-audio-setup = stdenvNoCC.mkDerivation rec {
+  eFinal = executable-dependencies (executablesMap // {
+    home-audio-lh-xover = home-audio-lh-xover;
+  });
+
+  home-audio-setup = mk-generic-script {
     name = "home-audio-setup";
     src = ./home-audio-setup.sh;
-    LH_XOVER_EXE = lib.escapeShellArg "${home-audio-lh-xover}/bin/home-audio-lh-xover";
+    e = eFinal;
 
-    nativeBuildInputs = [
-      makeBinaryWrapper
-      shellcheck
-    ];
-
-    dontUnpack = true;
-    doCheck = true;
-
-    checkPhase = ''
-      runHook preCheck
-      shellcheck -- "$src"
-      ${executablesCheckPhase}
-      if ! [[ -f "$LH_XOVER_EXE" && -r "$LH_XOVER_EXE" && -x "$LH_XOVER_EXE" ]]; then (
-        set -o xtrace; [[ -f "$LH_XOVER_EXE" && -r "$LH_XOVER_EXE" && -x "$LH_XOVER_EXE" ]]
-      ) fi
-      runHook postCheck
-    '';
-
-    installPhase = ''
-      runHook preInstall
-
-      BIN_PATH="$out/bin/"${lib.escapeShellArg name}
-      install -Dm755 -- "$src" "$BIN_PATH"
-      substituteInPlace "$BIN_PATH" --replace-fail "./home-audio-lh-xover.sh" "$LH_XOVER_EXE"
-
-      CMD=(
-        wrapProgram "$BIN_PATH"
-        --prefix PATH : ${lib.makeBinPath (lib.pipe src [
-          getScriptDependencies
-          scriptDependenciesToDerivations
-        ])}
-      )
-      "''${CMD[@]}"
-
-      runHook postInstall
+    postPatch = ''
+      substituteInPlace "$src" \
+        --replace-fail "./home-audio-lh-xover.sh" ${eFinal.s.home-audio-lh-xover}
     '';
   };
 
-  home-audio-mic = stdenvNoCC.mkDerivation rec {
+  home-audio-mic = mk-generic-script {
     name = "home-audio-mic";
     src = ./home-audio-mic.sh;
-
-    nativeBuildInputs = [
-      makeBinaryWrapper
-      shellcheck
+    e = eFinal;
+    wrapProgramArgs = [
+      "--set" "JALV_LSP_XOVER_PRESET" lspXOverPreset
+      "--set" "CALFJACKHOST_PRESET" presets/calfjackhost-mic.xml
     ];
-
-    dontUnpack = true;
-    doCheck = true;
-
-    checkPhase = ''
-      runHook preCheck
-      shellcheck -- "$src"
-      ${executablesCheckPhase}
-      runHook postCheck
-    '';
-
-    installPhase = ''
-      runHook preInstall
-
-      BIN_PATH="$out/bin/"${lib.escapeShellArg name}
-      install -Dm755 -- "$src" "$BIN_PATH"
-
-      CMD=(
-        wrapProgram "$BIN_PATH"
-        --prefix PATH : ${lib.makeBinPath (lib.pipe src [
-          getScriptDependencies
-          scriptDependenciesToDerivations
-        ])}
-        --set CALFJACKHOST_PRESET ${lib.escapeShellArg "${presets/calfjackhost-mic.xml}"}
-      )
-      "''${CMD[@]}"
-
-      runHook postInstall
-    '';
   };
 in
 

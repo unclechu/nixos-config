@@ -13,35 +13,34 @@ in
 , procps
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
 , __xbindkeys ? callPackage ../../apps/wenzels-xbindkeys.nix {}
 , __xlib-keys-hack-starter ? callPackage ../../apps/wenzels-xlib-keys-hack {}
+, executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
 
 # Build options
 , __srcScript ? ./main.raku
 , keyRepeatOptions ? constants.keyRepeat
 , xkbOptions ? constants.xkb
 }:
+
 assert lib.isDerivation __xbindkeys;
 assert lib.isDerivation __xlib-keys-hack-starter;
+
 let
   keyRepeatDelay    = keyRepeatOptions.delay;
   keyRepeatInterval = keyRepeatOptions.interval;
   xkbLayout         = xkbOptions.layout;
   xkbOptions'       = xkbOptions.options; # "eurosign:e"
-
-  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir valueCheckers shellCheckers;
 in
-assert valueCheckers.isPositiveNaturalNumber keyRepeatDelay;
-assert valueCheckers.isPositiveNaturalNumber keyRepeatInterval;
-assert valueCheckers.isNonEmptyString        xkbLayout;
-assert valueCheckers.isNonEmptyString        xkbOptions';
-let
-  name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  src = builtins.readFile __srcScript;
 
-  # Name is executable name and value is a derivation that provides that executable
-  dependencies = {
+assert builtins.isInt keyRepeatDelay && keyRepeatDelay >= 1;
+assert builtins.isInt keyRepeatInterval && keyRepeatInterval >= 1;
+assert builtins.isString xkbLayout && xkbLayout != "";
+assert builtins.isString xkbOptions' && xkbOptions' != "";
+
+let
+  e = (executable-dependencies {
     raku = rakudo;
     xset = xset;
     setxkbmap = setxkbmap;
@@ -49,32 +48,43 @@ let
     pkill = procps;
 
     xbindkeys = __xbindkeys;
-    ${__xlib-keys-hack-starter.name} = __xlib-keys-hack-starter;
-  };
-
-  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
-
-  checkPhase =
-    builtins.concatStringsSep "\n"
-      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
+    wenzels-xlib-keys-hack = __xlib-keys-hack-starter;
+  }).extend (final: prev: {
+    scriptDependencies = scriptSrc:
+      final.dependencies
+        "^BEGIN [{] # Guard dependencies$"
+        "^[[:space:]]*need-exe '([^']+)';$"
+        scriptSrc;
+  });
 in
-writeCheckedExecutable name checkPhase ''
-  #! ${executables.raku}
-  use v6.d;
-  close $*IN;
 
-  ${
-    builtins.concatStringsSep "\n"
-      (builtins.attrValues (builtins.mapAttrs (n: v: "my Str:D \\${n} := q<${v}>;") executables))
-  }
+mk-generic-script {
+  name = "wenzels-keyboard";
+  src = __srcScript;
+  inherit e;
 
-  my Str:D \xbindkeys := ${baseNameOf executables.xbindkeys};
-  my Str:D \xlib-keys-hack-starter := ${__xlib-keys-hack-starter.name};
+  buildInputs = [ e.executables.raku ];
+  lintBuildInputs = [ e.executables.raku ];
 
-  my Str:D \keyRepeatDelay := q<${toString keyRepeatDelay}>;
-  my Str:D \keyRepeatInterval := q<${toString keyRepeatInterval}>;
-  my Str:D \xkbLayout := q<${xkbLayout}>;
-  my Str:D \xkbOptions := q<${xkbOptions'}>;
+  wrapProgramArgs = [
+    "--add-flag" "--key-repeated-delay=${toString keyRepeatDelay}"
+    "--add-flag" "--key-repeated-interval=${toString keyRepeatInterval}"
+    "--add-flag" "--xkb-layout=${xkbLayout}"
+    "--add-flag" "--xkb-options=${xkbOptions'}"
+  ];
 
-  ${src}
-''
+  cutOffRuntimeDependenciesCheckPhase = ''
+    # The dependencies are already checked, no need to do it in runtime.
+    sed -i '/BEGIN { # Guard dependencies/,/^}$/d' "$src"
+  '';
+
+  lintPhase = ''
+    (
+      export PATH=${lib.escapeShellArg (e.scriptDependenciesBinPath __srcScript)}:$PATH
+      # Will check executable dependencies and Raku code for that check.
+      raku -c -- "$pre_patched_src"
+    )
+    # Final script, check that after patching that it is not broken.
+    raku -c -- "$src"
+  '';
+}

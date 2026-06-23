@@ -1,7 +1,7 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 { lib
-, writeTextFile
+, callPackage
 , bash
 , coreutils
 , gnused
@@ -10,9 +10,12 @@
 , xdotool
 , tmux
 , skim
+
+, executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
 }:
 let
-  executables = {
+  executablesMap = {
     bash = bash;
     sort = coreutils;
     head = coreutils;
@@ -31,52 +34,32 @@ let
     tmux = tmux;
   };
 
-  esc = lib.escapeShellArg;
-  bin = pkg: exe: "${pkg}/bin/${exe}";
-  e = builtins.mapAttrs (n: v: esc (bin v n)) executables;
-  executableFileCheck = x: "[[ -f ${x} || -r ${x} || -x ${x} ]]";
-
   mkScript = action: srcFile: extraEnvMap: alacrittyPkg:
-    let alacrittyExe = "${alacrittyPkg}/bin/${lib.getName alacrittyPkg}"; in
-    writeTextFile rec {
-      name = "tmuxed-${lib.getName alacrittyPkg}-${action}";
-      executable = true;
-      destination = "/bin/${name}";
-      checkPhase = ''(
-        set -o nounset
-        ${builtins.concatStringsSep "\n" (map (x: ''
-          if ! ${executableFileCheck x}; then (set -o xtrace && ${executableFileCheck x}); fi
-        '') (builtins.attrValues e ++ [alacrittyExe]))}
-      )'';
-      text = ''
-        #! ${let n = "bash"; in bin executables.${n} n}
-        set -o errexit || exit
+    let
+      e = executable-dependencies (executablesMap // {
+        ${alacrittyPkg.meta.mainProgram} = alacrittyPkg;
+      });
+    in
+    mk-generic-script {
+      name = "tmuxed-${alacrittyPkg.meta.mainProgram}-${action}";
+      src = srcFile;
+      inherit e;
 
-        export PATH=${
-          esc (lib.makeBinPath (builtins.attrValues executables))
-        }''${PATH:+:}''${PATH}
-
-        TMUX_EXE=${e.tmux}
-        ALACRITTY_EXE=${esc alacrittyExe}
-        SKIM_EXE=${e.sk}
-
-        ${lib.pipe extraEnvMap [
+      wrapProgramArgs = [
+        "--set" "TMUX_EXE" e.b.tmux
+        "--set" "ALACRITTY_EXE" e.b.${alacrittyPkg.meta.mainProgram}
+        "--set" "SKIM_EXE" e.b.sk
+      ] ++ (
+        lib.pipe extraEnvMap [
           (x: assert builtins.isAttrs x; x)
           lib.attrsToList
           (map (x:
             assert builtins.match "^[A-Z_]+$" x.name != null;
-            "${x.name}=${esc x.value}"
+            ["--set" x.name x.value]
           ))
-          (builtins.concatStringsSep "\n")
-        ]}
-
-        ${lib.pipe srcFile [
-          builtins.readFile
-          (lib.splitString "\n")
-          lib.tail # Cut off the shebang (fixes usage info generator)
-          (builtins.concatStringsSep "\n")
-        ]}
-      '';
+          lib.flatten
+        ]
+      );
     };
 
   tmuxed-alacritty-new =

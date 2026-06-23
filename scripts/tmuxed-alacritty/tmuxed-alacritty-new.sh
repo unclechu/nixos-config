@@ -21,6 +21,14 @@ set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 : "${ALACRITTY_EXE:=alacritty}"
 
 # Guard dependencies
+>/dev/null type sed
+>/dev/null type sort
+>/dev/null type tail
+>/dev/null type sleep
+>/dev/null type xdotool
+>/dev/null type xprop
+
+# Guard runtime-determined dependencies
 (X=$TMUX_EXE; if ! >/dev/null type -P -- "$X" && ! [[ -r $X && -x $X ]]; then
 	>&2 printf '[FAIL] Missing TMUX_EXE “%s” dependency' "$X"
 	exit 1
@@ -29,8 +37,6 @@ fi)
 	>&2 printf '[FAIL] Missing ALACRITTY_EXE “%s” dependency' "$X"
 	exit 1
 fi)
->/dev/null type sed sort tail sleep
->/dev/null type xdotool xprop
 
 # Improved command debug tracing
 PS4='+ [${BASH_SOURCE##*/}:${LINENO}] '

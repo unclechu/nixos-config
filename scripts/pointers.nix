@@ -1,8 +1,8 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 { lib
+, callPackage
 , writeText
-, writeShellApplication
 
 # Dependencies for check phase of “writeShellApplication”
 , stdenv
@@ -10,7 +10,9 @@
 
 , rakudo
 , xinput
-, which
+
+, executable-dependencies ? callPackage ../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../utils/mk-generic-script.nix {}
 }:
 let
   escRaku = x: "'${lib.escape ["'"] x}'";
@@ -23,11 +25,14 @@ let
     }: let
       name = "pointer-${pointerName}";
       productIdPropName = "Device Product ID";
-      raku-exe = "${rakudo}/bin/raku";
-      esc = lib.escapeShellArg;
-      releaseModeVarName = "IS_RELEASE_MODE";
 
-      pointerScript = writeText "${name}.raku" ''
+      e = executable-dependencies {
+        raku = rakudo;
+        xinput = xinput;
+      };
+
+      pointerScriptSrc = writeText "${name}.raku" ''
+        #! /usr/bin/env raku
         use v6.d;
         close $*IN;
 
@@ -35,20 +40,11 @@ let
           given run |args, :out { LEAVE { .sink }; .out.slurp(:close).chomp }
         }
 
-        my Bool:D \is-release = (%*ENV{${escRaku releaseModeVarName}} // 0) == 1;
-
-        sub checked-exe (Str:D \exe) of IO::Path:D {
-          IO::Path.new: is-release ?? exe !! slurp-run(«which --», exe)
-        }
-
-        # Guard dependencies
-        my IO::Path:D \xinput = CHECK { checked-exe 'xinput' };
-
         my regex PropValueRegEx {
           ^\s* $<name>=<-[:]>+ \s+ '(' $<prop-id>=\d+ '):' \s* $<value>=<-[:]>+ \s*$
         };
 
-        my Str:D @devices = slurp-run(xinput, 'list', '--short').lines;
+        my Str:D @devices = slurp-run(${escRaku e.b.xinput}, 'list', '--short').lines;
         @devices .= grep: / '↳ ' ${escRaku deviceName} \s+ 'id='\d+ \s+ /;
         my Bool:D $is-found = False;
 
@@ -61,7 +57,7 @@ let
 
           sub read-props {
             return if $props-are-read;
-            my @props = slurp-run(xinput, 'list-props', xinput-id).lines;
+            my @props = slurp-run(${escRaku e.b.xinput}, 'list-props', xinput-id).lines;
             %props = @props.map({ ($<name>.Str, $<value>.Str) if $_ ~~ &PropValueRegEx }).flat.Map;
             $props-are-read = True;
           }
@@ -83,7 +79,7 @@ let
           }
 
           sub set-prop (Str:D \prop-name, |args) {
-            run xinput, 'set-prop', xinput-id, prop-name, |args
+            run ${escRaku e.b.xinput}, 'set-prop', xinput-id, prop-name, |args
           }
 
           $*ERR.say: "Handling matching xinput device ID #{xinput-id}…";
@@ -133,25 +129,16 @@ let
     assert (deviceProductId != null) -> builtins.isString deviceProductId;
     assert builtins.isString rakuCommands;
     {
-      ${name} = writeShellApplication {
-        inherit name;
-        runtimeInputs = [ xinput ];
-        text = ''
-          raku_args=()
-          VAR_NAME=${esc releaseModeVarName}
-          if [[ ''${!VAR_NAME:-1} != 1 ]]; then raku_args+=(-c); fi
-          ${esc raku-exe} "''${raku_args[@]}" -- ${esc pointerScript} "$@"
-        '';
-        checkPhase = ''
-          runHook preCheck
-          PROGRAM=$out/bin/${esc name}
-          ${esc stdenv.shell} -n -- "$PROGRAM"
-          ${esc shellcheck}/bin/shellcheck -- "$PROGRAM"
-          env \
-            PATH=${esc (lib.makeBinPath [ which ])}:"$PATH" \
-            ${esc releaseModeVarName}=0 \
-            ${esc stdenv.shell} -- "$PROGRAM"
-          runHook postCheck
+      ${name} = mk-generic-script {
+        inherit name e;
+        src = pointerScriptSrc;
+        buildInputs = [ e.executables.raku ];
+        lintBuildInputs = [ e.executables.raku ];
+        dontAddDependencies = true;
+        cutOffRuntimeDependenciesCheckPhase = null;
+
+        lintPhase = ''
+          raku -c -- "$src"
         '';
       };
     };

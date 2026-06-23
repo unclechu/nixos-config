@@ -1,32 +1,35 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../nix/sources.nix; in
-{ callPackage
-, lib
+{ lib
+, callPackage
+, writeText
 , dash
 , libnotify
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
+, executable-dependencies ? callPackage ../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../utils/mk-generic-script.nix {}
 }:
-let
-  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
-  name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
 
-  dependencies = {
+let
+  name = "scream";
+
+  e = executable-dependencies {
     dash = dash;
     notify-send = libnotify;
   };
 
-  executables = builtins.mapAttrs (n: v: "${v}/bin/${n}") dependencies;
-
-  checkPhase =
-    builtins.concatStringsSep "\n"
-      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
+  src = writeText "${name}-source" ''
+    #! /usr/bin/env dash
+    set -o errexit || exit; set -o nounset; set -o pipefail
+    set -o xtrace
+    exec ${e.s.notify-send} -u critical -- "$@"
+  '';
 in
-writeCheckedExecutable name checkPhase ''
-  #! ${executables.dash}
-  set -o errexit || exit; set -o nounset; set -o pipefail
-  set -o xtrace
-  exec ${esc executables.notify-send} -u critical -- "$@"
-''
+
+mk-generic-script {
+  inherit name e src;
+  dontAddDependencies = true;
+  cutOffRuntimeDependenciesCheckPhase = null;
+}

@@ -2,66 +2,66 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../nix/sources.nix; in
 { callPackage
-, lib
+, writeText
 , bash
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
 , __dzen-box ? callPackage ./dzen-box {}
+, executable-dependencies ? callPackage ../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../utils/mk-generic-script.nix {}
 }:
-assert lib.isDerivation __dzen-box;
-let
-  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
-  name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
 
-  # Name is executable name and value is a derivation that provides that executable
-  dependencies = {
+let
+  name = "screen-backlight";
+
+  e = executable-dependencies {
     bash = bash;
-    ${__dzen-box.name} = __dzen-box;
+    dzen-box = __dzen-box;
   };
 
-  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
+  src = writeText "${name}-source" ''
+    #! /usr/bin/env bash
+    set -o errexit || exit
+    exec <&-
 
-  checkPhase =
-    builtins.concatStringsSep "\n"
-      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
-in
-writeCheckedExecutable name checkPhase ''
-  #! ${executables.bash}
-  set -e || exit
-  exec <&-
+    # Guard dependencies
+    >/dev/null type laptop-backlight
 
-  # Guard dependencies
-  >/dev/null type -P laptop-backlight
-
-  if (( $# != 1 )) || ! [[ $1 =~ ^(-|\+)?([0-9]+)%$ ]]; then
-    (
-      echo
-      echo "Incorrect arguments: '$@'"
-      echo "  $0 50%"
-      echo "  $0 +10%"
-      echo "  $0 -10%"
-      echo
-    ) >&2
-    exit 1
-  fi
-
-  MAX=$(laptop-backlight get-max)
-  OPERATOR=''${BASH_REMATCH[1]}
-  val=$(( ''${BASH_REMATCH[2]} * $MAX / 100 ))
-
-  if [[ -n $OPERATOR ]]; then
-    CUR=$(laptop-backlight get)
-    if [[ $OPERATOR == - ]]; then
-      val=$(( $CUR - $val ))
-    elif [[ $OPERATOR == + ]]; then
-      val=$(( $CUR + $val ))
+    if (( $# != 1 )) || ! [[ $1 =~ ^(-|\+)?([0-9]+)%$ ]]; then
+      (
+        echo
+        printf 'Incorrect argument: “%s”\n' "$@"
+        echo "  $0 50%"
+        echo "  $0 +10%"
+        echo "  $0 -10%"
+        echo
+      ) >&2
+      exit 1
     fi
-  fi
 
-  (( $val < 0    )) && val=0
-  (( $val > $MAX )) && val=$MAX
+    MAX=$(laptop-backlight get-max)
+    OPERATOR=''${BASH_REMATCH[1]}
+    val=$(( BASH_REMATCH[2] * MAX / 100 ))
 
-  ${esc executables.${__dzen-box.name}} $(( $val * 100 / $MAX ))% yellow
-  laptop-backlight set "$val"
-''
+    if [[ -n "$OPERATOR" ]]; then
+      CUR=$(laptop-backlight get)
+      if [[ "$OPERATOR" == - ]]; then
+        val=$(( CUR - val ))
+      elif [[ "$OPERATOR" == + ]]; then
+        val=$(( CUR + val ))
+      fi
+    fi
+
+    if (( val < 0 )); then val=0
+    elif (( val > MAX )); then val=$MAX; fi
+
+    ${e.s.dzen-box} $(( val * 100 / MAX ))% yellow
+    laptop-backlight set "$val"
+  '';
+in
+
+mk-generic-script {
+  inherit name e src;
+  dontAddDependencies = true;
+  cutOffRuntimeDependenciesCheckPhase = null;
+}

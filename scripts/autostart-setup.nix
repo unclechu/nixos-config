@@ -2,7 +2,7 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../nix/sources.nix; in
 { callPackage
-, lib
+, writeText
 , bash
 , pulseaudio
 , networkmanagerapplet
@@ -10,91 +10,93 @@ let sources = import ../nix/sources.nix; in
 , xsetroot
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
-, __input-setup ? callPackage ./input-setup.nix { inherit __nix-utils; }
-, __autolock ? callPackage ./autolock.nix { inherit __nix-utils; }
-, __wenzels-picom ? callPackage ./wenzels-picom { inherit __nix-utils systemConfig; }
+, __input-setup ? callPackage ./input-setup.nix {}
+, __autolock ? callPackage ./autolock.nix {}
+, __wenzels-picom ? callPackage ./wenzels-picom { inherit systemConfig; }
 , __screen-saver ? callPackage ./screen-saver {}
 , __pseudo-primary-display ? callPackage ./pseudo-primary-display {}
+, executable-dependencies ? callPackage ../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../utils/mk-generic-script.nix {}
 
 # Build options
 , # System config (e.g. self-reference) to extract machine host name.
   # Set to “null” to use in Nix REPL.
   systemConfig
 }:
-assert lib.isDerivation __input-setup;
-assert lib.isDerivation __autolock;
-assert lib.isDerivation __wenzels-picom;
-let
-  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
-  name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
 
-  # Name is executable name and value is a derivation that provides that executable
-  dependencies = {
+let
+  name = "autostart-setup";
+
+  hostName = systemConfig.networking.hostName or null;
+  wenzel-rusty-chunk = callPackage ../hardware/wenzel-rusty-chunk.nix {};
+
+  e = executable-dependencies {
     bash = bash;
     pactl = pulseaudio;
     gpaste-client = gpaste;
     nm-applet = networkmanagerapplet;
     xsetroot = xsetroot;
-
-    ${__input-setup.name} = __input-setup;
-    ${__autolock.name} = __autolock;
+    input-setup = __input-setup;
+    autolock = __autolock;
     run-picom = __wenzels-picom;
-    ${__screen-saver.name} = __screen-saver;
+    screen-saver = __screen-saver;
+    ${__pseudo-primary-display.copyToRuntimeScript.meta.mainProgram} =
+      __pseudo-primary-display.copyToRuntimeScript;
   };
 
-  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
+  src = writeText "${name}-source" ''
+    #! /usr/bin/env bash
+    exec <&- &>/dev/null
 
-  checkPhase =
-    builtins.concatStringsSep "\n"
-      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
+    # audio
+    ${e.s.pactl} stat # starting pulseaudio local user server
 
-  hostName = systemConfig.networking.hostName or null;
-  wenzel-rusty-chunk = callPackage ../hardware/wenzel-rusty-chunk.nix {};
+    # displays
+    ${e.s.${__pseudo-primary-display.copyToRuntimeScript.meta.mainProgram}}
+    SCREENLAYOUT=~/.screenlayout/default.sh
+    if [[ -f "$SCREENLAYOUT" && -x "$SCREENLAYOUT" ]]; then
+      if "$SCREENLAYOUT"; then sleep 1s; fi
+    fi
+    ${
+      let exe = e.s.run-picom; in assert builtins.isString exe;
+      # Disable autostart of Picom on some of the machines
+      if hostName != wenzel-rusty-chunk.networking.hostName
+      then exe
+      else ""
+    }
+    if [[ -f ~/.fehbg ]]; then ${e.s.bash} -- ~/.fehbg & fi
+
+    ${
+      let exe = e.s.autolock; in assert builtins.isString exe;
+      # This machine is not intended to be “secure”.
+      # So this is only would be an annoyance.
+      if hostName != wenzel-rusty-chunk.networking.hostName
+      then exe
+      else ""
+    }
+
+    ${
+      let exe = e.s.screen-saver; in assert builtins.isString exe;
+      # This machine is very old. And its battary drained its capacity to 0 years
+      # and years ago. And its turned off when unattended. So there is no point
+      # in having a screensaver.
+      if hostName == wenzel-rusty-chunk.networking.hostName
+      then "${exe} off"
+      else ""
+    }
+
+    ${e.s.input-setup}
+    ${e.s.gpaste-client} & # starting local gpaste daemon
+    ${e.s.nm-applet} & # starting system tray network manager applet
+
+    ${e.s.xsetroot} -cursor_name left_ptr # default cursor on an empty workspace
+
+    exit 0 # prevent returning exit status of the latest command
+  '';
 in
-writeCheckedExecutable name checkPhase ''
-  #! ${executables.bash}
-  exec <&- &>/dev/null
 
-  # audio
-  ${esc executables.pactl} stat # starting pulseaudio local user server
-
-  # displays
-  SCREENLAYOUT=~/.screenlayout/default.sh
-  if [[ -f $SCREENLAYOUT && -x $SCREENLAYOUT ]]; then
-    if "$SCREENLAYOUT"; then sleep 1s; fi
-  fi
-  ${esc (lib.getExe __pseudo-primary-display.copyToRuntimeScript)}
-  ${
-    # Disable autostart of Picom on some of the machines
-    if hostName != wenzel-rusty-chunk.networking.hostName
-    then esc executables.run-picom
-    else ""
-  }
-  if [[ -f ~/.fehbg ]]; then . ~/.fehbg & fi
-
-  ${
-    # This machine is not intended to be “secure”.
-    # So this is only would be an annoyance.
-    if hostName != wenzel-rusty-chunk.networking.hostName
-    then esc executables.${__autolock.name}
-    else ""
-  }
-
-  ${
-    # This machine is very old. And its battary drained its capacity to 0 years
-    # and years ago. And its turned off when unattended. So there is no point
-    # in having a screensaver.
-    if hostName == wenzel-rusty-chunk.networking.hostName
-    then esc executables.${__screen-saver.name} + " off"
-    else ""
-  }
-
-  ${esc executables.${__input-setup.name}}
-  ${esc executables.gpaste-client} & # starting local gpaste daemon
-  ${esc executables.nm-applet} & # starting system tray network manager applet
-
-  ${esc executables.xsetroot} -cursor_name left_ptr # default cursor on an empty workspace
-
-  exit 0 # prevent returning exit status of the latest command
-''
+mk-generic-script {
+  inherit name src e;
+  dontAddDependencies = true;
+  buildInputs = [ e.executables.bash ];
+}

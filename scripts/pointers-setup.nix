@@ -1,45 +1,48 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../nix/sources.nix; in
-{ callPackage
-, lib
+{ lib
+, callPackage
+, writeText
 , dash
 , xinput
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
 , __pointers ? callPackage ./pointers.nix {}
+, executable-dependencies ? callPackage ../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../utils/mk-generic-script.nix {}
 }:
 let
-  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
-  name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
+  name = "pointers-setup";
 
   pointers = lib.filterAttrs (n: v: lib.isDerivation v) __pointers;
 
-  dependencies = {
+  e = executable-dependencies ({
     dash = dash;
     xinput = xinput;
-  } // pointers;
+  } // pointers);
 
-  executables = builtins.mapAttrs (n: v: "${v}/bin/${n}") dependencies;
+  src = writeText "${name}-source" ''
+    #! /usr/bin/env dash
+    exec <&- 1>/dev/null 2>/dev/null # silent
 
-  checkPhase =
-    builtins.concatStringsSep "\n"
-      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
+    # all pointer setup scripts (mice)
+    ${lib.pipe pointers [
+      builtins.attrNames
+      (map (name: "${e.s.${name}} &"))
+      (builtins.concatStringsSep "\n")
+    ]}
+
+    # laptop touchscreen
+    ${e.s.xinput} --map-to-output 'ELAN25B6:00 04F3:0732' eDP1
+
+    # prevent returning exit status of the latest command (it’s okay to fail)
+    exit 0
+  '';
 in
-writeCheckedExecutable name checkPhase ''
-  #! ${executables.dash}
-  exec <&- 1>/dev/null 2>/dev/null # silent
 
-  # all pointer setup scripts (mice)
-  ${
-    builtins.concatStringsSep "\n"
-      (map (name: "${esc (executables.${name})} &") (builtins.attrNames pointers))
-  }
-
-  # laptop touchscreen
-  ${esc executables.xinput} --map-to-output 'ELAN25B6:00 04F3:0732' eDP1
-
-  # prevent returning exit status of the latest command (it’s okay to fail)
-  exit 0
-''
+mk-generic-script {
+  inherit name src e;
+  dontAddDependencies = true;
+  buildInputs = [ e.executables.dash ];
+}

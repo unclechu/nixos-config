@@ -18,6 +18,12 @@ else
 fi
 
 # Guard dependencies
+>/dev/null type sort
+>/dev/null type head
+>/dev/null type cut
+>/dev/null type grep
+
+# Guard runtime-determined dependencies
 (X=$TMUX_EXE; if ! >/dev/null type -P -- "$X" && ! [[ -r $X && -x $X ]]; then
 	>&2 printf '[FAIL] Missing TMUX_EXE “%s” dependency' "$X"
 	exit 1
@@ -30,7 +36,6 @@ fi)
 	>&2 printf '[FAIL] Missing SKIM_EXE “%s” dependency' "$X"
 	exit 1
 fi)
->/dev/null type sort head cut grep
 
 # Improved command debug tracing
 PS4='+ [${BASH_SOURCE##*/}:${LINENO}] '

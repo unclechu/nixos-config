@@ -1,5 +1,5 @@
 #! /usr/bin/env bash
-set -o errexit || exit; set -o nounset; set -o pipefail
+set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 exec <&- # Close standard input
 
 # An example of running this script from shell directly:
@@ -11,9 +11,13 @@ exec <&- # Close standard input
 >/dev/null type dirname
 >/dev/null type picom
 >/dev/null type sh # For Feh run
-SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}")
-[[ -x $SCRIPT_DIR/no-picom.sh || -x $SCRIPT_DIR/no-picom ]] \
-	|| (set -o xtrace; [[ -x $SCRIPT_DIR/no-picom.sh || -x $SCRIPT_DIR/no-picom ]])
+
+# Runtime environment dependencies guarding
+if [[ ! -v NO_PICOM_SCRIPT_EXE ]]; then
+	SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}")
+	NO_PICOM_SCRIPT_EXE=$SCRIPT_DIR/no-picom.sh
+fi
+>/dev/null type -- "$NO_PICOM_SCRIPT_EXE"
 
 # Arguments parsing
 if (( $# == 1 )) && [[ -f $1 && -r $1 ]]; then
@@ -25,7 +29,6 @@ elif (( $# == 0 )) \
 && [[ -r $DEFAULT_PICOM_CONFIG_FILE ]]
 then
 	PICOM_CONFIG_FILE=$DEFAULT_PICOM_CONFIG_FILE
-
 else
 	>&2 printf '“run-picom” script takes exactly one argument '
 	>&2 printf 'with the Picom configuration file!\n'
@@ -33,11 +36,7 @@ else
 fi
 
 # Kill previous Picom run first
-if [[ -x $SCRIPT_DIR/no-picom.sh ]]; then
-	(set -o xtrace; "$SCRIPT_DIR/no-picom.sh")
-elif [[ -x $SCRIPT_DIR/no-picom ]]; then
-	(set -o xtrace; "$SCRIPT_DIR/no-picom")
-fi
+(set -o xtrace; "$NO_PICOM_SCRIPT_EXE")
 
 # Run Picom in background as a daemon
 picom --config "$PICOM_CONFIG_FILE" & disown

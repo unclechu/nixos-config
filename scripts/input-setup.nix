@@ -2,39 +2,40 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../nix/sources.nix; in
 { callPackage
-, lib
+, writeText
 , dash
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
-, __wenzels-keyboard ? callPackage ./wenzels-keyboard { inherit __nix-utils; }
+, executable-dependencies ? callPackage ../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../utils/mk-generic-script.nix {}
+, __wenzels-keyboard ? callPackage ./wenzels-keyboard {}
 , __pointers-setup ? callPackage ./pointers-setup.nix {}
 }:
 let
-  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleFile shellCheckers;
-  name = nameOfModuleFile (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
+  name = "input-setup";
 
-  dependencies = {
+  e = executable-dependencies {
     dash = dash;
-    ${lib.getName __wenzels-keyboard} = __wenzels-keyboard;
-    ${lib.getName __pointers-setup} = __pointers-setup;
+    wenzels-keyboard = __wenzels-keyboard;
+    pointers-setup = __pointers-setup;
   };
 
-  executables = builtins.mapAttrs (n: v: "${v}/bin/${n}") dependencies;
+  src = writeText "${name}-source" ''
+    #! /usr/bin/env dash
+    exec <&- 1>/dev/null 2>/dev/null # silent
 
-  checkPhase =
-    builtins.concatStringsSep "\n"
-      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
+    # keyboard
+    ${e.s.wenzels-keyboard} &
+
+    # mouse
+    ${e.s.pointers-setup}
+
+    exit 0 # prevent returning exit status of the latest command
+  '';
 in
-writeCheckedExecutable name checkPhase ''
-  #! ${executables.dash}
-  exec <&- 1>/dev/null 2>/dev/null # silent
 
-  # keyboard
-  ${esc executables.${lib.getName __wenzels-keyboard}} &
-
-  # mouse
-  ${esc executables.${lib.getName __pointers-setup}}
-
-  exit 0 # prevent returning exit status of the latest command
-''
+mk-generic-script {
+  inherit name src e;
+  dontAddDependencies = true;
+  buildInputs = [ e.executables.dash ];
+}

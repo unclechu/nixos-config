@@ -1,27 +1,25 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-{ lib, writeTextFile, bash, dconf }:
+{ callPackage
+, writeText
+, bash
+, dconf
+
+, executable-dependencies ? callPackage ../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../utils/mk-generic-script.nix {}
+}:
+
 let
-  executables = {
-    bash = "${bash}/bin/bash";
-    dconf = "${dconf}/bin/dconf";
+  name = "pulseaudio-share-server";
+
+  e = executable-dependencies {
+    bash = bash;
+    dconf = dconf;
   };
 
-  e = builtins.mapAttrs (n: v: lib.escapeShellArg v) executables;
-in
-writeTextFile rec {
-  name = "pulseaudio-share-server";
-  executable = true;
-  destination = "/bin/${name}";
-  checkPhase = ''(
-    set -o xtrace
-    ${builtins.concatStringsSep "\n" (map (x: "[[ -x ${x} ]]") (builtins.attrValues e))}
-  )'';
-  text = ''
-    #! ${executables.bash}
-    set -o errexit || exit
-    set -o pipefail
-    set -o nounset
+  src = writeText "${name}-source" ''
+    #! /usr/bin/env bash
+    set -o errexit || exit; set -o errtrace; set -o pipefail; set -o nounset
 
     DIR=/org/freedesktop/pulseaudio/module-groups/remote-access/
 
@@ -40,7 +38,7 @@ writeTextFile rec {
       exit 1
     fi
 
-    ${e.dconf} load "$DIR" << EOF
+    ${e.s.dconf} load "$DIR" << EOF
       [/]
       args0='auth-anonymous=1'
       args1='auth-anonymous=1'
@@ -49,4 +47,10 @@ writeTextFile rec {
       name1='module-esound-protocol-tcp'
     EOF
   '';
+in
+
+mk-generic-script {
+  inherit name e src;
+  dontAddDependencies = true;
+  cutOffRuntimeDependenciesCheckPhase = null;
 }

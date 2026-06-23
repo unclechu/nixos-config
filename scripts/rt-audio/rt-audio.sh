@@ -6,9 +6,11 @@
 # 2. Start JACK server
 # 3. Set audio buffer size to low-latency for real-time playing with processing
 
-set -o errexit || exit
-set -o nounset
-set -o pipefail
+set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+
+# Guard dependencies
+>/dev/null type jack_control
+>/dev/null type jack_bufsize
 
 action=on
 bufsize=default # Default for “on” is 64, for “off” is 512

@@ -6,9 +6,9 @@
 #
 # Just a simple preset for ImageMagick parameters.
 
-set -o errexit || exit; set -o nounset; set -o pipefail
+set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 
-# Guarding dependencies
+# Guard dependencies
 >/dev/null type gs # Ghostscript dependency to be able to convert PDF to PNG
 >/dev/null type magick
 >/dev/null type basename

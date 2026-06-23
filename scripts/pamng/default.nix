@@ -1,35 +1,36 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-let sources = import ../../nix/sources.nix; in
+let sources = import ../nix/sources.nix; in
 { callPackage
-, inotify-tools
+, lib
+, pulseaudio
+, gnugrep
 , gnused
-, dzen2
+, gawk
+, findutils
 , coreutils
 
 # Overridable dependencies
+, __dzen-box ? callPackage ../dzen-box {}
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
 , mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
-
-# Build options
-, __srcScript ? ./main.bash
 }:
 
 let
   e = executable-dependencies {
-    inotifywait = inotify-tools;
+    pacmd = pulseaudio;
+    pactl = pulseaudio;
+    grep = gnugrep;
     sed = gnused;
-    dzen2 = dzen2;
-    rm = coreutils;
-    stat = coreutils;
-    sleep = coreutils;
-    head = coreutils;
-    touch = coreutils;
+    awk = gawk;
+    xargs = findutils;
+    basename = coreutils;
+    dzen-box = __dzen-box;
   };
 in
 
 mk-generic-script {
-  name = "dzen-box";
-  src = __srcScript;
+  name = "pamng";
+  src = ./pamng.sh;
   inherit e;
 }

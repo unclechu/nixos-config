@@ -3,53 +3,53 @@
 
 { lib
 , callPackage
-, writeTextFile
-, symlinkJoin
-, makeBinaryWrapper
 
 , rakudo
 , dunst
 , dbus
+
+, executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
 
 # Build options
 , __scriptSrc ? ./timer.raku
 }:
 
 let
-  executables = {
+  e = (executable-dependencies {
     raku = rakudo;
     dunstify = dunst;
     dunstctl = dunst;
     dbus-monitor = dbus;
-  };
-
-  esc = lib.escapeShellArg;
-  bin = pkg: exe: "${pkg}/bin/${exe}";
-  e = builtins.mapAttrs (n: v: esc (bin v n)) executables;
-  executableFileCheck = x: "[[ -f ${x} || -r ${x} || -x ${x} ]]";
-
-  timerScript = writeTextFile rec {
-    name = "timer";
-    executable = true;
-    destination = "/bin/${name}";
-    text = "#! ${e.raku}\n${builtins.readFile __scriptSrc}";
-    checkPhase = ''(
-      set -o nounset
-      ${builtins.concatStringsSep "\n" (map (x: ''
-        if ! ${executableFileCheck x}; then (set -o xtrace && ${executableFileCheck x}); fi
-      '') (builtins.attrValues e))}
-    )'';
-  };
-
-  wrappedTimerScript = symlinkJoin {
-    name = "${lib.getName timerScript}-wrapped";
-    nativeBuildInputs = [ makeBinaryWrapper ];
-    paths = [ timerScript ];
-    postBuild = ''
-      wrapProgram "$out"/bin/${esc (lib.getName timerScript)} \
-        --prefix PATH : ${esc (lib.makeBinPath (builtins.attrValues executables))}
-    '';
-  };
+  }).extend (final: prev: {
+    scriptDependencies = scriptSrc:
+      final.dependencies
+        "^BEGIN [{] # Guard dependencies$"
+        "^[[:space:]]*need-exe '([^']+)';$"
+        scriptSrc;
+  });
 in
 
-wrappedTimerScript // { inherit timerScript; }
+mk-generic-script {
+  name = "timer";
+  src = __scriptSrc;
+  inherit e;
+
+  buildInputs = [ e.executables.raku ];
+  lintBuildInputs = [ e.executables.raku ];
+
+  cutOffRuntimeDependenciesCheckPhase = ''
+    # The dependencies are already checked, no need to do it in runtime.
+    sed -i '/BEGIN { # Guard dependencies/,/^}$/d' "$src"
+  '';
+
+  lintPhase = ''
+    (
+      export PATH=${lib.escapeShellArg (e.scriptDependenciesBinPath __scriptSrc)}:$PATH
+      # Will check executable dependencies and Raku code for that check.
+      raku -c -- "$pre_patched_src"
+    )
+    # Final script, check that after patching that it is not broken.
+    raku -c -- "$src"
+  '';
+}

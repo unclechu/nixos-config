@@ -1,13 +1,32 @@
+#! /usr/bin/env raku
 # Author: Viacheslav Lotsmanov
-# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+# License: MIT https://raw.githubusercontent.com/unclechu/bashrc/master/LICENSE
+use v6.d;
+close $*IN;
+
+BEGIN { # Guard dependencies
+  need-exe 'xset';
+  need-exe 'setxkbmap';
+  need-exe 'numlockx';
+  need-exe 'pkill';
+  need-exe 'xbindkeys';
+  need-exe 'wenzels-xlib-keys-hack';
+
+  sub which(Str:D $cmd --> IO::Path) { $*SPEC.path.map({ .IO.add($cmd) }).first({ $_ ~~ :f & :x }) }
+  sub need-exe(Str:D $cmd) { which($cmd) or die "$cmd: executable dependency not found\n"; }
+}
 
 my $LOCKFILE := %*ENV{'HOME'}.IO.child: '.wenzels-keyboard.lock';
-my @pkill = (pkill, '-x', '-U', %*ENV{'USER'}, '--');
+my @pkill = ('pkill', '-x', '-U', %*ENV{'USER'}, '--');
 
 sub MAIN( Bool :f(:$force) = False
         , Bool :v(:$verbose) = False
         , Bool :$internal-bg = False
         , Bool :$no-xlib-hack = False
+        , Str:D :$key-repeated-delay
+        , Str:D :$key-repeated-interval
+        , Str:D :$xkb-layout
+        , Str:D :$xkb-options
         )
 {
   my &s = &safe-spawn.assuming: $verbose;
@@ -22,11 +41,11 @@ sub MAIN( Bool :f(:$force) = False
       $LOCKFILE.IO.open(:w).close;
     }
 
-    s True, xset, 'r', 'rate', keyRepeatDelay, keyRepeatInterval;
-    s True, setxkbmap, '-layout', xkbLayout, '-option', xkbOptions;
+    s True, 'xset', 'r', 'rate', $key-repeated-delay, $key-repeated-interval;
+    s True, 'setxkbmap', '-layout', $xkb-layout, '-option', $xkb-options;
 
-    s True, numlockx, 'off';
-    s True, numlockx, 'on';
+    s True, 'numlockx', 'off';
+    s True, 'numlockx', 'on';
 
     "'$*PROGRAM' will do last part in background…".note if $verbose;
 
@@ -43,31 +62,29 @@ sub MAIN( Bool :f(:$force) = False
         "'$*PROGRAM' is restarting 'xbindkeys' in own thread…".note if $verbose;
         s False, @pkill, 'xbindkeys';
         await Promise.in: 1;
-        s True, xbindkeys;
+        s True, 'xbindkeys';
         "'$*PROGRAM' is done with restarting 'xbindkeys'.".note if $verbose;
       },
 
       start {
-        my Str:D \xlib-keys-hack-starter-name = xlib-keys-hack-starter.IO.basename;
-
         if $no-xlib-hack {
-          ("'$*PROGRAM' is stopping '"~xlib-keys-hack-starter-name~"' in own thread…").note
+          ("'$*PROGRAM' is stopping 'wenzels-xlib-keys-hack' in own thread…").note
             if $verbose;
         } else {
-          ("'$*PROGRAM' is restarting '"~xlib-keys-hack-starter-name~"' in own thread…").note
+          ("'$*PROGRAM' is restarting 'wenzels-xlib-keys-hack' in own thread…").note
             if $verbose;
         }
 
-        s False, @pkill, xlib-keys-hack-starter-name;
+        s False, @pkill, 'wenzels-xlib-keys-hack';
         s False, @pkill, 'xlib-keys-hack';
         s False, @pkill, 'xlib-keys-hack-watch-for-window-focus-events';
 
         if $no-xlib-hack {
-          ("'$*PROGRAM' is done with stopping '"~xlib-keys-hack-starter-name~"'.").note if $verbose;
+          ("'$*PROGRAM' is done with stopping 'wenzels-xlib-keys-hack'.").note if $verbose;
         } else {
           await Promise.in: 1;
-          walking-zombie $verbose, xlib-keys-hack-starter;
-          "'$*PROGRAM' is done with restarting '"~xlib-keys-hack-starter-name~"'.".note if $verbose;
+          walking-zombie $verbose, 'wenzels-xlib-keys-hack';
+          "'$*PROGRAM' is done with restarting 'wenzels-xlib-keys-hack'.".note if $verbose;
         }
       }
     );
@@ -106,14 +123,14 @@ sub safe-spawn(Bool $verbose, Bool $warn, *@run-args) {
     await Promise.anyof(
       $promise,
       Promise.in($timeout).then: {
-        my $what = (@run-args[0] == pkill) ?? 'dying' !! 'killing it';
+        my $what = (@run-args[0] == 'pkill') ?? 'dying' !! 'killing it';
         "'$*PROGRAM' command '$cmd' is out of time, $what…".note if $verbose;
         $proc.kill: SIGKILL;
 
-        if @run-args[0] == pkill {
+        if @run-args[0] == 'pkill' {
           my @args = @run-args;
           @args.shift;
-          @args.prepend(pkill, '-KILL');
+          @args.prepend('pkill', '-KILL');
           $cmd = @args.join: ' ';
 
           "'$*PROGRAM' is spawning new killing command '$cmd'…".note

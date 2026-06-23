@@ -1,41 +1,28 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 { lib
-, writeTextFile
-, bash
+, callPackage
+, stdenvNoCC
+, makeBinaryWrapper
+, shellcheck
+, coreutils
 , ghostscript # For PDF → PNG conversion using ImageMagick
 , imagemagick
+
+, executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
+, mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
 }:
+
 let
-  executables = {
-    bash = bash;
+  e = executable-dependencies {
     gs = ghostscript;
     magick = imagemagick;
+    basename = coreutils;
   };
-
-  esc = lib.escapeShellArg;
-  bin = pkg: exe: "${pkg}/bin/${exe}";
-  e = builtins.mapAttrs (n: v: esc (bin v n)) executables;
-  executableFileCheck = x: "[[ -f ${x} || -r ${x} || -x ${x} ]]";
 in
-writeTextFile rec {
+
+mk-generic-script {
   name = "render-kicad-schematic-pdf-to-png";
-  executable = true;
-  destination = "/bin/${name}";
-  checkPhase = ''(
-    set -o nounset
-    ${builtins.concatStringsSep "\n" (map (x: ''
-      if ! ${executableFileCheck x}; then (set -o xtrace && ${executableFileCheck x}); fi
-    '') (builtins.attrValues e))}
-  )'';
-  text = ''
-    #! ${let n = "bash"; in bin executables.${n} n}
-    set -o errexit || exit
-
-    export PATH=${
-      esc (lib.makeBinPath (builtins.attrValues executables))
-    }''${PATH:+:}''${PATH}
-
-    ${builtins.readFile ./render-kicad-schematic-pdf-to-png.sh}
-  '';
+  src = ./render-kicad-schematic-pdf-to-png.sh;
+  inherit e;
 }

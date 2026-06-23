@@ -8,9 +8,10 @@
 # - https://wiki.archlinux.org/title/Display_Power_Management_Signaling
 # - https://unix.stackexchange.com/a/180552
 
-set -o errexit || exit
-set -o nounset
-set -o pipefail
+set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+
+# Guard dependencies
+>/dev/null type xset
 
 action=on
 blank_screen_timeout=$(( 5 * 60 )) # 5 minutes in seconds

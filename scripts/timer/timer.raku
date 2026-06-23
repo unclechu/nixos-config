@@ -3,6 +3,16 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/bashrc/master/LICENSE
 use v6.d;
 close $*IN;
+
+BEGIN { # Guard dependencies
+  need-exe 'dunstify';
+  need-exe 'dunstctl';
+  need-exe 'dbus-monitor';
+
+  sub which(Str:D $cmd --> IO::Path) { $*SPEC.path.map({ .IO.add($cmd) }).first({ $_ ~~ :f & :x }) }
+  sub need-exe(Str:D $cmd) { which($cmd) or die "$cmd: executable dependency not found\n"; }
+}
+
 my Int:D \LineLimit := 60;
 my Str:D \DefaultMessage := 'Time is up!';
 my Str:D \BS := "\c[BACKSPACE]";
