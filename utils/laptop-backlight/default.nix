@@ -1,21 +1,22 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../../nix/sources.nix; in
-{ callPackage
+{ lib
+, callPackage
 , runCommand
 , writeText
 , coreutils
+, hlint
 , haskellPackages
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
+, executable-dependencies ? callPackage ../executable-dependencies.nix {}
 
 # Build options
 , __srcFile ? ./main.hs
 }:
 let
-  inherit (__nix-utils) esc nameOfModuleWrapDir;
-  name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
+  name = "laptop-backlight";
   src = builtins.readFile __srcFile;
   srcFile = writeText "${name}.hs" src;
 
@@ -23,9 +24,17 @@ let
     p.attoparsec
     p.filepath
   ]);
+
+  e = executable-dependencies {
+    chmod = coreutils;
+    ghc = ghc;
+    hlint = hlint;
+  };
 in
 runCommand name {} ''
-  set -Eeuo pipefail || exit
-  ${esc ghc}/bin/ghc -Wall -O2 -o "$out" ${esc srcFile}
-  ${esc coreutils}/bin/chmod +x -- "$out"
+  set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+  ${e.checkPhase}
+  ${e.s.hlint} -- ${lib.escapeShellArg srcFile}
+  ${e.s.ghc} -Wall -O2 -o "$out" ${lib.escapeShellArg srcFile}
+  ${e.s.chmod} +x -- "$out"
 ''

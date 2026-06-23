@@ -12,7 +12,7 @@ import Data.Char (toLower)
 import Data.String (fromString)
 import qualified Data.Attoparsec.ByteString.Char8 as P
 
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), void)
 import Control.Monad.Fail (fail)
 import Control.Applicative ((<|>))
 
@@ -52,6 +52,6 @@ readSomeFile file = go $ getPath file where
 parseNumber ∷ String → Either String Word
 parseNumber = go where
   go = P.parseOnly parser ∘ fromString
-  parser = P.decimal <* (() <$ P.char '\n' <|> pure ()) <* P.endOfInput
+  parser = P.decimal <* (void (P.char '\n') <|> pure ()) <* P.endOfInput
 
 (∘) = (.); (•) = flip (.); (⋄) = (<>); (≤) = (<=)
