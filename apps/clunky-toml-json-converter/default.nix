@@ -7,6 +7,8 @@
 
 { pkgs ? import <nixpkgs> {}
 
+, executable-dependencies ? pkgs.callPackage ../../utils/executable-dependencies.nix {}
+
 , __srcFile ? ./main.hs
 
 , inNixShell ? false # Set automatically to “true” when running from nix-shell
@@ -24,30 +26,31 @@ let
     p.toml-parser
   ]);
 
-  inherit (pkgs) haskell-language-server;
-
-  shell = pkgs.mkShell {
-    buildInputs = [
-      ghc
-      haskell-language-server # LSP
-    ];
-  };
-
   clunky-toml-json-converter =
     let name = "clunky-toml-json-converter"; in
     pkgs.runCommand name {} ''
-      set -o nounset
+      set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+      ${e.checkPhase}
+      ${e.s.hlint} -- ${esc "${__srcFile}"}
       mkdir -p -- "$out/bin"
       executable="$out/bin/"${esc name}
-      ${esc ghc}/bin/ghc -O2 -o "$executable" ${esc "${__srcFile}"}
-      ${esc pkgs.coreutils}/bin/chmod +x -- "$executable"
+      ${e.s.ghc} -Wall -O2 -o "$executable" ${esc "${__srcFile}"}
+      ${e.s.chmod} +x -- "$executable"
     '';
+
+  shell = pkgs.mkShell {
+    buildInputs = pkgs.lib.unique (builtins.attrValues e.executables ++ [
+      pkgs.haskell-language-server # LSP
+    ]);
+  };
+
+  e = executable-dependencies {
+    ghc = ghc;
+    hlint = pkgs.hlint;
+    chmod = pkgs.coreutils;
+  };
 in
 
 (if inNixShell then shell else clunky-toml-json-converter) // {
-  inherit
-    clunky-toml-json-converter
-    shell
-    haskell-language-server
-    ;
+  inherit clunky-toml-json-converter shell;
 }
