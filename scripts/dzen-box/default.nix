@@ -1,54 +1,70 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 let sources = import ../../nix/sources.nix; in
-{ callPackage
+{ lib
+, callPackage
+, stdenvNoCC
+, makeBinaryWrapper
+, shellcheck
 , bash
 , inotify-tools
 , gnused
 , dzen2
+, coreutils
 
 # Overridable dependencies
-, __nix-utils ? callPackage sources.nix-utils {}
+, executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
 
 # Build options
 , __srcScript ? ./main.bash
 }:
-let
-  inherit (__nix-utils) esc writeCheckedExecutable nameOfModuleWrapDir shellCheckers;
-  name = nameOfModuleWrapDir (builtins.unsafeGetAttrPos "a" { a = 0; }).file;
-  src = builtins.readFile __srcScript;
 
-  # Name is executable name and value is a derivation that provides that executable
-  dependencies = {
+let
+  e = executable-dependencies {
     bash = bash;
     inotifywait = inotify-tools;
     sed = gnused;
     dzen2 = dzen2;
+    rm = coreutils;
+    stat = coreutils;
+    sleep = coreutils;
+    head = coreutils;
+    touch = coreutils;
   };
-
-  executables = builtins.mapAttrs (n: v: "${dependencies.${n}}/bin/${n}") dependencies;
-
-  checkPhase =
-    builtins.concatStringsSep "\n"
-      (map shellCheckers.fileIsExecutable (builtins.attrValues executables));
 in
-writeCheckedExecutable name checkPhase ''
-  #! ${executables.bash}
-  set -e || exit
-  exec <&-
 
-  ${
-    builtins.concatStringsSep "\n" (
-      map (drv: "PATH=${esc drv}/bin:$PATH") (builtins.attrValues dependencies)
-    )
-  }
+stdenvNoCC.mkDerivation rec {
+  name = "dzen-box";
+  src = __srcScript;
 
-  # Guard dependencies
-  ${
-    builtins.concatStringsSep "\n" (
-      map (n: ">/dev/null type -P -- ${esc n}") (builtins.attrNames executables)
-    )
-  }
+  nativeBuildInputs = [
+    makeBinaryWrapper
+    shellcheck
+  ];
 
-  ${src}
-''
+  dontUnpack = true;
+  doCheck = true;
+
+  checkPhase = ''
+    runHook preCheck
+    shellcheck -- "$src"
+    ${e.checkPhase}
+    runHook postCheck
+  '';
+
+  postPatch = ''
+    _src=$(basename -- "$src")
+    cp -- "$src" "$_src"
+    # In runtime the script must spawn as fast as possible.
+    # So removing the checks in runtime.
+    sed -i '/# Guard dependencies/,/^$/d' "$_src"
+  '';
+
+  installPhase = ''
+    runHook preInstall
+    BIN_PATH="$out/bin/"${lib.escapeShellArg name}
+    install -Dm755 -- "$_src" "$BIN_PATH"
+    wrapProgram "$BIN_PATH" --prefix PATH : ${e.scriptDependenciesBinPath src}
+    runHook postInstall
+  '';
+}
