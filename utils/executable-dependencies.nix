@@ -87,7 +87,8 @@ executablesMap: rec {
   scriptDependencies = scriptSrc:
     dependencies
       "^# Guard dependencies$"
-      "^>/dev/null type ([^[:space:]]+)$"
+      # Allow comments at the end of line
+      "^>/dev/null type ([^[:space:]]+)([[:space:]]*[#].*)?$"
       scriptSrc;
 
   # Generic executable dependencies list extraction.
