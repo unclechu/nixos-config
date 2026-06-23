@@ -4,8 +4,6 @@ args@{ pkgs, lib, config, systemConfig ? config, ... }:
 let
   sources = import nix/sources.nix;
   inherit (import ./constants.nix) wenzelUserName;
-  nix-utils = pkgs.callPackage sources.nix-utils {};
-  inherit (nix-utils) wrapExecutable;
 
   unstable = let
     pkgs-unstable = import <nixos-unstable> {};
