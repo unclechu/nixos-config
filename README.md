@@ -105,7 +105,7 @@ Or (in case you are already booted to the “audio” system profile):
 ## How to manage external dependencies
 
 Apart from general “nixos” and “nixos-unstable” channels some another external dependencies
-(such as [Home Manager] and my own [nix-utils]) are managed using [niv] tool.
+(such as [Home Manager]) are managed using [niv] tool.
 Those dependencies are described in [nix/sources.json].
 
 You don’t need [niv] to install the dependencies, only to update them, remove or add a new one
@@ -126,6 +126,5 @@ Some third-party dependencies may have different licenses.
 
 [MIT]: LICENSE
 [Home Manager]: https://github.com/nix-community/home-manager
-[nix-utils]: https://github.com/unclechu/nix-utils
 [niv]: https://github.com/nmattia/niv#readme
 [nix/sources.json]: nix/sources.json

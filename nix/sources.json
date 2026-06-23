@@ -83,18 +83,6 @@
         "url": "https://github.com/unclechu/neovimrc/archive/30e8b721ea5e88403f2577d3c0ef80893b96779c.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "nix-utils": {
-        "branch": "master",
-        "description": "My own Nix utils",
-        "homepage": null,
-        "owner": "unclechu",
-        "repo": "nix-utils",
-        "rev": "6fbb12ea371ee6610bf240778fca9c68a68c19d8",
-        "sha256": "11ihrs3s9ar3ww9wr9rbx8py4grkhfyvx27gabf1ifwx1ch2ng0r",
-        "type": "tarball",
-        "url": "https://github.com/unclechu/nix-utils/archive/6fbb12ea371ee6610bf240778fca9c68a68c19d8.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "place-cursor-at": {
         "branch": "v1.0.1",
         "description": "Utility for X11 that helps to move cursor using only keyboard written in Haskell",
