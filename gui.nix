@@ -86,7 +86,7 @@ in
       };
 
       sessionCommands = ''
-        ${esc pkgs.xset}/bin/xset r rate ${esc keyRepeat.delay} ${esc keyRepeat.interval}
+        ${esc (lib.getExe pkgs.xset)} r rate ${esc keyRepeat.delay} ${esc keyRepeat.interval}
       '';
     };
   };

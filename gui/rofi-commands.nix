@@ -4,7 +4,6 @@ args@{ pkgs, lib, ... }:
 
 let
   esc = lib.escapeShellArg;
-  exe = app: "${app}/bin/${lib.getName app}";
   inherit (pkgs) rofi;
 
   themes = {
@@ -13,7 +12,7 @@ let
   };
 
   modes = [ "run" "drun" "window" ];
-  cmd = mode: theme: "${esc (exe rofi)} -show ${esc mode} -theme ${esc themes.${theme}}";
+  cmd = mode: theme: "${esc (lib.getExe rofi)} -show ${esc mode} -theme ${esc themes.${theme}}";
 in
 
 lib.pipe modes [

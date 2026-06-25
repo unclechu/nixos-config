@@ -38,7 +38,7 @@ let
         (tmuxed-alacritty-attach alacritty)
         (tmuxed-alacritty-nuke alacritty)
         (tmuxed-alacritty-new-prompt {
-          TMUXED_ALACRITTY_EXE = "${new}/bin/${lib.getName new}";
+          TMUXED_ALACRITTY_EXE = lib.getExe new;
         } alacritty)
       ];
 
