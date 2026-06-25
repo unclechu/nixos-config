@@ -88,26 +88,23 @@ channels/manage.raku override
    (cd /etc/nixos && channels/manage.raku override)
    ```
 
-## Building “audio” system profile
-
-An alternative configuration optimized for real-time audio processing.
-It’s built as a separate system profile so that the default configuration is available as usual but
-you can boot to one for audio processing when you need it.
-
-You can use [build-audio-profile.sh](build-audio-profile.sh) script to build that configuration as a
-separate profile. If you provide either `boot` or `switch` subcommand argument it will also build
-the regular default profile using `boot` subcommand for `nixos-rebuild` so that the default profile
-boots by default and “audio” profile is available as an option.
+## Building specialized system profiles
 
 ``` sh
-./build-audio-profile.sh boot
+./build-profile.sh audio boot
+./build-profile.sh graphics boot
 ```
 
-Or (in case you are already booted to the “audio” system profile):
+### “graphics” system profile
 
-``` sh
-./build-audio-profile.sh switch
-```
+Enables gGPU globally for performant graphics.
+
+### “audio” system profile
+
+An alternative configuration optimized for real-time audio processing. It’s
+built as a separate system profile so that the default configuration is
+available as usual but you can boot to one for audio processing when you need
+it.
 
 ## How to manage external dependencies
 

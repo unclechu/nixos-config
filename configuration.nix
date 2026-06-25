@@ -1,6 +1,7 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 args@{ config, options, pkgs, lib, ... }:
+
 let
   inherit (import ./constants.nix)
     wenzelUserName
@@ -18,6 +19,7 @@ let
 
   my-packages = import ./my-packages.nix args;
 in
+
 {
   imports = [
     my-packages.configuration

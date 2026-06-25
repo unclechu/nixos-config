@@ -5,6 +5,7 @@
 # https://nixos.wiki/wiki/JACK
 #
 args@{ config, pkgs, lib, ... }:
+
 let
   inherit (import ./constants.nix) systemProfile;
   sources = import nix/sources.nix;
@@ -25,6 +26,7 @@ let
     # services.blueman.enable = lib.mkForce false;
   };
 in
+
 {
   imports = [
     ./configuration.nix

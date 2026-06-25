@@ -22,5 +22,6 @@
   systemProfile = builtins.foldl' (acc: name: acc // { ${name} = name; }) {} [
     "default"
     "audio"
+    "graphics"
   ];
 }
