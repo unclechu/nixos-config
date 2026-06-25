@@ -1,11 +1,7 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-let
-  sources = import ../../nix/sources.nix;
-  constants = import ../../constants.nix;
-in
-
+let sources = import ../../nix/sources.nix; in
 
 # Helpers
 { lib
@@ -26,8 +22,6 @@ in
 , # System config (e.g. self-reference) to extract machine host name.
   # Set to “null” to use in Nix REPL.
   systemConfig
-
-, systemProfile ? constants.systemProfile.default
 }:
 
 let
@@ -91,16 +85,6 @@ let
     wrapProgramArgs = [
       "--set" "DEFAULT_PICOM_CONFIG_FILE" hardwareSpecificConfig
       "--set" "NO_PICOM_SCRIPT_EXE" "${eFinal.b.no-picom}"
-    ] ++ lib.optionals (
-      # Picom does not work with `DRI_PRIME=1`:
-      #
-      #   [ 06/26/2026 00:50:33.902 glx_init ERROR ] GLX_EXT_texture_from_pixmap is not supported by your driver
-      #   [ 06/26/2026 00:50:33.902 initialize_backend FATAL ERROR ] Failed to initialize backend, aborting...
-      #   [ 06/26/2026 00:50:33.902 draw_callback_impl FATAL ERROR ] Pre-render preparation has failed, exiting...
-      #
-      systemProfile == constants.systemProfile.graphics
-    ) [
-      "--set" "DRI_PRIME" "0"
     ];
 
     checkPhase = ''

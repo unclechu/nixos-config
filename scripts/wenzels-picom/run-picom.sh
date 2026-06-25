@@ -35,11 +35,24 @@ else
 	exit 1
 fi
 
+picom_cmd=(picom --config "$PICOM_CONFIG_FILE")
+
+if [[ -v DRI_PRIME ]] && [[ "$DRI_PRIME" == 1 ]]; then
+	# Most Picom backends don’t work with DRI_PRIME=1.
+	#
+	#   [ 06/26/2026 00:50:33.902 glx_init ERROR ] GLX_EXT_texture_from_pixmap is not supported by your driver
+	#   [ 06/26/2026 00:50:33.902 initialize_backend FATAL ERROR ] Failed to initialize backend, aborting...
+	#   [ 06/26/2026 00:50:33.902 draw_callback_impl FATAL ERROR ] Pre-render preparation has failed, exiting...
+	#
+	# Only `xrender` does.
+	picom_cmd+=(--backend xrender)
+fi
+
 # Kill previous Picom run first
 (set -o xtrace; "$NO_PICOM_SCRIPT_EXE")
 
 # Run Picom in background as a daemon
-picom --config "$PICOM_CONFIG_FILE" & disown
+(set -o xtrace; "${picom_cmd[@]}") & disown
 
 # Update Feh-managed wallpaper
 if [[ -f ~/.fehbg ]]; then
