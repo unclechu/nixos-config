@@ -32,7 +32,7 @@ let
     # Main full-range speakers
     mains = {
       inDb = 0.0;
-      outDb = -9.0;
+      outDb = -4.0;
       balanceIn = 0.0; # -1 .. +1
       balanceOut = 0.0; # -1 .. +1
     };
