@@ -175,7 +175,9 @@ sub update-channels(*@channel-names) {
     "Updating these channels: {log-channels @channel-names} " ~
     "(via “sudo”, you may be asked for password)…";
 
-  run «"{sudo}" "{nix-channel}" --update --», @channel-names;
+  # N.B. `--option tarball-ttl 0` is required in case you rollback/downgrade
+  # nixpkgs to reset the cache for the fetched tarball.
+  run «"{sudo}" "{nix-channel}" --option tarball-ttl 0 --update --», @channel-names;
 }
 
 sub log-channels(*@channel-names) of Str:D { @channel-names.map('“'~*~'”').join: ', ' }
