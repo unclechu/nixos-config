@@ -107,6 +107,8 @@ import qualified XMonad.Hooks.ServerMode as ServerMode
 import qualified System.Timeout as Timeout
 import qualified System.Posix.Signals as PosixSignals
 import Data.Function ((&))
+import qualified System.Environment as SysEnv
+import qualified System.Process as SysProc
 
 main ∷ IO ()
 main = do
@@ -1624,6 +1626,20 @@ terminationPrompt xdgRuntimeDir = do
           { cmd = "terminate-xmonad"
           , title = "Terminate XMonad (end X session)"
           , xAction = exitXMonad
+          }
+      , TerminationPromptOption
+          { cmd = "restart-xmonad-full"
+          , title = "Restart XMonad (full)"
+          , xAction =
+              void $ SysEnv.getExecutablePath >>= flip SysProc.spawnProcess
+                ["ctl", "restart-xmonad", "full"]
+          }
+      , TerminationPromptOption
+          { cmd = "restart-xmonad-shallow"
+          , title = "Restart XMonad (shallow)"
+          , xAction =
+              void $ SysEnv.getExecutablePath >>= flip SysProc.spawnProcess
+                ["ctl", "restart-xmonad", "shallow"]
           }
       , TerminationPromptOption
           { cmd = "reboot"
