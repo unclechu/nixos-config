@@ -47,18 +47,6 @@
         "url": "https://github.com/nix-community/home-manager/archive/8355f0a16b2dbb06a97959a918af5b239bbe05ae.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "i3rc": {
-        "branch": "master",
-        "description": "my i3 window manager configs",
-        "homepage": null,
-        "owner": "unclechu",
-        "repo": "i3rc",
-        "rev": "403d24320b3b4497c50f3632b9efc31ce381f35b",
-        "sha256": "0aigbb263qgz9bmz28jpnwzn5mhk82c6i729926mwbx0hx82m44v",
-        "type": "tarball",
-        "url": "https://github.com/unclechu/i3rc/archive/403d24320b3b4497c50f3632b9efc31ce381f35b.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "musnix": {
         "branch": "master",
         "description": "Real-time audio in NixOS",

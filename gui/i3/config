@@ -1,0 +1,648 @@
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+
+# TODO figure out how to prevent some apps from *real* fullscreen (like in xmonad)
+
+# TODO gui app: fuzzy-select named workspace
+# TODO gui app: renaming workspaces
+# TODO gui app: marking windows
+# TODO gui app: navigating by marked windows
+
+set $m Mod4
+set $a Mod1
+set $s Shift
+
+set $d1 i3-msg -t get_outputs | jq -r '[.[] | select(.active)] | sort_by(.rect.x, .rect.y) | .[0].name'
+set $d2 i3-msg -t get_outputs | jq -r '[.[] | select(.active)] | sort_by(.rect.x, .rect.y) | .[1].name'
+set $d3 i3-msg -t get_outputs | jq -r '[.[] | select(.active)] | sort_by(.rect.x, .rect.y) | .[2].name'
+set $d4 i3-msg -t get_outputs | jq -r '[.[] | select(.active)] | sort_by(.rect.x, .rect.y) | .[3].name'
+
+set $new_workspace "i3-msg workspace -- $(( $(i3-msg -t get_workspaces | jq 'map(select(.num > 0).num) | [range(1; max+2)]-. | min') ))"
+
+# useful when another screen isn't used at the moment
+set $tmp_workspace "i3-msg rename workspace to tmp$(( ((RANDOM%9)+1) + (((RANDOM%9)+1)*10) + (((RANDOM%9)+1)*100) ))"
+
+set $exterminate "kill -KILL -- $(( $(xdotool getactivewindow getwindowpid) ))"
+
+set $pause_proc "kill -STOP -- $(( $(xdotool getactivewindow getwindowpid) ))"
+set $pause_proc_rec "( n=0; rec() { set -eu || return; if (( ++n > 10 )); then return 1; fi; kill -STOP -- $(($1)); pgrep -P $(($1)) | while read -r x; do rec $((x)); done; } && rec $(( $(xdotool getactivewindow getwindowpid) )) )"
+
+set $resume_proc "kill -CONT -- $(( $(xdotool getactivewindow getwindowpid) ))"
+set $resume_proc_rec "( n=0; rec() { set -eu || return; if (( ++n > 10 )); then return 1; fi; kill -CONT -- $(($1)); pgrep -P $(($1)) | while read -r x; do rec $((x)); done; } && rec $(( $(xdotool getactivewindow getwindowpid) )) )"
+
+set $terminal_dark  "i3-sensible-terminal"
+set $terminal_light "i3-sensible-terminal"
+
+set $run_dark   "gmrun"
+set $run_light  "gmrun"
+set $drun_dark  "dmenu_run"
+set $drun_light "dmenu_run"
+
+set $select_window_dark  "rofi -show window"
+set $select_window_light "rofi -show window"
+
+# Font for window titles. Will also be used by the bar unless a different font
+# is used in the ‘bar {}’ block below.
+# font pango:monospace 8
+font pango:Hack 9
+
+# This font is widely installed, provides lots of unicode glyphs, right-to-left
+# text rendering and scalability on retina/hidpi displays (thanks to pango).
+#font pango:DejaVu Sans Mono 8
+
+# Use Mouse+$m to drag floating windows to their wanted position
+floating_modifier $m
+
+floating_minimum_size 5 x 5
+
+focus_follows_mouse no
+popup_during_fullscreen smart
+
+# start a terminal
+bindsym $m+Return    exec $terminal_dark
+bindsym $m+$a+Return exec $terminal_light
+
+# also: i3-dmenu-desktop
+bindsym $m+semicolon       exec $run_dark
+bindsym $m+$a+semicolon    exec $run_light
+bindsym $m+$s+semicolon    exec $drun_dark
+bindsym $m+$s+$a+semicolon exec $drun_light
+
+# run window selection app
+bindsym $m+slash    exec $select_window_dark
+bindsym $m+$a+slash exec $select_window_light
+
+bindsym $m+apostrophe exec gpaste-gui
+bindsym $m+$a+apostrophe exec gpaste-gui -m=choose
+
+bindsym $m+n exec timeout 2s invert-window-colors
+bindsym $m+m exec place-cursor-at
+
+bindsym $m+u exec "i3-msg focus output $($d1)"
+bindsym $m+i exec "i3-msg focus output $($d2)"
+bindsym $m+o exec "i3-msg focus output $($d3)"
+bindsym $m+p exec "i3-msg focus output $($d4)"
+
+bindsym $m+$a+u exec sh -c 'place-cursor-at rb 1 && place-cursor-at'
+bindsym $m+$a+i exec sh -c 'place-cursor-at rb 2 && place-cursor-at'
+bindsym $m+$a+o exec sh -c 'place-cursor-at rb 3 && place-cursor-at'
+bindsym $m+$a+p exec sh -c 'place-cursor-at rb 4 && place-cursor-at'
+
+bindsym $m+$s+u exec "i3-msg move container to output $($d1)"
+bindsym $m+$s+i exec "i3-msg move container to output $($d2)"
+bindsym $m+$s+o exec "i3-msg move container to output $($d3)"
+bindsym $m+$s+p exec "i3-msg move container to output $($d4)"
+
+bindsym Print exec gnome-screenshot
+bindsym $m+Print exec gnome-screenshot -w
+bindsym --release Pause exec gnome-screenshot -a
+bindsym $m+Pause exec gnome-screenshot -ia
+
+bindsym XF86Calculator exec gnome-calculator
+
+bindsym $m+XF86AudioPlay exec audacious --play
+bindsym XF86AudioPlay exec audacious --play-pause
+bindsym XF86AudioPrev exec audacious --rew
+bindsym XF86AudioNext exec audacious --fwd
+bindsym XF86AudioStop exec audacious --stop
+
+bindsym $m+XF86AudioMute        exec pamng reset
+bindsym XF86AudioMute           exec pamng mute
+bindsym XF86AudioLowerVolume    exec pamng dec
+bindsym $s+XF86AudioLowerVolume exec pamng dec '5.0dB'
+bindsym XF86AudioRaiseVolume    exec pamng inc
+bindsym $s+XF86AudioRaiseVolume exec pamng inc '5.0dB'
+
+bindsym XF86MonBrightnessDown    exec screen-backlight -1%
+bindsym $s+XF86MonBrightnessDown exec screen-backlight -5%
+bindsym XF86MonBrightnessUp      exec screen-backlight +1%
+bindsym $s+XF86MonBrightnessUp   exec screen-backlight +5%
+
+# change focus
+bindsym $m+h focus left
+bindsym $m+j focus down
+bindsym $m+k focus up
+bindsym $m+l focus right
+
+# alternatively, you can use the cursor keys:
+bindsym $m+Left  focus left
+bindsym $m+Down  focus down
+bindsym $m+Up    focus up
+bindsym $m+Right focus right
+
+# move focused window
+bindsym $m+$a+h move left
+bindsym $m+$a+j move down
+bindsym $m+$a+k move up
+bindsym $m+$a+l move right
+
+# alternatively, you can use the cursor keys:
+bindsym $m+$a+Left  move left
+bindsym $m+$a+Down  move down
+bindsym $m+$a+Up    move up
+bindsym $m+$a+Right move right
+
+bindsym $m+c split v
+bindsym $m+v split h
+
+# enter fullscreen mode for the focused container
+bindsym $m+f fullscreen toggle
+
+# change container layout (stacked, tabbed, toggle split)
+bindsym $m+s layout stacking
+bindsym $m+w layout tabbed
+bindsym $m+e layout toggle split
+
+# toggle tiling / floating
+bindsym $m+$a+space floating toggle
+
+# change focus between tiling / floating windows
+bindsym $m+space focus mode_toggle
+
+# focus the parent container
+bindsym $m+a focus parent
+# focus the child container
+bindsym $m+q focus child
+
+# switch to workspace
+bindsym $m+1 workspace 1
+bindsym $m+2 workspace 2
+bindsym $m+3 workspace 3
+bindsym $m+4 workspace 4
+bindsym $m+5 workspace 5
+bindsym $m+6 workspace 6
+bindsym $m+7 workspace 7
+bindsym $m+8 workspace 8
+bindsym $m+9 workspace 9
+bindsym $m+0 workspace 10
+
+# move focused container to workspace
+bindsym $m+$a+1 move container to workspace 1
+bindsym $m+$a+2 move container to workspace 2
+bindsym $m+$a+3 move container to workspace 3
+bindsym $m+$a+4 move container to workspace 4
+bindsym $m+$a+5 move container to workspace 5
+bindsym $m+$a+6 move container to workspace 6
+bindsym $m+$a+7 move container to workspace 7
+bindsym $m+$a+8 move container to workspace 8
+bindsym $m+$a+9 move container to workspace 9
+bindsym $m+$a+0 move container to workspace 10
+
+bindsym $m+z workspace prev_on_output
+bindsym $m+x workspace next_on_output
+bindsym $m+$a+z move container to workspace prev_on_output
+bindsym $m+$a+x move container to workspace next_on_output
+bindsym $m+b exec $new_workspace
+
+bindsym $m+comma     move workspace to output left
+bindsym $m+$s+comma  move workspace to output down
+bindsym $m+period    move workspace to output right
+bindsym $m+$s+period move workspace to output up
+
+# reload the configuration file
+bindsym $m+$a+c reload
+
+# resize window (you can also use the mouse for that)
+mode "resize" {
+  bindsym Escape mode "default"
+  bindsym $m+r   mode "resize (big steps)"
+  bindsym $m+t   mode "positioning"
+
+  bindsym $m+$a+space mode "default" ; floating toggle
+  bindsym $m+space    mode "default" ; focus mode_toggle
+
+  bindsym $m+h focus left
+  bindsym $m+j focus down
+  bindsym $m+k focus up
+  bindsym $m+l focus right
+
+  bindsym h resize shrink width  1 px or 1 ppt
+  bindsym j resize grow   height 1 px or 1 ppt
+  bindsym k resize shrink height 1 px or 1 ppt
+  bindsym l resize grow   width  1 px or 1 ppt
+
+  bindsym $a+h resize shrink width  5 px or 5 ppt
+  bindsym $a+j resize grow   height 5 px or 5 ppt
+  bindsym $a+k resize shrink height 5 px or 5 ppt
+  bindsym $a+l resize grow   width  5 px or 5 ppt
+
+  bindsym $s+h resize shrink width  10 px or 10 ppt
+  bindsym $s+j resize grow   height 10 px or 10 ppt
+  bindsym $s+k resize shrink height 10 px or 10 ppt
+  bindsym $s+l resize grow   width  10 px or 10 ppt
+
+  bindsym Left  resize shrink width  10 px or 10 ppt
+  bindsym Down  resize grow   height 10 px or 10 ppt
+  bindsym Up    resize shrink height 10 px or 10 ppt
+  bindsym Right resize grow   width  10 px or 10 ppt
+}
+
+mode "resize (big steps)" {
+  bindsym Escape mode "default"
+  bindsym $m+r   mode "resize"
+  bindsym $m+t   mode "positioning (big steps)"
+
+  bindsym $m+$a+space mode "default" ; floating toggle
+  bindsym $m+space    mode "default" ; focus mode_toggle
+
+  bindsym $m+h focus left
+  bindsym $m+j focus down
+  bindsym $m+k focus up
+  bindsym $m+l focus right
+
+  bindsym h resize shrink width  10 px or 10 ppt
+  bindsym j resize grow   height 10 px or 10 ppt
+  bindsym k resize shrink height 10 px or 10 ppt
+  bindsym l resize grow   width  10 px or 10 ppt
+
+  bindsym $a+h resize shrink width  50 px or 50 ppt
+  bindsym $a+j resize grow   height 50 px or 50 ppt
+  bindsym $a+k resize shrink height 50 px or 50 ppt
+  bindsym $a+l resize grow   width  50 px or 50 ppt
+
+  bindsym $s+h resize shrink width  100 px or 100 ppt
+  bindsym $s+j resize grow   height 100 px or 100 ppt
+  bindsym $s+k resize shrink height 100 px or 100 ppt
+  bindsym $s+l resize grow   width  100 px or 100 ppt
+
+  bindsym Left  resize shrink width  100 px or 100 ppt
+  bindsym Down  resize grow   height 100 px or 100 ppt
+  bindsym Up    resize shrink height 100 px or 100 ppt
+  bindsym Right resize grow   width  100 px or 100 ppt
+}
+
+mode "positioning" {
+  bindsym Escape mode "default"
+  bindsym $m+r   mode "resize"
+  bindsym $m+t   mode "positioning (big steps)"
+
+  bindsym $m+$a+space mode "default" ; floating toggle
+  bindsym $m+space    mode "default" ; focus mode_toggle
+
+  bindsym $m+h focus left
+  bindsym $m+j focus down
+  bindsym $m+k focus up
+  bindsym $m+l focus right
+
+  bindsym h move left
+  bindsym j move down
+  bindsym k move up
+  bindsym l move right
+
+  bindsym $a+h move left  ; move left
+  bindsym $a+j move down  ; move down
+  bindsym $a+k move up    ; move up
+  bindsym $a+l move right ; move right
+
+  bindsym $s+h move left  ; move left  ; move left  ; move left
+  bindsym $s+j move down  ; move down  ; move down  ; move down
+  bindsym $s+k move up    ; move up    ; move up    ; move up
+  bindsym $s+l move right ; move right ; move right ; move right
+
+  bindsym Left  move left
+  bindsym Down  move down
+  bindsym Up    move up
+  bindsym Right move right
+}
+
+mode "positioning (big steps)" {
+  bindsym Escape mode "default"
+  bindsym $m+r   mode "resize (big steps)"
+  bindsym $m+t   mode "positioning"
+
+  bindsym $m+$a+space mode "default" ; floating toggle
+  bindsym $m+space    mode "default" ; focus mode_toggle
+
+  bindsym $m+h focus left
+  bindsym $m+j focus down
+  bindsym $m+k focus up
+  bindsym $m+l focus right
+
+  bindsym h move left  ; move left  ; move left  ; move left
+  bindsym j move down  ; move down  ; move down  ; move down
+  bindsym k move up    ; move up    ; move up    ; move up
+  bindsym l move right ; move right ; move right ; move right
+
+  bindsym $a+h move left  ; move left  ; move left  ; move left  ; \
+               move left  ; move left  ; move left  ; move left  ; \
+               move left  ; move left  ; move left  ; move left  ; \
+               move left  ; move left  ; move left  ; move left
+  bindsym $a+j move down  ; move down  ; move down  ; move down  ; \
+               move down  ; move down  ; move down  ; move down  ; \
+               move down  ; move down  ; move down  ; move down  ; \
+               move down  ; move down  ; move down  ; move down
+  bindsym $a+k move up    ; move up    ; move up    ; move up    ; \
+               move up    ; move up    ; move up    ; move up    ; \
+               move up    ; move up    ; move up    ; move up    ; \
+               move up    ; move up    ; move up    ; move up
+  bindsym $a+l move right ; move right ; move right ; move right ; \
+               move right ; move right ; move right ; move right ; \
+               move right ; move right ; move right ; move right ; \
+               move right ; move right ; move right ; move right
+
+  bindsym $s+h move left  ; move left  ; move left  ; move left  ; \
+               move left  ; move left  ; move left  ; move left  ; \
+               move left  ; move left  ; move left  ; move left  ; \
+               move left  ; move left  ; move left  ; move left  ; \
+               move left  ; move left  ; move left  ; move left  ; \
+               move left  ; move left  ; move left  ; move left  ; \
+               move left  ; move left  ; move left  ; move left  ; \
+               move left  ; move left  ; move left  ; move left
+  bindsym $s+j move down  ; move down  ; move down  ; move down  ; \
+               move down  ; move down  ; move down  ; move down  ; \
+               move down  ; move down  ; move down  ; move down  ; \
+               move down  ; move down  ; move down  ; move down  ; \
+               move down  ; move down  ; move down  ; move down  ; \
+               move down  ; move down  ; move down  ; move down  ; \
+               move down  ; move down  ; move down  ; move down  ; \
+               move down  ; move down  ; move down  ; move down
+  bindsym $s+k move up    ; move up    ; move up    ; move up    ; \
+               move up    ; move up    ; move up    ; move up    ; \
+               move up    ; move up    ; move up    ; move up    ; \
+               move up    ; move up    ; move up    ; move up    ; \
+               move up    ; move up    ; move up    ; move up    ; \
+               move up    ; move up    ; move up    ; move up    ; \
+               move up    ; move up    ; move up    ; move up    ; \
+               move up    ; move up    ; move up    ; move up
+  bindsym $s+l move right ; move right ; move right ; move right ; \
+               move right ; move right ; move right ; move right ; \
+               move right ; move right ; move right ; move right ; \
+               move right ; move right ; move right ; move right ; \
+               move right ; move right ; move right ; move right ; \
+               move right ; move right ; move right ; move right ; \
+               move right ; move right ; move right ; move right ; \
+               move right ; move right ; move right ; move right
+
+  bindsym Left  move left  ; move left  ; move left  ; move left  ; \
+                move left  ; move left  ; move left  ; move left  ; \
+                move left  ; move left  ; move left  ; move left  ; \
+                move left  ; move left  ; move left  ; move left  ; \
+                move left  ; move left  ; move left  ; move left  ; \
+                move left  ; move left  ; move left  ; move left  ; \
+                move left  ; move left  ; move left  ; move left  ; \
+                move left  ; move left  ; move left  ; move left
+  bindsym Down  move down  ; move down  ; move down  ; move down  ; \
+                move down  ; move down  ; move down  ; move down  ; \
+                move down  ; move down  ; move down  ; move down  ; \
+                move down  ; move down  ; move down  ; move down  ; \
+                move down  ; move down  ; move down  ; move down  ; \
+                move down  ; move down  ; move down  ; move down  ; \
+                move down  ; move down  ; move down  ; move down  ; \
+                move down  ; move down  ; move down  ; move down
+  bindsym Up    move up    ; move up    ; move up    ; move up    ; \
+                move up    ; move up    ; move up    ; move up    ; \
+                move up    ; move up    ; move up    ; move up    ; \
+                move up    ; move up    ; move up    ; move up    ; \
+                move up    ; move up    ; move up    ; move up    ; \
+                move up    ; move up    ; move up    ; move up    ; \
+                move up    ; move up    ; move up    ; move up    ; \
+                move up    ; move up    ; move up    ; move up
+  bindsym Right move right ; move right ; move right ; move right ; \
+                move right ; move right ; move right ; move right ; \
+                move right ; move right ; move right ; move right ; \
+                move right ; move right ; move right ; move right ; \
+                move right ; move right ; move right ; move right ; \
+                move right ; move right ; move right ; move right ; \
+                move right ; move right ; move right ; move right ; \
+                move right ; move right ; move right ; move right
+}
+
+mode "do" {
+  bindsym Escape mode "default"
+
+  bindsym $m+$a+space mode "default" ; floating toggle
+  bindsym $m+space    mode "default" ; focus mode_toggle
+
+  # close focused window
+  # mnemonic: ‘w’ is for ‘Wipe’ or a common (Ctrl+W) hotkey that closes stuff
+  bindsym $m+q kill; mode "default"
+  bindsym    q kill
+  # send SIGKILL to focused window
+  # mnemonic: ‘q’ is for ‘Quit it!’
+  bindsym $m+$a+q exec $exterminate; mode "default"
+  bindsym    $s+q exec $exterminate
+  # send SIGSTOP to focused window
+  # mnemonic: ‘h’ is for ‘Hold’
+  bindsym $m+h exec $pause_proc; mode "default"
+  bindsym    h exec $pause_proc
+  # STOP focused window and all its children
+  bindsym $m+$a+h exec $pause_proc_rec; mode "default"
+  bindsym    $s+h exec $pause_proc_rec
+  # send SIGCONT to focused window
+  # mnemonic: ‘j’ is for ‘Join’
+  bindsym $m+j exec $resume_proc; mode "default"
+  bindsym    j exec $resume_proc
+  # CONTinue focused window and all its children
+  bindsym $m+$a+j exec $resume_proc_rec; mode "default"
+  bindsym    $s+j exec $resume_proc_rec
+
+  # restart i3 in-place
+  # (preserves your layout/session, can be used to upgrade i3)
+  # mnemonic: ‘r’ is for ‘Restart’
+  bindsym $m+r restart
+  # exit i3 (logs you out of your X session)
+  # mnemonic: ‘e’ is for ‘Exit’
+  bindsym $m+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"; mode "default"
+
+  # mnemonic: ‘a’ is for ‘Autostart’
+  bindsym $m+a exec autostart-setup; mode "default"
+  # mnemonic: ‘i’ is for ‘Input’
+  bindsym $m+i exec input-setup;     mode "default"
+
+  bindsym $m+z exec place-cursor-at rb 1; mode "default"
+  bindsym    z exec place-cursor-at rb 1
+  bindsym $m+x exec place-cursor-at rb 2; mode "default"
+  bindsym    x exec place-cursor-at rb 2
+  bindsym $m+c exec place-cursor-at rb 3; mode "default"
+  bindsym    c exec place-cursor-at rb 3
+  bindsym $m+v exec place-cursor-at rb 4; mode "default"
+  bindsym    v exec place-cursor-at rb 4
+  bindsym $m+g exec place-cursor-at; mode "default"
+  bindsym    g exec place-cursor-at
+
+  # mnemonic: ‘f’ is for ‘Force’ (force a window to appear on all workspaces)
+  bindsym $m+f sticky toggle; mode "default"
+  bindsym    f sticky toggle
+
+  # mnemonic: ‘b’ is for ‘Border’
+  bindsym $m+b border toggle; mode "default"
+  bindsym    b border toggle
+
+  # mnemonic: ‘s’ is for ‘Shutter’
+  bindsym $m+s exec shutter; mode "default"
+  bindsym    s exec shutter
+
+  # jump to audacious windows (when it's float, winamp classic interface)
+  # mnemonic: ‘m’ is for ‘Music’
+  bindsym $m+m [class="^Audacious$" title="Audacious$" floating] focus; mode "default"
+  bindsym    m [class="^Audacious$" title="Audacious$" floating] focus
+  # mnemonic: ‘p’ is for ‘Playlist’
+  bindsym $m+p [class="^Audacious$" title="^Audacious Playlist Editor$" floating] focus; mode "default"
+  bindsym    p [class="^Audacious$" title="^Audacious Playlist Editor$" floating] focus
+
+  # mnemonic: ‘n’ is for ‘Negative’
+  bindsym $m+n exec timeout 2s invert-window-colors app all; mode "default"
+  bindsym    n exec timeout 2s invert-window-colors app all
+
+  # renames current workspace to temporary name
+  # mnemonic: ‘t’ is for ‘Temporary’
+  bindsym $m+t exec $tmp_workspace; mode "default"
+  bindsym    t exec $tmp_workspace
+}
+
+mode "workspace" {
+  bindsym Escape mode "default"
+
+  bindsym $m+$a+space mode "default" ; floating toggle
+  bindsym $m+space    mode "default" ; focus mode_toggle
+
+  bindsym $m+u exec "i3-msg focus output `$d1`"
+  bindsym $m+i exec "i3-msg focus output `$d2`"
+  bindsym $m+o exec "i3-msg focus output `$d3`"
+  bindsym $m+p exec "i3-msg focus output `$d4`"
+
+  bindsym $a+u exec "i3-msg move workspace to output `$d1`"
+  bindsym $a+i exec "i3-msg move workspace to output `$d2`"
+  bindsym $a+o exec "i3-msg move workspace to output `$d3`"
+  bindsym $a+p exec "i3-msg move workspace to output `$d4`"
+
+  bindsym    i                   workspace im; mode "default"
+  bindsym $s+i move container to workspace im; mode "default"
+
+  bindsym    m                   workspace music; mode "default"
+  bindsym $s+m move container to workspace music; mode "default"
+
+  bindsym    v                   workspace video; mode "default"
+  bindsym $s+v move container to workspace video; mode "default"
+
+  bindsym    g                   workspace main; mode "default"
+  bindsym $s+g move container to workspace main; mode "default"
+
+  bindsym    c                   workspace code; mode "default"
+  bindsym $s+c move container to workspace code; mode "default"
+
+  bindsym    1                   workspace 1; mode "default"
+  bindsym $s+1 move container to workspace 1; mode "default"
+  bindsym    2                   workspace 2; mode "default"
+  bindsym $s+2 move container to workspace 2; mode "default"
+  bindsym    3                   workspace 3; mode "default"
+  bindsym $s+3 move container to workspace 3; mode "default"
+  bindsym    4                   workspace 4; mode "default"
+  bindsym $s+4 move container to workspace 4; mode "default"
+  bindsym    5                   workspace 5; mode "default"
+  bindsym $s+5 move container to workspace 5; mode "default"
+  bindsym    6                   workspace 6; mode "default"
+  bindsym $s+6 move container to workspace 6; mode "default"
+  bindsym    7                   workspace 7; mode "default"
+  bindsym $s+7 move container to workspace 7; mode "default"
+  bindsym    8                   workspace 8; mode "default"
+  bindsym $s+8 move container to workspace 8; mode "default"
+  bindsym    9                   workspace 9; mode "default"
+  bindsym $s+9 move container to workspace 9; mode "default"
+  bindsym    0                   workspace 10; mode "default"
+  bindsym $s+0 move container to workspace 10; mode "default"
+
+  bindsym    z                   workspace prev_on_output
+  bindsym $s+z move container to workspace prev_on_output
+  bindsym    x                   workspace next_on_output
+  bindsym $s+x move container to workspace next_on_output
+
+  bindsym b workspace back_and_forth; mode "default"
+  bindsym n exec $new_workspace; mode "default"
+}
+
+mode "mouse-cursor" {
+  bindsym Escape mode "default"
+
+  bindsym $m+$a+space mode "default" ; floating toggle
+  bindsym $m+space    mode "default" ; focus mode_toggle
+
+  bindsym h exec "xdotool mousemove_relative -- -10  0"
+  bindsym j exec "xdotool mousemove_relative --   0 +10"
+  bindsym k exec "xdotool mousemove_relative --   0 -10"
+  bindsym l exec "xdotool mousemove_relative -- +10  0"
+
+  bindsym $a+h exec "xdotool mousemove_relative -- -50  0"
+  bindsym $a+j exec "xdotool mousemove_relative --   0 +50"
+  bindsym $a+k exec "xdotool mousemove_relative --   0 -50"
+  bindsym $a+l exec "xdotool mousemove_relative -- +50  0"
+
+  bindsym $s+h exec "xdotool mousemove_relative -- -100  0"
+  bindsym $s+j exec "xdotool mousemove_relative --    0 +100"
+  bindsym $s+k exec "xdotool mousemove_relative --    0 -100"
+  bindsym $s+l exec "xdotool mousemove_relative -- +100  0"
+
+  bindsym q exec "place-cursor-at LT"
+  bindsym a exec "place-cursor-at LC"
+  bindsym z exec "place-cursor-at LB"
+  bindsym w exec "place-cursor-at CT"
+  bindsym s exec "place-cursor-at CC"
+  bindsym x exec "place-cursor-at CB"
+  bindsym e exec "place-cursor-at RT"
+  bindsym d exec "place-cursor-at RC"
+  bindsym c exec "place-cursor-at RB"
+
+  # one column after "place-cursor-at" keys
+  bindsym r exec "xdotool mousedown 2 mouseup 2"
+  bindsym $m+r exec "xdotool mousedown 2 mouseup 2"; mode "default"
+  bindsym f exec "xdotool mousedown 1 mouseup 1"
+  bindsym $m+f exec "xdotool mousedown 1 mouseup 1"; mode "default"
+  bindsym v exec "xdotool mousedown 3 mouseup 3"
+  bindsym $m+v exec "xdotool mousedown 3 mouseup 3"; mode "default"
+
+  bindsym $m+h focus left
+  bindsym $m+j focus down
+  bindsym $m+k focus up
+  bindsym $m+l focus right
+
+  bindsym u exec "i3-msg focus output `$d1`"
+  bindsym i exec "i3-msg focus output `$d2`"
+  bindsym o exec "i3-msg focus output `$d3`"
+  bindsym p exec "i3-msg focus output `$d4`"
+
+  bindsym $s+u exec "i3-msg move workspace to output `$d1`"
+  bindsym $s+i exec "i3-msg move workspace to output `$d2`"
+  bindsym $s+o exec "i3-msg move workspace to output `$d3`"
+  bindsym $s+p exec "i3-msg move workspace to output `$d4`"
+}
+
+# modes switching hotkeys
+bindsym $m+d mode "do"
+bindsym $m+g mode "workspace"
+bindsym $m+r mode "resize"
+bindsym $m+t mode "positioning"
+bindsym $m+$a+m mode "mouse-cursor"
+
+bar {
+  status_command unclechu-i3-status
+  tray_output primary
+}
+
+# Red border for focused window (easier to notice)
+# class                 border  backgr. text    indicator child_border
+client.focused          #4c7899 #285577 #ffffff #2e9ef4   #ff0000
+
+default_border          pixel 1
+default_floating_border pixel 1
+
+for_window [class="."]                 border pixel 1
+for_window [title="^Place Cursor At"]  border none
+for_window [class="^qjackctl$"]        floating enable
+for_window [title="^Android Emulator"] floating enable
+for_window [class="^Gmrun$"]           move position center
+
+for_window [class="Firefox" window_role="^PictureInPicture$"] floating enable
+for_window [class="firefox" window_role="^PictureInPicture$"] floating enable
+for_window [class="Firefox" window_role="^PictureInPicture$"] sticky   enable
+for_window [class="firefox" window_role="^PictureInPicture$"] sticky   enable
+
+# Sticky by default when switching to floating
+for_window [class="^vlc$"]      sticky enable
+for_window [class="^smplayer$"] sticky enable
+
+# Calf JACK Host is floating by default, making it be tiled
+for_window [class="calfjackhost"] floating disable
+
+focus_on_window_activation none
+
+exec_always autostart-setup

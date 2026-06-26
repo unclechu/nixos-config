@@ -9,7 +9,7 @@ in
 {
   imports = [
     gui/xmonad
-    gui/i3.nix
+    gui/i3
   ];
 
   environment = {

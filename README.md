@@ -5,7 +5,6 @@ Note that some significant parts of this config have their own repositories:
 - [neovimrc](https://github.com/unclechu/neovimrc)
 - [bashrc](https://github.com/unclechu/bashrc)
 - [tmuxrc](https://github.com/unclechu/tmuxrc)
-- [i3rc](https://github.com/unclechu/i3rc)
 
 ## Usage
 
