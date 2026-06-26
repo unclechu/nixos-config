@@ -1,6 +1,7 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 args@{ pkgs, lib, config, systemConfig ? config, ... }:
+
 let
   sources = import nix/sources.nix;
   inherit (import ./constants.nix) wenzelUserName;
@@ -14,13 +15,11 @@ let
 
   # *** apps ***
 
-  wenzels-bash       = pkgs.callPackage apps/wenzels-bash.nix      {};
-  tmux-config        = pkgs.callPackage sources.tmuxrc             {};
-  xlib-keys-hack     = pkgs.callPackage sources.xlib-keys-hack     {};
-  gnome-screenshot   = pkgs.callPackage apps/gnome-screenshot.nix  {};
-  unclechu-i3-status = pkgs.callPackage sources.unclechu-i3-status {};
-
+  wenzels-bash = pkgs.callPackage apps/wenzels-bash.nix {};
+  tmux-config = pkgs.callPackage sources.tmuxrc {};
   gpaste-gui = pkgs.callPackage sources.gpaste-gui {};
+  terminal-emulators = import ./terminal-emulators.nix { inherit pkgs lib; };
+  invert-window-colors = pkgs.callPackage apps/invert-window-colors {};
 
   vims =
     let
@@ -35,65 +34,26 @@ let
       bashEnvFile = "${wenzels-bash.dir}/.bash_aliases";
     };
 
-  terminal-emulators = import ./terminal-emulators.nix { inherit pkgs lib; };
-
-  wenzels-xlib-keys-hack = pkgs.callPackage apps/wenzels-xlib-keys-hack {};
-  wenzels-keyboard-script = pkgs.callPackage scripts/wenzels-keyboard {};
-  wenzels-xbindkeys = pkgs.callPackage apps/wenzels-xbindkeys.nix {};
-
-  firefox = pkgs.callPackage apps/firefox.nix {};
-
-  nheko = pkgs.callPackage apps/nheko {};
-
-  hell = pkgs.callPackage apps/hell {};
-
-  midi-trigger = pkgs.callPackage sources.MIDI-Trigger {
-    src = sources.MIDI-Trigger;
-  };
-
-  pspg = pkgs.callPackage apps/pspg.nix {};
+  # *** gui stuff ***
 
   polybar = pkgs.callPackage gui/polybar/polybar.nix {};
   run-polybar = pkgs.callPackage gui/polybar/run-polybar.nix { inherit polybar; };
 
-  # *** scripts ***
+  # *** session setup scripts ***
 
-  autolock = pkgs.callPackage scripts/autolock.nix {};
-  cursor-to-display = pkgs.callPackage "${sources.i3rc}/nix/apps/cursor-to-display.nix" {};
-
-  invert-window-colors = pkgs.callPackage "${sources.i3rc}/nix/apps/invert-window-colors-nim.nix" {
-    inherit (pkgs) nim;
-  };
-
-  timer = pkgs.callPackage scripts/timer {};
-
-  dzen-box = pkgs.callPackage scripts/dzen-box {};
-  screen-backlight = pkgs.callPackage scripts/screen-backlight.nix {};
-  locktop = pkgs.callPackage scripts/locktop.nix {};
-  pamng = pkgs.callPackage scripts/pamng {};
-  pa-add-mono-sink = pkgs.callPackage scripts/pa-add-mono-sink.nix {};
   autostart-setup = pkgs.callPackage scripts/autostart-setup.nix { inherit systemConfig; };
   pointers-setup = pkgs.callPackage scripts/pointers-setup.nix {};
   input-setup = pkgs.callPackage scripts/input-setup.nix {};
-  wenzels-picom = pkgs.callPackage scripts/wenzels-picom { inherit systemConfig; };
-  genpass = pkgs.callPackage scripts/genpass.nix {};
   pointers = pkgs.callPackage scripts/pointers.nix {};
-  pulseaudio-share-server = pkgs.callPackage scripts/pulseaudio-share-server.nix {};
-  rt-audio = pkgs.callPackage scripts/rt-audio {};
-  screen-saver = pkgs.callPackage scripts/screen-saver {};
-  render-kicad-schematic-pdf-to-png = pkgs.callPackage scripts/render-kicad-schematic-pdf-to-png {};
-  scream = pkgs.callPackage scripts/scream.nix {};
   home-audio-setup = pkgs.callPackage scripts/home-audio-setup {};
-  pseudo-primary-display = pkgs.callPackage scripts/pseudo-primary-display {};
 
-  clunky-toml-json-converter = pkgs.callPackage apps/clunky-toml-json-converter {};
+  # *** misc scripts ***
 
-  mpv = pkgs.mpv.override {
-    mpv-unwrapped = pkgs.mpv-unwrapped.override {
-      jackaudioSupport = true;
-    };
-  };
+  cursor-to-display = pkgs.callPackage "${sources.i3rc}/nix/apps/cursor-to-display.nix" {};
+  screen-backlight = pkgs.callPackage scripts/screen-backlight.nix {};
+  pamng = pkgs.callPackage scripts/pamng {};
 in
+
 {
   my-apps = {
     inherit
@@ -139,7 +99,7 @@ in
       pkgs.iperf # Measuring IP bandwidth
       tmux-config.tmuxsh
       tmux-config.tmux-report-current-pane-cwd
-      pspg
+      (pkgs.callPackage apps/pspg.nix {})
       # Fix file names extracted from a Windows ZIP archive with cyrillic chars:
       #   unzip archive.zip
       #   convmv --notest -f iso8859-1 -t cp850 *
@@ -152,7 +112,7 @@ in
       pkgs.jo # json creator. see https://github.com/jpmens/jo
       pkgs.gron # json to greppable format converter. see https://github.com/tomnomnom/gron
       pkgs.remarshal # Convert between TOML, YAML and JSON
-      clunky-toml-json-converter # Convert between TOML and JSON
+      (pkgs.callPackage apps/clunky-toml-json-converter {}) # Convert between TOML and JSON
       pkgs.pv # monitoring progress of data transfer through a pipeline
       pkgs.xmlstarlet # XML command-line manipulation
 
@@ -181,7 +141,7 @@ in
       pkgs.haskellPackages.ghc
       pkgs.hlint
       (pkgs.haskell.lib.justStaticExecutables pkgs.haskellPackages.hoogle)
-      hell
+      (pkgs.callPackage apps/hell {})
       ## perls
       pkgs.perl pkgs.rakudo
       ## c
@@ -249,7 +209,7 @@ in
       pkgs.swh_lv2
       pkgs.x42-plugins
       pkgs.zam-plugins
-      midi-trigger
+      (pkgs.callPackage sources.MIDI-Trigger { src = sources.MIDI-Trigger; })
       pkgs.chow-tape-model
       pkgs.lilv # Provides useful tools like “lv2ls”
       pkgs.jalv
@@ -279,7 +239,9 @@ in
       pkgs.vlc
       pkgs.smplayer
       pkgs.mplayer
-      mpv
+      (pkgs.mpv.override {
+        mpv-unwrapped = pkgs.mpv-unwrapped.override { jackaudioSupport = true; };
+      })
       pkgs.mpvc
       pkgs.ffmpeg-full
       unstable.yt-dlp
@@ -296,7 +258,7 @@ in
       pkgs.gmrun pkgs.dmenu pkgs.dzen2 pkgs.rofi
       pkgs.xsel pkgs.xdotool pkgs.numlockx pkgs.xkb-switch
       pkgs.xbindkeys
-      xlib-keys-hack
+      (pkgs.callPackage sources.xlib-keys-hack {})
       pkgs.place-cursor-at
       pkgs.xautolock
       pkgs.networkmanagerapplet
@@ -312,7 +274,7 @@ in
       pkgs.kitty # TODO: configure
       pkgs.piper # GUI for “ratbagd” service
       pkgs.libnotify
-      scream
+      (pkgs.callPackage scripts/scream.nix {})
       polybar
       run-polybar
       # Useful for testing stuff, like an urgency window marker for example:
@@ -327,7 +289,7 @@ in
       (pkgs.callPackage apps/psi-plus.nix {})
       pkgs.hexchat
       pkgs.weechat
-      nheko
+      (pkgs.callPackage apps/nheko {})
       pkgs.dino
       pkgs.thunderbird
 
@@ -337,12 +299,12 @@ in
       pkgs.clipmenu
 
       # screenshots
-      gnome-screenshot
+      (pkgs.callPackage apps/gnome-screenshot.nix {})
       pkgs.scrot # An alternative to "gnome-screenshot" (just in case, usually I don't use it)
       pkgs.shutter # Advanced screenshot taking&editing tool with GUI (written in Perl)
 
       # web browsers
-      firefox
+      (pkgs.callPackage apps/firefox.nix {})
       pkgs.chromium
       unstable.freetube
 
@@ -384,38 +346,37 @@ in
     services.xserver.windowManager.i3.extraPackages = [
       pkgs.i3status
       pkgs.i3lock
-      unclechu-i3-status
+      (pkgs.callPackage sources.unclechu-i3-status {})
       pkgs.adwaita-icon-theme
     ];
 
     users.users.${wenzelUserName}.packages = [
       wenzels-bash.wenzels-bash
-      wenzels-xlib-keys-hack
-      wenzels-xbindkeys
-      wenzels-keyboard-script
+      (pkgs.callPackage apps/wenzels-xlib-keys-hack {})
+      (pkgs.callPackage apps/wenzels-xbindkeys.nix {})
+      (pkgs.callPackage scripts/wenzels-keyboard {})
       pointers-setup
       input-setup
       autostart-setup
-      autolock
+      (pkgs.callPackage scripts/autolock.nix {})
       cursor-to-display
-      # FIXME: Fails to compile after migrated to 23.11
-      # invert-window-colors
-      dzen-box
-      locktop
+      invert-window-colors
+      (pkgs.callPackage scripts/dzen-box {})
+      (pkgs.callPackage scripts/locktop.nix {})
       pamng
       screen-backlight
-      timer
-      genpass
-      pa-add-mono-sink
-      wenzels-picom
-      pulseaudio-share-server
-      rt-audio
-      screen-saver
-      render-kicad-schematic-pdf-to-png
+      (pkgs.callPackage scripts/timer {})
+      (pkgs.callPackage scripts/genpass.nix {})
+      (pkgs.callPackage scripts/pa-add-mono-sink.nix {})
+      (pkgs.callPackage scripts/wenzels-picom { inherit systemConfig; })
+      (pkgs.callPackage scripts/pulseaudio-share-server.nix {})
+      (pkgs.callPackage scripts/rt-audio {})
+      (pkgs.callPackage scripts/screen-saver {})
+      (pkgs.callPackage scripts/render-kicad-schematic-pdf-to-png {})
       home-audio-setup.home-audio-lh-xover
       home-audio-setup.home-audio-setup
       home-audio-setup.home-audio-mic
-      pseudo-primary-display
+      (pkgs.callPackage scripts/pseudo-primary-display {})
     ] ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
   };
 }

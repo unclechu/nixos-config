@@ -83,6 +83,18 @@
         "url": "https://github.com/unclechu/neovimrc/archive/04adf802aa26ed74463171559c95e37a69941027.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "nim-dbus": {
+        "branch": "master",
+        "description": "libdbus binding for Nim",
+        "homepage": null,
+        "owner": "zielmicha",
+        "repo": "nim-dbus",
+        "rev": "9aedf3c455554ccef2c7741d2379f5af0ac85e55",
+        "sha256": "1gihx73l6pch9q9fd20r41h8brybchxvnmg9fiwwhzf475ks8352",
+        "type": "tarball",
+        "url": "https://github.com/zielmicha/nim-dbus/archive/9aedf3c455554ccef2c7741d2379f5af0ac85e55.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "place-cursor-at": {
         "branch": "v1.0.1",
         "description": "Utility for X11 that helps to move cursor using only keyboard written in Haskell",
