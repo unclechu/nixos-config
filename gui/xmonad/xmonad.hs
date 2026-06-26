@@ -106,6 +106,7 @@ import GHC.Internal.System.Environment (getProgName)
 import qualified XMonad.Hooks.ServerMode as ServerMode
 import qualified System.Timeout as Timeout
 import qualified System.Posix.Signals as PosixSignals
+import Data.Function ((&))
 
 main ∷ IO ()
 main = do
@@ -1584,56 +1585,71 @@ exitXMonad ∷ XMonad.MonadIO io ⇒ io ()
 exitXMonad = XMonad.io $
   PosixProc.getProcessID >>= PosixSignals.signalProcess PosixSignals.sigTERM
 
-terminationPrompt ∷ (XMonad.MonadIO m, MonadFinally m) ⇒ XdgRuntimeDir → m ()
+terminationPrompt ∷ ∀m. (XMonad.MonadIO m, MonadFinally m) ⇒ XdgRuntimeDir → m ()
 terminationPrompt xdgRuntimeDir = do
   withFifoResponse xdgRuntimeDir "termination-prompt" $ \fifoPath getFifoLine → do
+    let shOptions = foldMap (\x → shellQuote x.title <> "$'\n'") options
+
+    let
+      shHandleAnswer
+        = options
+        & fmap (\TerminationPromptOption { title, cmd } → [qmb|
+            if [[ "$answer" == {shellQuote title} ]];
+              then printf '%s\n' {shellQuote cmd} >> {shellQuote fifoPath}
+          |])
+        & intercalate "\nel"
+        & (<> "\nfi")
+
     XMonad.spawn [qmb|
-      options={
-        shellQuote terminateXMonadActionTitle
-      }$'\n'{
-        shellQuote rebootActionTitle
-      }$'\n'{
-        shellQuote powerOffActionTitle
-      }$'\nCancel'
-
-      answer=$(<<<"$options" {prompt}) || true
-
       # Report action cancellation.
       # It’s okay if this comes after actual action, it won’t change the outcome.
       finish() \{ echo >> {shellQuote fifoPath}; }
       trap finish EXIT
 
-      if [[ "$answer" == {shellQuote terminateXMonadActionTitle} ]]; then
-        printf '%s\n' {shellQuote terminateXMonadAction} >> {shellQuote fifoPath}
-      elif [[ "$answer" == {shellQuote rebootActionTitle} ]]; then
-        printf '%s\n' {shellQuote rebootAction} >> {shellQuote fifoPath}
-      elif [[ "$answer" == {shellQuote powerOffActionTitle} ]]; then
-        printf '%s\n' {shellQuote powerOffAction} >> {shellQuote fifoPath}
-      fi
+      options={shOptions}'Cancel'
+      answer=$(<<<"$options" {prompt}) || true
+      {shHandleAnswer}
     |]
 
     -- Do not set a timeout, because the prompt window can be shown
     -- for undefined amount of time.
     getFifoLine Nothing $ \case
-      Right action
-        | action == terminateXMonadAction → exitXMonad
-        | action == rebootAction → XMonad.spawn "reboot"
-        | action == powerOffAction → XMonad.spawn "poweroff"
+      Right ((\x → find ((x ==) . (.cmd)) options) → Just ((.xAction) → m)) → m
       _ → pure ()
 
   where
-    (terminateXMonadAction, terminateXMonadActionTitle) =
-      ("terminate-xmonad", "Terminate XMonad (end X session)")
-    (rebootAction, rebootActionTitle) =
-      ("reboot", "Reboot the machine")
-    (powerOffAction, powerOffActionTitle) =
-      ("power-off", "Power off the machine")
+    options ∷ [TerminationPromptOption]
+    options =
+      [ TerminationPromptOption
+          { cmd = "terminate-xmonad"
+          , title = "Terminate XMonad (end X session)"
+          , xAction = exitXMonad
+          }
+      , TerminationPromptOption
+          { cmd = "reboot"
+          , title = "Reboot the machine"
+          , xAction = XMonad.spawn "reboot"
+          }
+      , TerminationPromptOption
+          { cmd = "power-off"
+          , title = "Power off the machine"
+          , xAction = XMonad.spawn "poweroff"
+          }
+      ]
+
+    prompt ∷ String
     prompt =
       rofiCmd RofiThemeDark . RofiModeDMenu $ RofiDmenuOptions
         { rofiDmenu_prompt = "What action do you want to take?"
         , rofiDmenu_strict = True
         , rofiDmenu_selectRow = Just 1
         }
+
+data TerminationPromptOption = TerminationPromptOption
+  { cmd ∷ String
+  , title ∷ String
+  , xAction ∷ IO ()
+  }
 
 data XMonadStartMode
   = Full -- ^ Regular full (re)start of XMonad ((re)load fresh config)
