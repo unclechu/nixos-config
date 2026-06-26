@@ -36,6 +36,11 @@ else
 fi
 
 picom_cmd=(picom --config "$PICOM_CONFIG_FILE")
+picom_forced_backend=
+
+if [[ -v PICOM_PREFERRED_BACKEND ]] && [[ -n "$PICOM_PREFERRED_BACKEND" ]]; then
+	picom_forced_backend=$PICOM_PREFERRED_BACKEND
+fi
 
 if [[ -v DRI_PRIME ]] && [[ "$DRI_PRIME" == 1 ]]; then
 	# Most Picom backends don’t work with DRI_PRIME=1.
@@ -45,7 +50,11 @@ if [[ -v DRI_PRIME ]] && [[ "$DRI_PRIME" == 1 ]]; then
 	#   [ 06/26/2026 00:50:33.902 draw_callback_impl FATAL ERROR ] Pre-render preparation has failed, exiting...
 	#
 	# Only `xrender` does.
-	picom_cmd+=(--backend xrender)
+	picom_forced_backend=xrender
+fi
+
+if [[ -n "$picom_forced_backend" ]]; then
+	picom_cmd+=(--backend "$picom_forced_backend")
 fi
 
 # Kill previous Picom run first

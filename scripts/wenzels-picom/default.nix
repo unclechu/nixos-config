@@ -85,6 +85,13 @@ let
     wrapProgramArgs = [
       "--set" "DEFAULT_PICOM_CONFIG_FILE" hardwareSpecificConfig
       "--set" "NO_PICOM_SCRIPT_EXE" "${eFinal.b.no-picom}"
+    ] ++ lib.optionals (
+      # I checked that on this machine `xrender` backend is enough to get rid of
+      # tearing with `--vsync`. And it feels a touch more responsive than `glx`
+      # backend.
+      hostName == wenzel-silver-laptop.networking.hostName
+    ) [
+      "--set" "PICOM_PREFERRED_BACKEND" "xrender"
     ];
 
     checkPhase = ''
