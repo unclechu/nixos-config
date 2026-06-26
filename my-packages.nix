@@ -49,7 +49,7 @@ let
 
   # *** misc scripts ***
 
-  cursor-to-display = pkgs.callPackage "${sources.i3rc}/nix/apps/cursor-to-display.nix" {};
+  cursor-to-display = pkgs.callPackage scripts/cursor-to-display {};
   screen-backlight = pkgs.callPackage scripts/screen-backlight.nix {};
   pamng = pkgs.callPackage scripts/pamng {};
 in
