@@ -34,5 +34,12 @@ in
   services.xserver.windowManager.i3 = {
     enable = true;
     configFile = i3-config;
+
+    extraPackages = [
+      (pkgs.callPackage ./wenzels-i3-status-generator {})
+      pkgs.i3status
+      pkgs.i3lock
+      pkgs.adwaita-icon-theme
+    ];
   };
 }

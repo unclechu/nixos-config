@@ -1,0 +1,9 @@
+# direnv configuration
+.envrc
+
+# Cabal build artifacts
+dist*
+# Cabal for some reason creates it when building
+# (it shouldn’t, it must be in the `dist-newstyle` directory).
+# And also `cabal clean` does not clean it up.
+src/Main

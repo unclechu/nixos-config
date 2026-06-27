@@ -119,18 +119,6 @@
         "url": "https://github.com/unclechu/tmuxrc/archive/37bf50dd495e95f55b294e72c67c6544a42285d4.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "unclechu-i3-status": {
-        "branch": "master",
-        "description": "my own i3 status-bar generator",
-        "homepage": null,
-        "owner": "unclechu",
-        "repo": "unclechu-i3-status",
-        "rev": "1a2668a0ececd15b8b761b86465c7762469f77c9",
-        "sha256": "1jry56mqbmw37gsrmwm139z1s1f7r75b3vpy0qnap2cbqwv0383l",
-        "type": "tarball",
-        "url": "https://github.com/unclechu/unclechu-i3-status/archive/1a2668a0ececd15b8b761b86465c7762469f77c9.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "xlib-keys-hack": {
         "branch": "master",
         "description": "Keyboard behavior customization utility",

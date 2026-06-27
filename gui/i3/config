@@ -614,7 +614,7 @@ bindsym $m+t mode "positioning"
 bindsym $m+$a+m mode "mouse-cursor"
 
 bar {
-  status_command unclechu-i3-status
+  status_command wenzels-i3-status-generator
   tray_output primary
 }
 

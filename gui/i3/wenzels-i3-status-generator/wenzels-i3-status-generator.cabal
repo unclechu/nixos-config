@@ -1,0 +1,75 @@
+-- Author: Viacheslav Lotsmanov
+-- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+
+cabal-version: 1.12
+
+name:           wenzels-i3-status-generator
+version:        0.0.0
+synopsis:       My own status line generator for i3 window manager
+category:       System, Desktop Environment
+author:         Viacheslav Lotsmanov
+copyright:      Copyright © 2017–2026 Viacheslav Lotsmanov
+license:        MIT
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/unclechu/nixos-config
+
+library
+  exposed-modules:
+      WenzelsI3StatusGenerator.App
+      WenzelsI3StatusGenerator.Dzen
+      WenzelsI3StatusGenerator.EventSubscriber.Battery
+      WenzelsI3StatusGenerator.EventSubscriber.DateTime
+      WenzelsI3StatusGenerator.EventSubscriber.InputEvents
+      WenzelsI3StatusGenerator.EventSubscriber.IPC
+      WenzelsI3StatusGenerator.EventSubscriber.WindowTitle
+      WenzelsI3StatusGenerator.Handler.AppState
+      WenzelsI3StatusGenerator.Handler.AppState.Types
+      WenzelsI3StatusGenerator.Handler.InputEvents
+      WenzelsI3StatusGenerator.Indicators
+      WenzelsI3StatusGenerator.IPC
+      WenzelsI3StatusGenerator.Layout
+      WenzelsI3StatusGenerator.ParentProc
+      WenzelsI3StatusGenerator.Render
+      WenzelsI3StatusGenerator.Utils
+      WenzelsI3StatusGenerator.Utils.Aeson
+      WenzelsI3StatusGenerator.X
+  other-modules:
+      Paths_wenzels_i3_status_generator
+  hs-source-dirs:
+      src
+  -- Technically this explicit linking should not be necessary,
+  -- `extra-libraries` should be enough. But for some reason Cabal fails to
+  -- link it automatically.
+  ghc-options: -Wall -optl-lXtst -optl-lX11
+  extra-libraries:
+      X11
+    , Xtst
+  build-depends:
+      X11
+    , aeson >=2.0.0.0
+    , async
+    , attoparsec
+    , base
+    , base-unicode-symbols
+    , bytestring
+    , containers
+    , data-default
+    , dbus
+    , process
+    , qm-interpolated-string
+    , time
+    , unix
+  default-language: Haskell2010
+
+executable wenzels-i3-status-generator
+  main-is: Main.hs
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -threaded -with-rtsopts=-N
+  build-depends:
+      base
+    , wenzels-i3-status-generator
+  default-language: Haskell2010

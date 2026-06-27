@@ -37,6 +37,7 @@ let sources = import ../../nix/sources.nix; in
 , invert-window-colors ? callPackage ../../apps/invert-window-colors {}
 , pamng ? callPackage ../../scripts/pamng {}
 , screen-backlight ? callPackage ../../scripts/screen-backlight.nix {}
+, wenzels-i3-status-generator ? callPackage ./wenzels-i3-status-generator {}
 
 # ↓ Build options ↓
 
@@ -78,6 +79,7 @@ let
     invert-window-colors = invert-window-colors;
     pamng = pamng;
     screen-backlight = screen-backlight;
+    wenzels-i3-status-generator = wenzels-i3-status-generator;
   };
 
   # Check that `b` preserves context of `a` but can be bigger.

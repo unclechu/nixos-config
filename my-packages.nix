@@ -343,13 +343,6 @@ in
       pkgs.xfce.thunar-volman
     ];
 
-    services.xserver.windowManager.i3.extraPackages = [
-      pkgs.i3status
-      pkgs.i3lock
-      (pkgs.callPackage sources.unclechu-i3-status {})
-      pkgs.adwaita-icon-theme
-    ];
-
     users.users.${wenzelUserName}.packages = [
       wenzels-bash.wenzels-bash
       (pkgs.callPackage apps/wenzels-xlib-keys-hack {})

@@ -1,0 +1,5 @@
+# Example configuration for direnv
+watch_file wenzels-i3-status-generator.cabal
+watch_file default.nix
+watch_file shell.nix
+use nix
