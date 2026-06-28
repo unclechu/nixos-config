@@ -71,7 +71,7 @@ endif
 [MIT] — For the code of this repository.
 Some third-party dependencies may have different licenses.
 
-[MIT]: LICENSE
+[MIT]: ../../../LICENSE
 [i3wm]: https://i3wm.org/
 [xlib-keys-hack]: https://github.com/unclechu/xlib-keys-hack
 [dbus]: https://www.freedesktop.org/wiki/Software/dbus/
