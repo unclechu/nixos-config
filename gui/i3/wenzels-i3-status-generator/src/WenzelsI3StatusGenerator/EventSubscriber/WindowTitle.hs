@@ -15,13 +15,14 @@ import Control.Monad (forever)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types (typeMismatch)
-import Data.ByteString (hGetLine, hGetContents)
+import Data.ByteString.Char8 (hGetLine)
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Int (Int64)
 import Data.Maybe (listToMaybe, mapMaybe)
 import GHC.Generics (Generic)
-import qualified System.Process as SysProc
+import qualified System.Process.Typed as Proc
 import Text.InterpolatedString.QM (qn, qm)
-import WenzelsI3StatusGenerator.Utils ((∘), (•), (⋄), (<&>))
+import WenzelsI3StatusGenerator.Utils ((∘), (•), (⋄), (<&>), (&))
 import WenzelsI3StatusGenerator.Utils.Aeson (withFieldNamer)
 
 
@@ -31,17 +32,12 @@ subscribeToFocusedWindowTitleUpdates
   → IO (Maybe WindowTitle, Async.Async ())
   -- ^ Current/initial focused window title and thread handle
 subscribeToFocusedWindowTitleUpdates updateCallback = do
-  (initialTree ∷ Either String WindowTree) ← do
-    let
-      procSpec =
-        (SysProc.proc "i3-msg" ["-t", "get_tree"])
-          { SysProc.std_in  = SysProc.NoStream
-          , SysProc.std_out = SysProc.CreatePipe
-          , SysProc.std_err = SysProc.Inherit
-          }
-    SysProc.withCreateProcess procSpec $ \Nothing (Just hOut) _ procHandle → do
-      result ← Aeson.eitherDecodeStrict' <$> hGetContents hOut
-      result <$ SysProc.waitForProcess procHandle
+  (initialTree ∷ Either String WindowTree) ←
+    fmap (Aeson.eitherDecodeStrict' ∘ LBS.toStrict)
+      ∘ Proc.readProcessStdout_
+      $ Proc.proc "i3-msg" ["-t", "get_tree"]
+      & Proc.setStdin Proc.closed
+      & Proc.setStderr Proc.inherit
 
   (initTitle ∷ Maybe WindowTitle) ←
     case initialTree of
@@ -54,14 +50,13 @@ subscribeToFocusedWindowTitleUpdates updateCallback = do
 
   threadHandle ← Async.async $ do
     let
-      procSpec =
-        (SysProc.proc "i3-msg" ["-t", "subscribe", "-m", [qn| ["window", "workspace"] |]])
-          { SysProc.std_in  = SysProc.NoStream
-          , SysProc.std_out = SysProc.CreatePipe
-          , SysProc.std_err = SysProc.Inherit
-          }
-    SysProc.withCreateProcess procSpec $ \Nothing (Just hOut) _ _ →
-      forever @IO @() @() $ hGetLine hOut
+      procSpec
+        = Proc.proc "i3-msg" ["-t", "subscribe", "-m", [qn| ["window", "workspace"] |]]
+        & Proc.setStdin Proc.closed
+        & Proc.setStdout Proc.createPipe
+        & Proc.setStderr Proc.inherit
+    Proc.withProcessWait procSpec $ \p → do
+      forever @IO @() @() $ hGetLine (Proc.getStdout p)
         <&> Aeson.eitherDecodeStrict'
         >>= either (fail ∘ ("Error while parsing window title event: " ⋄)) pure
         >>= getFocusedWindowTitle • \case

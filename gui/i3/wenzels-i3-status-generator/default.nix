@@ -125,7 +125,7 @@ let
 in
 
 (if inNixShell then shell else wenzels-i3-status-generator) // {
-  inherit shell;
+  inherit shell wenzels-i3-status-generator;
   haskell-language-server = hls;
   haskellPackages = hsPkgs;
   haskellPackage = hsPkgs.${name};

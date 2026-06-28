@@ -13,12 +13,12 @@ import qualified Control.Concurrent.Async as Async
 import qualified Data.IORef as IORef
 import System.IO (Handle, hPutStrLn, hFlush, hClose)
 import System.Mem.Weak (addFinalizer)
-import qualified System.Process as SysProc
+import qualified System.Process.Typed as Proc
 import WenzelsI3StatusGenerator.Utils
 
 
 dzen
-  ∷ IORef.IORef (Maybe (SysProc.ProcessHandle, Handle, Async.Async ()))
+  ∷ IORef.IORef (Maybe (Proc.Process Handle () (), Handle, Async.Async ()))
   -- ^ Process handle, stdin of the process, and timeout timer thread handle
   → String
   → String
@@ -28,7 +28,7 @@ dzen procRef text fgColor = do
     IORef.readIORef procRef >>= \case
       Nothing → getNewProc
       Just (procHandler, input, threadHandle) →
-        SysProc.getProcessExitCode procHandler >>= \case
+        Proc.getExitCode procHandler >>= \case
           Just _ → Async.cancel threadHandle >> getNewProc
           Nothing → do
             Async.cancel threadHandle
@@ -72,15 +72,16 @@ dzen procRef text fgColor = do
 
     runKiller input procHandler = Async.async $ do
       threadDelay $ fromIntegral timeoutSeconds × 1000 × 1000
-      hClose input >> SysProc.terminateProcess procHandler
+      hClose input >> Proc.stopProcess procHandler
 
     getNewProc = do
-      (Just input, Nothing, Nothing, procHandler)
-        ← SysProc.createProcess (SysProc.proc "dzen2" args)
-        { SysProc.std_in  = SysProc.CreatePipe
-        , SysProc.std_out = SysProc.NoStream
-        , SysProc.std_err = SysProc.NoStream
-        }
+      procHandler
+        ← Proc.startProcess
+        $ Proc.proc "dzen2" args
+        & Proc.setStdin Proc.createPipe
+        & Proc.setStdout Proc.closed
+        & Proc.setStderr Proc.closed
 
-      addFinalizer procHandler $ SysProc.terminateProcess procHandler
+      let input = Proc.getStdin procHandler
+      addFinalizer procHandler $ Proc.stopProcess procHandler
       (procHandler, input,) <$> runKiller input procHandler

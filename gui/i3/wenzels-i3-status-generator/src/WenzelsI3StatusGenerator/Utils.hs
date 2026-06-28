@@ -24,7 +24,7 @@ import Data.Functor ((<&>), ($>))
 import Graphics.X11.Xlib (Display, displayString)
 import Prelude.Unicode
 import qualified System.IO as SysIO
-import qualified System.Process as SysProc
+import qualified System.Process.Typed as Proc
 import Text.InterpolatedString.QM (qms)
 
 
@@ -62,13 +62,12 @@ getDisplayName dpy = go where
 -- | Spawn a process in fire-and-forget mode
 spawnProc ∷ FilePath → [String] → IO ()
 spawnProc cmd args = do
-  devNull <- SysIO.openFile "/dev/null" SysIO.ReadWriteMode
-  void $ SysProc.createProcess (SysProc.proc cmd args)
-    { SysProc.std_in = SysProc.UseHandle devNull
-    , SysProc.std_out = SysProc.UseHandle devNull
-    , SysProc.std_err = SysProc.UseHandle devNull
-    , SysProc.new_session = True
-    }
+  void ∘ Proc.startProcess
+    $ Proc.proc cmd args
+    & Proc.setStdin Proc.nullStream
+    & Proc.setStdout Proc.nullStream
+    & Proc.setStderr Proc.nullStream
+    & Proc.setNewSession True
 
 
 -- | Spawn fire-and-forget thread and report exception if it occurs inside it

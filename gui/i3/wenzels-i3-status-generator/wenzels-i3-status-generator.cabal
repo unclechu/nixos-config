@@ -58,7 +58,7 @@ library
     , containers
     , data-default
     , dbus
-    , process
+    , typed-process
     , qm-interpolated-string
     , time
     , unix
