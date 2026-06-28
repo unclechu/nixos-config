@@ -68,7 +68,7 @@ subscribeToBatteryChargeUpdates updateCallback = do
       unsubscriber ←
         catchUpdate client x
           <&> DBus.Client.removeMatch client
-          <&> (>> DBus.Client.disconnect client)
+          • (>> DBus.Client.disconnect client)
       chargeLeft ← getPropCall client x ∘ show $ Percentage
       chargeState ← getPropCall client x ∘ show $ State
       pure $ Just ((chargeLeft, chargeState), unsubscriber)

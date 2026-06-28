@@ -17,7 +17,7 @@ import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types (typeMismatch)
 import Data.ByteString (hGetLine, hGetContents)
 import Data.Int (Int64)
-import Data.Maybe (listToMaybe, catMaybes)
+import Data.Maybe (listToMaybe, mapMaybe)
 import GHC.Generics (Generic)
 import qualified System.Process as SysProc
 import Text.InterpolatedString.QM (qn, qm)
@@ -49,7 +49,7 @@ subscribeToFocusedWindowTitleUpdates updateCallback = do
         Nothing <$ fail [qm| Error while parsing i3 window tree: {msg} |]
       Right tree → pure $ let
         f x@WindowTree { focused = True } = Just x
-        f WindowTree { nodes } = listToMaybe $ catMaybes $ f <$> nodes
+        f WindowTree { nodes } = listToMaybe $ mapMaybe f nodes
         in f tree >>= mkWindowTitle
 
   threadHandle ← Async.async $ do
@@ -92,7 +92,7 @@ getFocusedWindowTitle = \case
     f x@WindowTree { focused = True } = Just x
     f WindowTree { nodes } = firstFocused nodes
 
-    firstFocused = listToMaybe ∘ catMaybes ∘ map f
+    firstFocused = listToMaybe ∘ mapMaybe f
     top = firstFocused current.nodes
 
     in maybe FocusedWindowNotFound (FocusedWindowTitle ∘ mkWindowTitle) top

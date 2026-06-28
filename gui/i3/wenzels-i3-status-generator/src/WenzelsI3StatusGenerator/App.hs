@@ -100,7 +100,7 @@ runApp = do
     { alternativeModeClickHandler =
         let
           !newState =
-            readState <&> alternative <&> \case
+            readState <&> alternative • \case
               Nothing     → 1
               Just (1, _) → 2
               _           → 0
@@ -158,8 +158,8 @@ runApp = do
       fmap catMaybes ∘ Async.forConcurrently threadHandles $ \asyncHandle →
         Async.waitCatch asyncHandle
           <&> either Just (const Nothing)
-          <&> (>>= \e → e <$ guard (fromException e ≠ Just Async.AsyncCancelled))
-          <&> fmap (Async.asyncThreadId asyncHandle,)
+          • (>>= \e → e <$ guard (fromException e ≠ Just Async.AsyncCancelled))
+          • fmap (Async.asyncThreadId asyncHandle,)
 
     if null terminationExceptions
     then pure () -- Normal successful exit

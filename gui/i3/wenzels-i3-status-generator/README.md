@@ -57,7 +57,7 @@ nix-shell configuration for this project. To enable it for my
 
 ``` vim
 if !exists('g:ale_linters') | let g:ale_linters = {} | endif
-let g:ale_linters.haskell = []
+let g:ale_linters.haskell = ['hlint']
 
 if executable('haskell-language-server-wrapper')
 	SetupNeovimLsp

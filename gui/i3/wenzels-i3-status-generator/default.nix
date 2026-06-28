@@ -65,8 +65,7 @@ let
         # Lint the sources before building
         (lib.flip haskell.lib.overrideCabal (old: {
           preConfigure = (old.preConfigure or "") + ''
-            # TODO: Refactor the code following the linter warnings and enable this
-            # hlint -- src/
+            hlint -- src/
           '';
         }))
         # Enable level-2 optimizations
