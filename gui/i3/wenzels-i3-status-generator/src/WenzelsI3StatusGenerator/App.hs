@@ -11,7 +11,7 @@ module WenzelsI3StatusGenerator.App
 import Control.Arrow ((&&&))
 import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Exception (finally, fromException, displayException)
+import qualified Control.Exception as E
 import Control.Monad (join, guard)
 import Data.Aeson (ToJSON (..), genericToJSON, encode)
 import Data.Default (Default (def))
@@ -21,6 +21,7 @@ import Data.Maybe (catMaybes)
 import GHC.Generics (Generic)
 import Graphics.X11.Xlib (openDisplay, closeDisplay)
 import System.Environment (getArgs)
+import qualified System.IO as SysIO
 import qualified System.Posix.Signals as Sig
 import Text.InterpolatedString.QM (qm)
 import WenzelsI3StatusGenerator.Dzen (dzen)
@@ -127,17 +128,18 @@ runApp = do
     appStateHandler dzenNotification getNextStateModification saveState =<< readState
 
   -- Handle POSIX signals to terminate application
-  let
-    threadHandles =
-      [ focusedWindowTitleThreadHandle
-      , ipcEventsThreadHandle
-      , dateAndTimeThreadHandle
-      , clickEventsThreadHandle
-      , appStateThreadHandle
+  threadHandles ∷ [Async.Async ()] ←
+    mapM (uncurry withTerminationReport)
+      [ ("focusedWindowTitleThreadHandle", focusedWindowTitleThreadHandle)
+      , ("ipcEventsThreadHandle", ipcEventsThreadHandle)
+      , ("dateAndTimeThreadHandle", dateAndTimeThreadHandle)
+      , ("clickEventsThreadHandle", clickEventsThreadHandle)
+      , ("appStateThreadHandle", appStateThreadHandle)
       ]
 
+  let
     terminateApplication
-      = foldl' finally (pure ())
+      = foldl' E.finally (pure ())
       $ [maybe (pure ()) snd batteryChargeUpdatesSubscription]
       ⋄ fmap Async.uninterruptibleCancel threadHandles
 
@@ -158,13 +160,26 @@ runApp = do
       fmap catMaybes ∘ Async.forConcurrently threadHandles $ \asyncHandle →
         Async.waitCatch asyncHandle
           <&> either Just (const Nothing)
-          • (>>= \e → e <$ guard (fromException e ≠ Just Async.AsyncCancelled))
+          • (>>= \e → e <$ guard (E.fromException e ≠ Just Async.AsyncCancelled))
           • fmap (Async.asyncThreadId asyncHandle,)
 
     if null terminationExceptions
     then pure () -- Normal successful exit
-    else fail ∘ intercalate "\n\n" $ terminationExceptions <&> \(tid, e) →
-           [qm| Thread ({tid}) has failed with exception: {displayException e} |]
+    else
+      fail ∘ intercalate "\n\n" $ terminationExceptions <&> \(tid, e) →
+        [qm| Thread ({tid}) has failed with exception: {E.displayException e} |]
+
+
+withTerminationReport ∷ String → Async.Async () → IO (Async.Async ())
+withTerminationReport threadName watchedThread =
+  Async.async $
+    Async.wait watchedThread `E.catch` \(e ∷ E.SomeException) → do
+      SysIO.hPutStrLn SysIO.stderr ∘ unwords $
+        ["Thread", show threadName]
+        ⋄ case E.fromException e of
+            Just Async.AsyncCancelled → ["was cancelled"]
+            Nothing → ["failed with:", E.displayException e]
+      E.throwIO e
 
 
 -- * Types
