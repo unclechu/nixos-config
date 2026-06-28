@@ -1,21 +1,17 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024 #-}
 
 -- | Module responsible of handling application state
 module WenzelsI3StatusGenerator.Handler.AppState.Types
      ( State (..)
      ) where
 
-import "base" Data.Word (Word8)
-import "data-default" Data.Default (Default (def))
-import "time" Data.Time.Clock (UTCTime)
-import "time" Data.Time.LocalTime (TimeZone)
-
--- Local imports
-
+import Data.Default (Default (def))
+import Data.Time.Clock (UTCTime)
+import Data.Time.LocalTime (TimeZone)
+import Data.Word (Word8)
 import WenzelsI3StatusGenerator.EventSubscriber.Battery (UPowerBatteryState)
 import WenzelsI3StatusGenerator.Layout (Layout)
 

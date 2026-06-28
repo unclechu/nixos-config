@@ -1,15 +1,12 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024 #-}
 
 module WenzelsI3StatusGenerator.ParentProc (dieWithParent) where
 
-import "base" Control.Monad (void)
-
-import qualified "base" Foreign.C.Types as CTypes
+import Control.Monad (void)
+import qualified Foreign.C.Types as CTypes
 
 #include <signal.h>
 #include <linux/prctl.h>

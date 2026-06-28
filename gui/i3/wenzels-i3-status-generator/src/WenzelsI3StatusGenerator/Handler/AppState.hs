@@ -1,9 +1,7 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024, OverloadedStrings #-}
 
 -- | Module responsible of handling application state
 module WenzelsI3StatusGenerator.Handler.AppState
@@ -11,25 +9,14 @@ module WenzelsI3StatusGenerator.Handler.AppState
      , module WenzelsI3StatusGenerator.Handler.AppState.Types
      ) where
 
-import "base" Control.Exception (finally)
-import "base" Control.Monad (when)
-import qualified "async" Control.Concurrent.Async as Async
-
--- Local imports
-
+import qualified Control.Concurrent.Async as Async
+import Control.Exception (finally)
+import Control.Monad (when)
 import WenzelsI3StatusGenerator.Handler.AppState.Types
+import qualified WenzelsI3StatusGenerator.Indicators as Indicators
 import WenzelsI3StatusGenerator.Layout (colorOfLayout)
 import WenzelsI3StatusGenerator.Render (render)
-import WenzelsI3StatusGenerator.Utils
-
-import WenzelsI3StatusGenerator.Indicators
-  ( showNumLock
-  , colorOfNumLock
-  , showCapsLock
-  , colorOfCapsLock
-  , showAlternativeState
-  , colorOfAlternativeState
-  )
+import WenzelsI3StatusGenerator.Utils (echo, (≡), (⋄), (≢), (∧), (∨), (∘))
 
 
 -- | Reactive loop that gets state modifier from an @MVar@
@@ -93,18 +80,18 @@ appStateHandler reportCallback getNextStateUpdate writeState initialState = go w
               )
         when condition $
           either (const darn) (uncurry reportCallback) $ (,)
-            <$> (showAlternativeState ∘ alternative) newState
-            <*> (colorOfAlternativeState ∘ alternative) newState
+            <$> (Indicators.showAlternativeState ∘ alternative) newState
+            <*> (Indicators.colorOfAlternativeState ∘ alternative) newState
 
       when (capsLock newState ≢ capsLock prevState) $
         reportCallback
-          (showCapsLock ∘ capsLock $ newState)
-          (colorOfCapsLock ∘ capsLock $ newState)
+          (Indicators.showCapsLock ∘ capsLock $ newState)
+          (Indicators.colorOfCapsLock ∘ capsLock $ newState)
 
       when (numLock newState ≢ numLock prevState) $
         reportCallback
-          (showNumLock ∘ numLock $ newState)
-          (colorOfNumLock ∘ numLock $ newState)
+          (Indicators.showNumLock ∘ numLock $ newState)
+          (Indicators.colorOfNumLock ∘ numLock $ newState)
 
 
 -- * Types

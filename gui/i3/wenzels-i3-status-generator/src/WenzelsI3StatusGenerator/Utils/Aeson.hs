@@ -1,17 +1,15 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024 #-}
 
 module WenzelsI3StatusGenerator.Utils.Aeson
      ( withFieldNamer
      ) where
 
-import "base-unicode-symbols" Prelude.Unicode
-
-import "aeson" Data.Aeson (defaultOptions)
-import "aeson" Data.Aeson.Types (Options (fieldLabelModifier), camelTo2)
+import Data.Aeson (defaultOptions)
+import Data.Aeson.Types (Options (fieldLabelModifier), camelTo2)
+import WenzelsI3StatusGenerator.Utils ((∘))
 
 
 withFieldNamer ∷ (String → String) → Options

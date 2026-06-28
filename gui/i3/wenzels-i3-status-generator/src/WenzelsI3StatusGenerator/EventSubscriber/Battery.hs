@@ -1,37 +1,25 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024, QuasiQuotes, ViewPatterns, OverloadedStrings #-}
 
 module WenzelsI3StatusGenerator.EventSubscriber.Battery
      ( UPowerBatteryState (..)
      , subscribeToBatteryChargeUpdates
      ) where
 
-import "base" Data.Word (Word8)
-import "base" Data.Either (isRight)
-import "base" Data.Foldable (find)
-import "base" Data.String (fromString)
-import "qm-interpolated-string" Text.InterpolatedString.QM (qms)
-import qualified "containers" Data.Map.Strict as Map
-import qualified "attoparsec" Data.Attoparsec.ByteString.Char8 as Parsec
-
-import "base" Control.Monad (void)
-
-import qualified "dbus" DBus
-import qualified "dbus" DBus.Internal.Types as DBusInternal
-import qualified "dbus" DBus.Client
-
--- Local imports
-
-import WenzelsI3StatusGenerator.Utils
+import Control.Monad (void)
+import qualified Data.Attoparsec.ByteString.Char8 as Parsec
+import Data.Either (isRight)
+import Data.Foldable (find)
+import qualified Data.Map.Strict as Map
+import Data.String (fromString)
+import Data.Word (Word8)
+import qualified DBus
+import qualified DBus.Client
+import qualified DBus.Internal.Types as DBusInternal
+import Text.InterpolatedString.QM (qms)
+import WenzelsI3StatusGenerator.Utils ((∘), (∈), (<&!>), (<&>), (•))
 
 
 subscribeToBatteryChargeUpdates

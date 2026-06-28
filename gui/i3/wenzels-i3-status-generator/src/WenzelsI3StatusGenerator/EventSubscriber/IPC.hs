@@ -1,18 +1,8 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024, QuasiQuotes, DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedRecordDot, ViewPatterns, OverloadedStrings #-}
 
 module WenzelsI3StatusGenerator.EventSubscriber.IPC
      ( IPCEvent (..)
@@ -21,23 +11,18 @@ module WenzelsI3StatusGenerator.EventSubscriber.IPC
      , subscribeToIPCEvents
      ) where
 
-import "base" Data.Word (Word8)
-import "data-default" Data.Default (Default (def))
-import "qm-interpolated-string" Text.InterpolatedString.QM (qm)
-
-import "base" Control.Arrow ((&&&))
-import "base" Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import "base" Control.Exception (finally)
-import "base" Control.Monad (when, void, forever)
-import qualified "async" Control.Concurrent.Async as Async
-
-import qualified "dbus" DBus
-import qualified "dbus" DBus.Client
-
--- Local imports
-
+import Control.Arrow ((&&&))
+import qualified Control.Concurrent.Async as Async
+import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
+import Control.Exception (finally)
+import Control.Monad (when, void, forever)
+import Data.Default (Default (def))
+import Data.Word (Word8)
+import qualified DBus
+import qualified DBus.Client
+import Text.InterpolatedString.QM (qm)
 import WenzelsI3StatusGenerator.Layout (Layout (..), numToLayout)
-import WenzelsI3StatusGenerator.Utils
+import WenzelsI3StatusGenerator.Utils ((≢), (&), (•), (∘), (<&>), (⋄))
 
 
 subscribeToIPCEvents

@@ -1,54 +1,27 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024, QuasiQuotes, DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedRecordDot, OverloadedStrings #-}
 
 module WenzelsI3StatusGenerator.EventSubscriber.WindowTitle
      ( WindowTitle (..)
      , subscribeToFocusedWindowTitleUpdates
      ) where
 
-import "base" GHC.Generics (Generic)
-
-import "aeson" Data.Aeson.Types (typeMismatch)
-import "base" Data.Int (Int64)
-import "base" Data.Maybe (listToMaybe, catMaybes)
-import "bytestring" Data.ByteString (hGetLine, hGetContents)
-import "qm-interpolated-string" Text.InterpolatedString.QM (qn, qm)
-import qualified "aeson" Data.Aeson.KeyMap as KM
-
-import "aeson" Data.Aeson
-  ( Value (Object)
-  , FromJSON (..)
-  , genericParseJSON
-  , eitherDecodeStrict'
-  )
-
-import "base" Control.Applicative ((<|>))
-import "base" Control.Monad (forever)
-import qualified "async" Control.Concurrent.Async as Async
-
-import "process" System.Process
-  ( CreateProcess (std_in, std_out, std_err)
-  , StdStream (NoStream, Inherit, CreatePipe)
-  , proc
-  , waitForProcess
-  , withCreateProcess
-  )
-
--- Local imports
-
-import WenzelsI3StatusGenerator.Utils
+import Control.Applicative ((<|>))
+import qualified Control.Concurrent.Async as Async
+import Control.Monad (forever)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.KeyMap as KM
+import Data.Aeson.Types (typeMismatch)
+import Data.ByteString (hGetLine, hGetContents)
+import Data.Int (Int64)
+import Data.Maybe (listToMaybe, catMaybes)
+import GHC.Generics (Generic)
+import qualified System.Process as SysProc
+import Text.InterpolatedString.QM (qn, qm)
+import WenzelsI3StatusGenerator.Utils ((∘), (•), (⋄), (<&>))
 import WenzelsI3StatusGenerator.Utils.Aeson (withFieldNamer)
 
 
@@ -61,14 +34,14 @@ subscribeToFocusedWindowTitleUpdates updateCallback = do
   (initialTree ∷ Either String WindowTree) ← do
     let
       procSpec =
-        (proc "i3-msg" ["-t", "get_tree"])
-          { std_in  = NoStream
-          , std_out = CreatePipe
-          , std_err = Inherit
+        (SysProc.proc "i3-msg" ["-t", "get_tree"])
+          { SysProc.std_in  = SysProc.NoStream
+          , SysProc.std_out = SysProc.CreatePipe
+          , SysProc.std_err = SysProc.Inherit
           }
-    withCreateProcess procSpec $ \Nothing (Just hOut) _ procHandle → do
-      result ← eitherDecodeStrict' <$> hGetContents hOut
-      result <$ waitForProcess procHandle
+    SysProc.withCreateProcess procSpec $ \Nothing (Just hOut) _ procHandle → do
+      result ← Aeson.eitherDecodeStrict' <$> hGetContents hOut
+      result <$ SysProc.waitForProcess procHandle
 
   (initTitle ∷ Maybe WindowTitle) ←
     case initialTree of
@@ -82,14 +55,14 @@ subscribeToFocusedWindowTitleUpdates updateCallback = do
   threadHandle ← Async.async $ do
     let
       procSpec =
-        (proc "i3-msg" ["-t", "subscribe", "-m", [qn| ["window", "workspace"] |]])
-          { std_in  = NoStream
-          , std_out = CreatePipe
-          , std_err = Inherit
+        (SysProc.proc "i3-msg" ["-t", "subscribe", "-m", [qn| ["window", "workspace"] |]])
+          { SysProc.std_in  = SysProc.NoStream
+          , SysProc.std_out = SysProc.CreatePipe
+          , SysProc.std_err = SysProc.Inherit
           }
-    withCreateProcess procSpec $ \Nothing (Just hOut) _ _ →
+    SysProc.withCreateProcess procSpec $ \Nothing (Just hOut) _ _ →
       forever @IO @() @() $ hGetLine hOut
-        <&> eitherDecodeStrict'
+        <&> Aeson.eitherDecodeStrict'
         >>= either (fail ∘ ("Error while parsing window title event: " ⋄)) pure
         >>= getFocusedWindowTitle • \case
               Ignore → pure ()
@@ -153,21 +126,21 @@ data ChangeEvent
   | WindowTitleEvent EventContainer
   | WindowCloseEvent EventContainer
   | WorkspaceFocusEvent EventWorkspace
-  | OtherEvent Value
+  | OtherEvent Aeson.Value
   deriving (Show, Eq, Generic)
 
-instance FromJSON ChangeEvent where
-  parseJSON json@(Object obj) =
+instance Aeson.FromJSON ChangeEvent where
+  parseJSON json@(Aeson.Object obj) =
     case KM.lookup "change" obj of
       Nothing → mismatch
       Just "focus" →
-        maybe mismatch (fmap WindowFocusEvent ∘ parseJSON) (KM.lookup containerKey obj)
-        <|> maybe mismatch (fmap WorkspaceFocusEvent ∘ parseJSON) (KM.lookup "current" obj)
+        maybe mismatch (fmap WindowFocusEvent ∘ Aeson.parseJSON) (KM.lookup containerKey obj)
+        <|> maybe mismatch (fmap WorkspaceFocusEvent ∘ Aeson.parseJSON) (KM.lookup "current" obj)
         -- ↑ When there’s “current” there can be also optional “old” value
       Just "title" →
-        maybe mismatch (fmap WindowTitleEvent ∘ parseJSON) (KM.lookup containerKey obj)
+        maybe mismatch (fmap WindowTitleEvent ∘ Aeson.parseJSON) (KM.lookup containerKey obj)
       Just "close" →
-        maybe mismatch (fmap WindowCloseEvent ∘ parseJSON) (KM.lookup containerKey obj)
+        maybe mismatch (fmap WindowCloseEvent ∘ Aeson.parseJSON) (KM.lookup containerKey obj)
       Just _ →
         pure $ OtherEvent json
     where
@@ -191,8 +164,8 @@ data EventContainer
   }
   deriving (Show, Eq, Generic)
 
-instance FromJSON EventContainer where
-  parseJSON = genericParseJSON $ withFieldNamer f where
+instance Aeson.FromJSON EventContainer where
+  parseJSON = Aeson.genericParseJSON $ withFieldNamer f where
     f ('_' : xs) = xs; f x = x
 
 instance HasWindowProperties EventContainer where
@@ -208,8 +181,8 @@ data EventContainerWindowProperties
   }
   deriving (Show, Eq, Generic)
 
-instance FromJSON EventContainerWindowProperties where
-  parseJSON = genericParseJSON $ withFieldNamer f where
+instance Aeson.FromJSON EventContainerWindowProperties where
+  parseJSON = Aeson.genericParseJSON $ withFieldNamer f where
     f ('_' : xs) = xs; f x = x
 
 
@@ -227,8 +200,8 @@ data EventWorkspace
   }
   deriving (Show, Eq, Generic)
 
-instance FromJSON EventWorkspace where
-  parseJSON = genericParseJSON $ withFieldNamer f where
+instance Aeson.FromJSON EventWorkspace where
+  parseJSON = Aeson.genericParseJSON $ withFieldNamer f where
     f ('_' : xs) = xs; f x = x
 
 
@@ -245,8 +218,8 @@ data WindowTree
   }
   deriving (Show, Eq, Generic)
 
-instance FromJSON WindowTree where
-  parseJSON = genericParseJSON $ withFieldNamer Prelude.id
+instance Aeson.FromJSON WindowTree where
+  parseJSON = Aeson.genericParseJSON $ withFieldNamer Prelude.id
 
 instance HasWindowProperties WindowTree where
   getWindowProperties = (.windowProperties)

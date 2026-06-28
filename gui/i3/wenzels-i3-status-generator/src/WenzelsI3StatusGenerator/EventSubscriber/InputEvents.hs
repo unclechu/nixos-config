@@ -1,14 +1,7 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024, QuasiQuotes, OverloadedStrings #-}
 
 -- | Listening to input events
 module WenzelsI3StatusGenerator.EventSubscriber.InputEvents
@@ -16,35 +9,30 @@ module WenzelsI3StatusGenerator.EventSubscriber.InputEvents
      , subscribeToClickEvents
      ) where
 
-import "base" GHC.Generics (Generic)
+import qualified Control.Concurrent.Async as Async
+import Control.Monad (forever)
+import Data.Aeson (FromJSON (..), eitherDecodeStrict, genericParseJSON)
+import qualified Data.ByteString.Char8 as BS
+import Data.Word (Word8)
+import GHC.Generics (Generic)
 import Prelude hiding (getLine)
-
-import "aeson" Data.Aeson (FromJSON (..), eitherDecodeStrict, genericParseJSON)
-import "base" Data.Word (Word8)
-import "bytestring" Data.ByteString.Char8 (getLine, uncons)
-import "qm-interpolated-string" Text.InterpolatedString.QM (qm)
-
-import "base" Control.Monad (forever)
-import qualified "async" Control.Concurrent.Async as Async
-
--- Local imports
-
-import WenzelsI3StatusGenerator.Utils
+import Text.InterpolatedString.QM (qm)
+import WenzelsI3StatusGenerator.Utils ((•), (⋄))
 import WenzelsI3StatusGenerator.Utils.Aeson (withFieldNamer)
 
 
 -- | Reading click events from i3-bar
 subscribeToClickEvents ∷ (ClickEvent → IO ()) → IO (Async.Async ())
 subscribeToClickEvents eventCallback = Async.async $ do
-  getLine >>= \case
+  BS.getLine >>= \case
     "[" → pure () -- Opening of the list items stream
     x → fail $ "Incorrect opening of JSON list: " ⋄ show x
 
   -- First one (without comma separator)
-  getLine >>= parseItem >>= eventCallback
+  BS.getLine >>= parseItem >>= eventCallback
 
   forever @IO @() @() $ do
-    getLine >>= uncons • \case
+    BS.getLine >>= BS.uncons • \case
       Nothing →
         fail [qm| Failed to parse JSON: Unexpected end of input |]
       Just (',', x) →

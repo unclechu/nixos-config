@@ -1,10 +1,7 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024, QuasiQuotes #-}
 
 module WenzelsI3StatusGenerator.Utils
      ( (•), (⋄), (<&!>)
@@ -17,36 +14,18 @@ module WenzelsI3StatusGenerator.Utils
      , fireAndForget
      ) where
 
-import Prelude hiding (putStrLn)
-import "base-unicode-symbols" Prelude.Unicode
-
-import "base" Data.Function ((&))
-import "base" Data.Functor ((<&>), ($>))
-import "bytestring" Data.ByteString.Lazy.Char8 (ByteString, putStrLn)
-import "qm-interpolated-string" Text.InterpolatedString.QM (qms)
-
-import "base" Control.Concurrent (myThreadId)
-import "base" Control.Exception (SomeException, catch, displayException)
-import "base" Control.Monad ((<$!>), void)
-import qualified "async" Control.Concurrent.Async as Async
-
-import "base" System.IO
-  ( IOMode (ReadWriteMode)
-  , stdout
-  , stderr
-  , hPutStrLn
-  , hFlush
-  , openFile
-  )
-
-import "process" System.Process
-  ( CreateProcess (std_in, std_out, std_err, new_session)
-  , StdStream (UseHandle)
-  , proc
-  , createProcess
-  )
-
-import "X11" Graphics.X11.Xlib (Display, displayString)
+import Control.Concurrent (myThreadId)
+import qualified Control.Concurrent.Async as Async
+import Control.Exception (SomeException, catch, displayException)
+import Control.Monad ((<$!>), void)
+import qualified Data.ByteString.Lazy.Char8 as LBS
+import Data.Function ((&))
+import Data.Functor ((<&>), ($>))
+import Graphics.X11.Xlib (Display, displayString)
+import Prelude.Unicode
+import qualified System.IO as SysIO
+import qualified System.Process as SysProc
+import Text.InterpolatedString.QM (qms)
 
 
 -- * Operators
@@ -63,8 +42,8 @@ infixl 1 <&!>
 -- * Helper functions
 
 -- | Print a "ByteString" to stdout and flush it immediatelly
-echo ∷ ByteString → IO ()
-echo s = putStrLn s >> hFlush stdout
+echo ∷ LBS.ByteString → IO ()
+echo s = LBS.putStrLn s >> SysIO.hFlush SysIO.stdout
 
 
 -- | Get a display name (printed number) with special symbols replaced with @_@
@@ -83,12 +62,12 @@ getDisplayName dpy = go where
 -- | Spawn a process in fire-and-forget mode
 spawnProc ∷ FilePath → [String] → IO ()
 spawnProc cmd args = do
-  devNull <- openFile "/dev/null" ReadWriteMode
-  void $ createProcess (proc cmd args)
-    { std_in = UseHandle devNull
-    , std_out = UseHandle devNull
-    , std_err = UseHandle devNull
-    , new_session = True
+  devNull <- SysIO.openFile "/dev/null" SysIO.ReadWriteMode
+  void $ SysProc.createProcess (SysProc.proc cmd args)
+    { SysProc.std_in = SysProc.UseHandle devNull
+    , SysProc.std_out = SysProc.UseHandle devNull
+    , SysProc.std_err = SysProc.UseHandle devNull
+    , SysProc.new_session = True
     }
 
 
@@ -97,7 +76,7 @@ fireAndForget ∷ IO () → IO ()
 fireAndForget m =
   void ∘ Async.async $ catch m $ \e → do
     threadId ← myThreadId
-    hPutStrLn stderr [qms|
+    SysIO.hPutStrLn SysIO.stderr [qms|
       Fire-and-forget thread ({threadId}) failed with exception:
       {displayException @SomeException e}
     |]

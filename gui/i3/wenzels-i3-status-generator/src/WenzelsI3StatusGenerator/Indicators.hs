@@ -1,9 +1,7 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024 #-}
 
 -- | Some helper functions for printing indicators/mods
 module WenzelsI3StatusGenerator.Indicators
@@ -17,8 +15,8 @@ module WenzelsI3StatusGenerator.Indicators
      , colorOfAlternativeState
      ) where
 
-import "base" Data.Bool (bool)
-import "base" Data.Word (Word8)
+import Data.Bool (bool)
+import Data.Word (Word8)
 
 
 showNumLock ∷ Bool → String

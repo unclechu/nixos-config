@@ -1,11 +1,7 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024 #-}
 {-# LANGUAGE ViewPatterns #-}
 
 -- | Serializing the state of the application into a string
@@ -13,34 +9,20 @@ module WenzelsI3StatusGenerator.Render
      ( render
      ) where
 
-import "base" GHC.Generics (Generic)
-import "base-unicode-symbols" Prelude.Unicode
-
-import "aeson" Data.Aeson (ToJSON (..), genericToJSON, encode)
-import "base" Data.Tuple (swap)
-import "base" Data.Word (Word8)
-import "bytestring" Data.ByteString.Lazy.Char8 (ByteString)
-import "data-default" Data.Default (Default (def))
-import "time" Data.Time.Format (FormatTime, formatTime, defaultTimeLocale)
-import "time" Data.Time.LocalTime (utcToZonedTime)
-
--- Local imports
-
+import Data.Aeson (ToJSON (..), genericToJSON, encode)
+import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Default (Default (def))
+import Data.Time.Format (FormatTime, formatTime, defaultTimeLocale)
+import Data.Time.LocalTime (utcToZonedTime)
+import Data.Tuple (swap)
+import Data.Word (Word8)
+import GHC.Generics (Generic)
 import WenzelsI3StatusGenerator.EventSubscriber.Battery (UPowerBatteryState (..))
 import WenzelsI3StatusGenerator.Handler.AppState.Types (State (..))
+import qualified WenzelsI3StatusGenerator.Indicators as Indicators
 import WenzelsI3StatusGenerator.Layout (Layout, colorOfLayout)
-import WenzelsI3StatusGenerator.Utils
+import WenzelsI3StatusGenerator.Utils ((⋄), (<&>), (≡), (∘), (≥))
 import WenzelsI3StatusGenerator.Utils.Aeson (withFieldNamer)
-
-import WenzelsI3StatusGenerator.Indicators
-  ( showNumLock
-  , colorOfNumLock
-  , showCapsLock
-  , colorOfCapsLock
-  , showAlternativeState
-  , colorOfAlternativeState
-  )
-
 
 
 -- | Render given state to a string (encoded JSON value)
@@ -68,8 +50,8 @@ render s
 numLockView ∷ State → Unit
 numLockView s
   = def
-  { fullText = showNumLock isOn
-  , color = Just $ colorOfNumLock isOn
+  { fullText = Indicators.showNumLock isOn
+  , color = Just $ Indicators.colorOfNumLock isOn
   , name = Just "numlock"
   }
   where
@@ -79,8 +61,8 @@ numLockView s
 capsLockView ∷ State → Unit
 capsLockView s
   = def
-  { fullText = showCapsLock isOn
-  , color = Just $ colorOfCapsLock isOn
+  { fullText = Indicators.showCapsLock isOn
+  , color = Just $ Indicators.colorOfCapsLock isOn
   , name = Just "capslock"
   }
   where
@@ -92,11 +74,11 @@ alternativeView s
   = def
   { fullText =
       either (\n → "%UNKNOWN:" ⋄ show n ⋄ "%") Prelude.id $
-        showAlternativeState alternativeState
+        Indicators.showAlternativeState alternativeState
 
   , color =
       either (const Nothing) Just $
-        colorOfAlternativeState alternativeState
+        Indicators.colorOfAlternativeState alternativeState
 
   , name = Just "alternative"
   }

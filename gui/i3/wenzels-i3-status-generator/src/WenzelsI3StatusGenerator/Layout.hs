@@ -1,10 +1,7 @@
 -- Author: Viacheslav Lotsmanov
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, GHC2024 #-}
 
 -- | "Layout" data-type and related functions
 module WenzelsI3StatusGenerator.Layout
@@ -13,11 +10,8 @@ module WenzelsI3StatusGenerator.Layout
      , colorOfLayout
      ) where
 
-import "base" Data.List (find)
-
--- Local imports
-
-import WenzelsI3StatusGenerator.Utils
+import Data.List (find)
+import WenzelsI3StatusGenerator.Utils ((•), (≡), (&))
 
 
 -- | Layouts definition
