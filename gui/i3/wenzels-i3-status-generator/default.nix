@@ -11,7 +11,7 @@
 , haskellPackages ? pkgs.haskellPackages
 , haskell ? pkgs.haskell
 
-, pkg-config ? pkgs.pkg-config
+, libX11 ? pkgs.libX11
 , libXtst ? pkgs.libXtst
 
 , dzen2 ? pkgs.dzen2
@@ -38,6 +38,12 @@ let
       builtins.path {
         name = "${name}-source";
         path = __src;
+
+        # Note that `cabal.project` does not end up here (it’s not neccesary for
+        # the build). `cabal.project` disables optimizations for HLS and
+        # development `cabal build`/`cabal run`/`cabal repl`. But since it’s not
+        # added here for the Nix build of the executable default optimization
+        # level is applied. So `cabal.project` is intentionally avoided here.
         filter = path: type:
           (
             type == "directory" &&
@@ -56,12 +62,18 @@ let
     ${name} =
       lib.pipe (self.callCabal2nix name src {}) [
         (lib.flip haskell.lib.addBuildTools [ self.hlint ])
+        # Lint the sources before building
         (lib.flip haskell.lib.overrideCabal (old: {
-          # Lint the sources before building
           preConfigure = (old.preConfigure or "") + ''
             # TODO: Refactor the code following the linter warnings and enable this
             # hlint -- src/
           '';
+        }))
+        # Enable level-2 optimizations
+        (lib.flip haskell.lib.overrideCabal (old: {
+          configureFlags = (old.configureFlags or []) ++ [
+            "--enable-optimization=2"
+          ];
         }))
       ];
   });
@@ -97,6 +109,13 @@ let
     ];
 
     inherit withHoogle;
+
+    shellHook = ''
+      # Needed for `cabal repl` and HLS (Haskell Language Server LSP) to work.
+      export LD_LIBRARY_PATH=${
+        lib.escapeShellArg (lib.makeLibraryPath [libX11 libXtst])
+      }"''${LD_LIBRARY_PATH:+:}$LD_LIBRARY_PATH"
+    '';
 
     buildInputs = [
       hsPkgs.cabal-install

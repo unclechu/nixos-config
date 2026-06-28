@@ -35,10 +35,36 @@ bar {
 Some useful commands:
 
 ``` sh
-cabal build -O0
-cabal run -O0 exe:wenzels-i3-status-generator
+cabal build
+cabal run exe:wenzels-i3-status-generator
+cabal v2-repl library:wenzels-i3-status-generator
 hlint src/
 ```
+
+Note that “production” build is when you build the derivation with Nix.
+When you build it for development the optimizations are disabled in
+[cabal.project](cabal.project) file. You can always force the optimizations:
+
+``` sh
+cabal build -O1
+```
+
+### Vim configuration
+
+Haskell Language Server (also known as [HLS][HLS]) is already provided in the
+nix-shell configuration for this project. To enable it for my
+[Neovim config](https://github.com/unclechu/neovimrc) I do this:
+
+``` vim
+if !exists('g:ale_linters') | let g:ale_linters = {} | endif
+let g:ale_linters.haskell = []
+
+if executable('haskell-language-server-wrapper')
+	SetupNeovimLsp
+endif
+```
+
+[hie.yaml](hie.yaml) configures HLS for this package.
 
 ## License
 
@@ -49,3 +75,4 @@ Some third-party dependencies may have different licenses.
 [i3wm]: https://i3wm.org/
 [xlib-keys-hack]: https://github.com/unclechu/xlib-keys-hack
 [dbus]: https://www.freedesktop.org/wiki/Software/dbus/
+[HLS]: https://github.com/haskell/haskell-language-server

@@ -1,0 +1,6 @@
+cradle:
+  cabal:
+    - path: './src'
+      component: 'library:wenzels-i3-status-generator'
+    - path: './app'
+      component: 'wenzels-i3-status-generator:exe:wenzels-i3-status-generator'
