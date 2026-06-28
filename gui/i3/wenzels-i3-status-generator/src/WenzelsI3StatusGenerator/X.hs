@@ -12,7 +12,7 @@ import Control.Monad (forM, unless)
 import Foreign.C.Types (CULong (CULong), CInt (CInt))
 import qualified Graphics.X11.Xlib as Xlib
 import Graphics.X11.Xlib.Misc (keysymToKeycode)
-import WenzelsI3StatusGenerator.Utils ((≠), fireAndForget, (∘), (≢))
+import WenzelsI3StatusGenerator.Utils ((≠), fireAndForget)
 
 
 foreign import ccall unsafe "X11/extensions/XTest.h XTestFakeKeyEvent"
@@ -39,6 +39,16 @@ fakeKeyEvent keySyms = fireAndForget $ do
   Xlib.closeDisplay dpy
 
   where
-    keyCodes dpy = forM keySyms $ \(k, s) → (, s) ∘ test <$> keysymToKeycode dpy k
-    test = (\(x, True) → x) ∘ (\x → (x, x ≢ 0))
-    trig dpy k s = xFakeKeyEvent dpy k s 0 >> Xlib.sync dpy False
+    trig dpy k s =
+      xFakeKeyEvent dpy k s 0 >> Xlib.sync dpy False
+
+    keyCodes dpy =
+      forM keySyms $ \(keySym, keyState) →
+        keysymToKeycode dpy keySym >>= \case
+          keyCode
+            | keyCode ≠ 0 → pure (keyCode, keyState)
+            | otherwise → fail $ unwords
+                [ "XKeysymToKeycode():"
+                , "Failed to obtain a key code for key symbol: "
+                , show keySym
+                ]
