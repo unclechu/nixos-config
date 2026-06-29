@@ -616,6 +616,7 @@ bindsym $m+$a+m mode "mouse-cursor"
 bar {
   status_command wenzels-i3-status-generator
   tray_output primary
+  position top
 }
 
 # Red border for focused window (easier to notice)
