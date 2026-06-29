@@ -31,8 +31,11 @@ set $pause_proc_rec "( n=0; rec() { set -eu || return; if (( ++n > 10 )); then r
 set $resume_proc "kill -CONT -- $(( $(xdotool getactivewindow getwindowpid) ))"
 set $resume_proc_rec "( n=0; rec() { set -eu || return; if (( ++n > 10 )); then return 1; fi; kill -CONT -- $(($1)); pgrep -P $(($1)) | while read -r x; do rec $((x)); done; } && rec $(( $(xdotool getactivewindow getwindowpid) )) )"
 
-set $terminal_dark  "i3-sensible-terminal"
-set $terminal_light "i3-sensible-terminal"
+# Intended to be overridden (see `tmuxed-alacritty`)
+set $terminal_new        "i3-sensible-terminal"
+set $terminal_attach     "i3-sensible-terminal"
+set $terminal_nuke       "i3-sensible-terminal"
+set $terminal_new_prompt "i3-sensible-terminal"
 
 set $run_dark   "gmrun"
 set $run_light  "gmrun"
@@ -68,8 +71,9 @@ gaps inner $gaps
 focus_wrapping workspace
 
 # start a terminal
-bindsym $m+Return    exec $terminal_dark
-bindsym $m+$a+Return exec $terminal_light
+bindsym $m+Return    exec $terminal_new
+bindsym $m+$a+Return exec $terminal_attach
+bindsym $m+$s+Return exec $terminal_new_prompt
 
 # also: i3-dmenu-desktop
 bindsym $m+semicolon       exec $run_dark
@@ -434,6 +438,8 @@ mode "positioning (big steps)" {
 
 mode "do" {
   bindsym Escape mode "default"
+
+  bindsym $m+Return exec $terminal_nuke ; mode "default"
 
   bindsym $m+$a+space mode "default" ; floating toggle
   bindsym $m+space    mode "default" ; focus mode_toggle

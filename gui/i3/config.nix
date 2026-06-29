@@ -43,8 +43,10 @@ let sources = import ../../nix/sources.nix; in
 
 , __configFile ? ./config
 
-, terminalDark  ? null # Optional path to an executable of terminal emulator (dark  color scheme)
-, terminalLight ? null # Optional path to an executable of terminal emulator (light color scheme)
+, terminalNew       ? null # Optional path to an executable for “new terminal” action
+, terminalAttach    ? null # Optional path to an executable for “attach terminal” action
+, terminalNuke      ? null # Optional path to an executable for “nuke terminal” action
+, terminalNewPrompt ? null # Optional path to an executable for “new prompt terminal” action
 
 , runDark  ? null # Optional path to an executable of command runner (dark  color scheme)
 , runLight ? null # Optional path to an executable of command runner (light color scheme)
@@ -126,133 +128,104 @@ let
       f
       ;
 
-  # Type: string → string
-  replaceTerminal = input:
+  # Replace a string with a given list of substitutions.
+  #
+  # Type:
+  #   [{
+  #     context = attrset;
+  #     # ↑ Context that will be verified for preservation
+  #     match = string → null | [string];
+  #     # ↑ Matching function that will be applied against a line
+  #     #   (if `null` is returned it’s no match, `sub` is not called)
+  #     sub = [string] → string;
+  #     # ↑ Result of `match` applied against a line → new line
+  #   }]
+  #   → string
+  #   → string
+  replaceWithSubstitutions = substitutions: input:
+    assert builtins.isList substitutions;
+    assert builtins.all (x:
+      builtins.isAttrs x.context &&
+      builtins.isFunction x.match &&
+      builtins.isFunction x.sub
+    ) substitutions;
     assert builtins.isString input;
-    assert terminalDark != null -> builtins.isString terminalDark;
-    assert terminalLight != null -> builtins.isString terminalLight;
-    let
-      matchDark = builtins.match "^(set \\$terminal_dark ).*$";
-      matchLight = builtins.match "^(set \\$terminal_light ).*$";
-    in
     lib.pipe input [
       (builtins.split "\n")
       (builtins.filter builtins.isString)
       (map (line:
-        let
-          darkMatch = matchDark line;
-          lightMatch = matchLight line;
-        in
-        if terminalDark != null && darkMatch != null
-        then "${builtins.elemAt darkMatch 0}\"${lib.escape ["\""] terminalDark}\""
-        else
-        if terminalLight != null && lightMatch != null
-        then "${builtins.elemAt lightMatch 0}\"${lib.escape ["\""] terminalLight}\""
-        else
-        line
+        builtins.foldl' (acc: x:
+          let matchResult = x.match acc; in
+          if isNull matchResult then acc else x.sub matchResult
+        ) line substitutions
       ))
       (builtins.concatStringsSep "\n")
       (lib.flip builtins.appendContext (builtins.getContext input))
       # The context for substitutions is preserved
-      (x: assert terminalDark != null -> preservesContext terminalDark x; x)
-      (x: assert terminalLight != null -> preservesContext terminalLight x; x)
+      (x:
+        let xContext = builtins.getContext x; in
+        assert builtins.all (y:
+          builtins.all (k: builtins.hasAttr k xContext) (builtins.attrNames y.context)
+        ) substitutions; x
+      )
       # Something was actually changed
-      (x: assert (terminalDark != null || terminalLight != null) -> x != input; x)
+      (x: assert (builtins.length substitutions > 0) -> x != input; x)
       # String context is preserved
       (assertPreservesContext input)
     ];
 
   # Type: string → string
-  replaceRunners = input:
-    assert builtins.isString input;
-    assert runDark != null -> builtins.isString runDark;
-    assert runLight != null -> builtins.isString runLight;
-    assert drunDark != null -> builtins.isString drunDark;
-    assert drunLight != null -> builtins.isString drunLight;
-    let
-      matchRunDark = builtins.match "^(set \\$run_dark ).*$";
-      matchRunLight = builtins.match "^(set \\$run_light ).*$";
-      matchDrunDark = builtins.match "^(set \\$drun_dark ).*$";
-      matchDrunLight = builtins.match "^(set \\$drun_light ).*$";
-    in
-    lib.pipe input [
-      (builtins.split "\n")
-      (builtins.filter builtins.isString)
-      (map (line:
-        let
-          runDarkMatch = matchRunDark line;
-          runLightMatch = matchRunLight line;
-          drunDarkMatch = matchDrunDark line;
-          drunLightMatch = matchDrunLight line;
-        in
-        if runDark != null && runDarkMatch != null
-        then "${builtins.elemAt runDarkMatch 0}\"${lib.escape ["\""] runDark}\""
-        else
-        if runLight != null && runLightMatch != null
-        then "${builtins.elemAt runLightMatch 0}\"${lib.escape ["\""] runLight}\""
-        else
-        if drunDark != null && drunDarkMatch != null
-        then "${builtins.elemAt drunDarkMatch 0}\"${lib.escape ["\""] drunDark}\""
-        else
-        if drunLight != null && drunLightMatch != null
-        then "${builtins.elemAt drunLightMatch 0}\"${lib.escape ["\""] drunLight}\""
-        else
-        line
-      ))
-      (builtins.concatStringsSep "\n")
-      (lib.flip builtins.appendContext (builtins.getContext input))
-      # The context for substitutions is preserved
-      (x: assert runDark != null -> preservesContext runDark x; x)
-      (x: assert runLight != null -> preservesContext runLight x; x)
-      (x: assert drunDark != null -> preservesContext drunDark x; x)
-      (x: assert drunLight != null -> preservesContext drunLight x; x)
-      # Something was actually changed
-      (x: assert (
-        runDark != null || runLight != null || drunDark != null || drunLight != null
-      ) -> x != input; x)
-      # String context is preserved
-      (assertPreservesContext input)
+  replaceTerminals =
+    lib.pipe {
+      new = terminalNew;
+      attach = terminalAttach;
+      nuke = terminalNuke;
+      new_prompt = terminalNewPrompt;
+    } [
+      (lib.filterAttrs (n: v: v != null))
+      (lib.mapAttrsToList (n: v: {
+        context = builtins.getContext v;
+        match = builtins.match "^(set \\$terminal_${n} ).*$";
+        sub = x: "${builtins.elemAt x 0}\"${lib.escape ["\""] v}\"";
+      }))
+      replaceWithSubstitutions
     ];
 
   # Type: string → string
-  replaceWindowSelectionApp = input:
-    assert builtins.isString input;
-    assert selectWindowDark != null -> builtins.isString selectWindowDark;
-    assert selectWindowLight != null -> builtins.isString selectWindowLight;
-    let
-      matchSelectWindowDark = builtins.match "^(set \\$select_window_dark ).*$";
-      matchSelectWindowLight = builtins.match "^(set \\$select_window_light ).*$";
-    in
-    lib.pipe input [
-      (builtins.split "\n")
-      (builtins.filter builtins.isString)
-      (map (line:
-        let
-          selectWindowDarkMatch = matchSelectWindowDark line;
-          selectWindowLightMatch = matchSelectWindowLight line;
-        in
-        if selectWindowDark != null && selectWindowDarkMatch != null
-        then "${builtins.elemAt selectWindowDarkMatch 0}\"${lib.escape ["\""] selectWindowDark}\""
-        else
-        if selectWindowLight != null && selectWindowLightMatch != null
-        then "${builtins.elemAt selectWindowLightMatch 0}\"${lib.escape ["\""] selectWindowLight}\""
-        else
-        line
-      ))
-      (builtins.concatStringsSep "\n")
-      (lib.flip builtins.appendContext (builtins.getContext input))
-      # The context for substitutions is preserved
-      (x: assert selectWindowDark != null -> preservesContext selectWindowDark x; x)
-      (x: assert selectWindowLight != null -> preservesContext selectWindowLight x; x)
-      # Something was actually changed
-      (x: assert (selectWindowDark != null || selectWindowLight != null) -> x != input; x)
-      # String context is preserved
-      (assertPreservesContext input)
+  replaceRunners =
+    lib.pipe {
+      run_dark = runDark;
+      run_light = runLight;
+      drun_dark = drunDark;
+      drun_light = drunLight;
+    } [
+      (lib.filterAttrs (n: v: v != null))
+      (lib.mapAttrsToList (n: v: {
+        context = builtins.getContext v;
+        match = builtins.match ("^(set \\$" + n + " ).*$");
+        sub = x: "${builtins.elemAt x 0}\"${lib.escape ["\""] v}\"";
+      }))
+      replaceWithSubstitutions
+    ];
+
+  # Type: string → string
+  replaceWindowSelectionApp =
+    lib.pipe {
+      dark = selectWindowDark;
+      light = selectWindowLight;
+    } [
+      (lib.filterAttrs (n: v: v != null))
+      (lib.mapAttrsToList (n: v: {
+        context = builtins.getContext v;
+        match = builtins.match "^(set \\$select_window_${n} ).*$";
+        sub = x: "${builtins.elemAt x 0}\"${lib.escape ["\""] v}\"";
+      }))
+      replaceWithSubstitutions
     ];
 
   patchConfig = lib.flip lib.pipe [
     (replacePathsToExecutables e.s)
-    replaceTerminal
+    replaceTerminals
     replaceRunners
     replaceWindowSelectionApp
   ];

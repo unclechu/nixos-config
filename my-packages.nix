@@ -61,6 +61,7 @@ in
       cursor-to-display invert-window-colors gpaste-gui pamng screen-backlight
       ;
     inherit (wenzels-bash) wenzels-bash;
+    inherit (terminal-emulators) allTerminalEmulators;
   };
 
   configuration = {
