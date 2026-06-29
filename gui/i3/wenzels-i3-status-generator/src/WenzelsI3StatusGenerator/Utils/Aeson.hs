@@ -8,9 +8,13 @@ module WenzelsI3StatusGenerator.Utils.Aeson
      ) where
 
 import Data.Aeson (defaultOptions)
-import Data.Aeson.Types (Options (fieldLabelModifier), camelTo2)
+import qualified Data.Aeson.Types as AesonT
 import WenzelsI3StatusGenerator.Utils ((∘))
 
 
-withFieldNamer ∷ (String → String) → Options
-withFieldNamer f = defaultOptions { fieldLabelModifier = f ∘ camelTo2 '_' }
+withFieldNamer ∷ (String → String) → AesonT.Options
+withFieldNamer f = defaultOptions
+  { AesonT.fieldLabelModifier = f ∘ AesonT.camelTo2 '_'
+  -- Reduce the amount of transmitted JSON by removing all the `null` fields
+  , AesonT.omitNothingFields = True
+  }
