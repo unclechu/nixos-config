@@ -2,6 +2,7 @@
 -- License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
 {-# LANGUAGE UnicodeSyntax, GHC2024, QuasiQuotes, OverloadedRecordDot #-}
+{-# LANGUAGE ViewPatterns #-}
 
 -- | Main application runner module
 module WenzelsI3StatusGenerator.App
@@ -9,17 +10,21 @@ module WenzelsI3StatusGenerator.App
      ) where
 
 import Control.Arrow ((&&&))
+import qualified Control.Concurrent as CC
 import qualified Control.Concurrent.Async as Async
-import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
+import qualified Control.Concurrent.MVar as MVar
 import qualified Control.Exception as E
 import Control.Monad (join, guard)
 import Data.Aeson (ToJSON (..), genericToJSON, encode)
 import Data.Default (Default (def))
+import Data.Foldable (forM_)
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
+import Foreign.C.Types (CInt)
 import GHC.Generics (Generic)
 import Graphics.X11.Xlib (openDisplay, closeDisplay)
+import Prelude hiding (log)
 import System.Environment (getArgs)
 import qualified System.IO as SysIO
 import qualified System.Posix.Signals as Sig
@@ -41,6 +46,8 @@ import WenzelsI3StatusGenerator.X (initThreads)
 
 runApp ∷ IO ()
 runApp = do
+  log ← mkStderrLogger
+
   getArgs >>= \case
     [] → pure ()
     args → fail $
@@ -54,7 +61,7 @@ runApp = do
     closeDisplay dpy $> WithDisplayMarker ($ x)
 
   (putStateModification, getNextStateModification) ←
-    (putMVar &&& takeMVar) <$> newEmptyMVar
+    (MVar.putMVar &&& MVar.takeMVar) <$> MVar.newEmptyMVar
 
   (ipcEmitSignal, ipcEventsThreadHandle) ←
     subscribeToIPCEvents (unWithDisplayMarker withDisplayMarker) $ \case
@@ -128,8 +135,8 @@ runApp = do
     appStateHandler dzenNotification getNextStateModification saveState =<< readState
 
   -- Handle POSIX signals to terminate application
-  threadHandles ∷ [Async.Async ()] ←
-    mapM (uncurry withTerminationReport)
+  threadHandles ∷ [(IO (), Async.Async ())] ←
+    mapM (uncurry $ withTerminationReport log)
       [ ("focusedWindowTitleThreadHandle", focusedWindowTitleThreadHandle)
       , ("ipcEventsThreadHandle", ipcEventsThreadHandle)
       , ("dateAndTimeThreadHandle", dateAndTimeThreadHandle)
@@ -138,26 +145,50 @@ runApp = do
       ]
 
   let
-    terminateApplication
-      = foldl' E.finally (pure ())
-      $ [maybe (pure ()) snd batteryChargeUpdatesSubscription]
-      ⋄ fmap Async.uninterruptibleCancel threadHandles
+    terminateApplication ∷ Maybe TerminationSig → IO ()
+    terminateApplication sig =
+      go `E.catch` \(e ∷ E.SomeException) →
+        log ∘ unwords $
+          [ "terminateApplication for"
+          , maybe "main thread" (("for " ⋄) ∘ show) sig
+          , "threw exception:", E.displayException e
+          ]
+      where
+        go = do
+          log $
+            case sig of
+              Nothing → "Main thread triggered termination"
+              Just sig' → unwords [show sig', "signal triggered termination"]
+          foldl' E.finally (pure ()) $
+            [maybe (pure ()) snd batteryChargeUpdatesSubscription]
+            ⋄ fmap fst threadHandles
 
-  mapM_
-    (\sig → Sig.installHandler sig (Sig.Catch terminateApplication) Nothing)
-    [Sig.sigHUP, Sig.sigINT, Sig.sigTERM, Sig.sigPIPE]
+  forM_ [minBound .. maxBound] $ \sig →
+    Sig.installHandler
+      (toSigNum sig)
+      ((Sig.Catch ∘ terminateApplication ∘ Just) sig)
+      Nothing
 
   do -- Hanlding termination of the application
 
-    _ ← Async.waitAnyCatch threadHandles
+    Async.waitAnyCatch (threadHandles <&> snd) >>= \(thread, result) →
+      log ∘ unwords $
+        [ "Main thread termination: Thread watcher"
+        , "(" ⋄ (show ∘ Async.asyncThreadId) thread ⋄ ")"
+        , "reported:"
+        ]
+        ⋄ case result of
+            Right () → ["successful exit"]
+            Left (E.fromException → Just Async.AsyncCancelled) → ["cancellation"]
+            Left e → ["failure:", E.displayException e]
 
     -- Send cancellation signal to all other threads.
     -- And also call unsubscriber functions.
-    terminateApplication
+    terminateApplication Nothing
 
     -- Wait each thread individually and collect information about exceptions
     terminationExceptions ←
-      fmap catMaybes ∘ Async.forConcurrently threadHandles $ \asyncHandle →
+      fmap catMaybes ∘ Async.forConcurrently threadHandles $ \(_, asyncHandle) →
         Async.waitCatch asyncHandle
           <&> either Just (const Nothing)
           • (>>= \e → e <$ guard (E.fromException e ≠ Just Async.AsyncCancelled))
@@ -170,16 +201,46 @@ runApp = do
         [qm| Thread ({tid}) has failed with exception: {E.displayException e} |]
 
 
-withTerminationReport ∷ String → Async.Async () → IO (Async.Async ())
-withTerminationReport threadName watchedThread =
-  Async.async $
+withTerminationReport
+  ∷ Logger
+  → String
+  → Async.Async ()
+  → IO (IO (), Async.Async ())
+withTerminationReport log threadName watchedThread = do
+  watcherThread ← Async.async $
     Async.wait watchedThread `E.catch` \(e ∷ E.SomeException) → do
-      SysIO.hPutStrLn SysIO.stderr ∘ unwords $
-        ["Thread", show threadName]
+      threadId ← CC.myThreadId
+      log ∘ unwords $
+        [ "Thread", show threadName, "watcher", "(" ⋄ show threadId ⋄ "):"
+        , "Thread", show threadName, "(" ⋄ (show ∘ Async.asyncThreadId) watchedThread ⋄ ")"]
         ⋄ case E.fromException e of
             Just Async.AsyncCancelled → ["was cancelled"]
             Nothing → ["failed with:", E.displayException e]
       E.throwIO e
+  pure (Async.uninterruptibleCancel watchedThread, watcherThread)
+
+
+data TerminationSig = SIGHUP | SIGINT | SIGTERM | SIGPIPE
+  deriving stock (Eq, Show, Bounded, Enum)
+
+toSigNum ∷ TerminationSig → CInt
+toSigNum = \case
+  SIGHUP → Sig.sigHUP
+  SIGINT → Sig.sigINT
+  SIGTERM → Sig.sigTERM
+  SIGPIPE → Sig.sigPIPE
+{-# INLINE toSigNum #-}
+
+
+type Logger = String → IO ()
+
+mkStderrLogger ∷ IO Logger
+mkStderrLogger = do
+  lock ← MVar.newMVar ()
+  pure $ \msg →
+    MVar.withMVar lock $ \() → do
+      SysIO.hPutStrLn SysIO.stderr msg
+      SysIO.hFlush SysIO.stderr
 
 
 -- * Types
