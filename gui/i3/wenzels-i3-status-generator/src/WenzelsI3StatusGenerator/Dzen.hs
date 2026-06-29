@@ -13,6 +13,7 @@ import qualified Control.Concurrent.Async as Async
 import qualified Data.IORef as IORef
 import System.IO (Handle, hPutStrLn, hFlush, hClose)
 import System.Mem.Weak (addFinalizer)
+import qualified System.Process as SysProc
 import qualified System.Process.Typed as Proc
 import WenzelsI3StatusGenerator.Utils
 
@@ -72,16 +73,17 @@ dzen procRef text fgColor = do
 
     runKiller input procHandler = Async.async $ do
       threadDelay $ fromIntegral timeoutSeconds × 1000 × 1000
-      hClose input >> Proc.stopProcess procHandler
+      hClose input
+      SysProc.terminateProcess $ Proc.unsafeProcessHandle procHandler
 
     getNewProc = do
       procHandler
         ← Proc.startProcess
         $ Proc.proc "dzen2" args
         & Proc.setStdin Proc.createPipe
-        & Proc.setStdout Proc.closed
-        & Proc.setStderr Proc.closed
+        & Proc.setStdout Proc.nullStream
+        & Proc.setStderr Proc.nullStream
 
       let input = Proc.getStdin procHandler
-      addFinalizer procHandler $ Proc.stopProcess procHandler
+      addFinalizer procHandler $ SysProc.terminateProcess $ Proc.unsafeProcessHandle procHandler
       (procHandler, input,) <$> runKiller input procHandler

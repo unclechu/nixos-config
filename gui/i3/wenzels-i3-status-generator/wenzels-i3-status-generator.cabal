@@ -59,6 +59,7 @@ library
     , data-default
     , dbus
     , typed-process
+    , process
     , qm-interpolated-string
     , time
     , unix
