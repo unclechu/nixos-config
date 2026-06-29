@@ -23,7 +23,7 @@ if [[ -f "$DISPLAY_NUM_FILE" ]]; then
 	TRAY_OUTPUT=$(
 		i3-msg -t get_outputs \
 			| jq -r --argjson display_num "$DISPLAY_NUM" \
-				'[.[] | select(.active) | .name][$display_num-1]'
+				'(map(select(.active)) | sort_by(.rect.x, .rect.y) | map(.name))[$display_num-1]'
 	)
 else
 	TRAY_OUTPUT=primary
