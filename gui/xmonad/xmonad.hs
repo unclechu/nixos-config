@@ -1108,7 +1108,6 @@ defaultModeKeys
         makingScreenshots = Map.fromList
           [ ((0, XMonad.xK_Print), XMonad.spawn "gnome-screenshot")
           , ((m, XMonad.xK_Print), XMonad.spawn "gnome-screenshot -w")
-          -- TODO: Test it ↓ This bind was with “--release” flag in my i3wm config.
           , ((0, XMonad.xK_Pause), XMonad.spawn "gnome-screenshot -a")
           , ((m, XMonad.xK_Pause), XMonad.spawn "gnome-screenshot -ia")
           ]

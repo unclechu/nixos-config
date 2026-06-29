@@ -42,6 +42,8 @@ set $drun_light "dmenu_run"
 set $select_window_dark  "rofi -show window"
 set $select_window_light "rofi -show window"
 
+set $gaps 10px
+
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the ‘bar {}’ block below.
 # font pango:monospace 8
@@ -58,6 +60,12 @@ floating_minimum_size 5 x 5
 
 focus_follows_mouse no
 popup_during_fullscreen smart
+
+# Gaps between windows
+gaps inner $gaps
+
+# do not move the focus to another screen if it is first/last window
+focus_wrapping workspace
 
 # start a terminal
 bindsym $m+Return    exec $terminal_dark
@@ -150,8 +158,9 @@ bindsym $m+v split h
 bindsym $m+f fullscreen toggle
 
 # change container layout (stacked, tabbed, toggle split)
-bindsym $m+s layout stacking
-bindsym $m+w layout tabbed
+bindsym $m+w layout splith
+bindsym $m+$a+w layout tabbed
+bindsym $m+$s+w layout stacking
 bindsym $m+e layout toggle split
 
 # toggle tiling / floating
@@ -483,6 +492,8 @@ mode "do" {
   # mnemonic: ‘b’ is for ‘Border’
   bindsym $m+b border toggle; mode "default"
   bindsym    b border toggle
+  bindsym $a+b gaps inner all set 0px
+  bindsym $s+b gaps inner all set $gaps
 
   # mnemonic: ‘s’ is for ‘Shutter’
   bindsym $m+s exec shutter; mode "default"
