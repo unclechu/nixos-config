@@ -10,15 +10,20 @@ let
 
   executable-dependencies = pkgs.callPackage ../../utils/executable-dependencies.nix {};
 
-  add-i3-pseudo-primary-display-runtime-config =
-    pkgs.callPackage ./add-i3-pseudo-primary-display-runtime-config.nix {};
+  wenzels-i3-status-generator = pkgs.callPackage ./wenzels-i3-status-generator {};
+
+  make-i3-runtime-bar-config = pkgs.callPackage ./make-i3-runtime-bar-config.nix {
+    inherit wenzels-i3-status-generator;
+  };
 
   e = executable-dependencies {
-    add-i3-pseudo-primary-display-runtime-config =
-      add-i3-pseudo-primary-display-runtime-config;
+    wenzels-i3-status-generator = wenzels-i3-status-generator;
+    make-i3-runtime-bar-config = make-i3-runtime-bar-config;
   };
 
   i3-config = pkgs.callPackage ./config.nix {
+    inherit wenzels-i3-status-generator;
+
     autostart-setup = apps.autostart-setup;
     input-setup = apps.input-setup;
     gpaste-gui = apps.gpaste-gui;
@@ -45,13 +50,24 @@ let
     buildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
       ${e.checkPhase}
-      # Note that `--run` won’t re-run on i3 reload.
-      # Make sure `pseudo-primary-display` runs it when changing pseudo primary.
+      # Note that `--run` won’t re-run on i3 reload/restart.
       wrapProgram "$out"/bin/${
         lib.escapeShellArg pkgs.i3.meta.mainProgram
-      } --run ${
-        e.s.add-i3-pseudo-primary-display-runtime-config
-      }
+      } --run ${lib.escapeShellArg ''(
+        PSEUDO_PRIMARY_DISPLAY_I3_CONFIG=$XDG_RUNTIME_DIR/i3-runtime-bar-config.conf
+        # If file doesn’t exist create a dummy initial configuration
+        # so that the i3bar actually starts and then when the autostart
+        # script runs i3bar can be updated on triggered i3 reload.
+        if [[ ! -f "$PSEUDO_PRIMARY_DISPLAY_I3_CONFIG" ]]; then
+          printf '
+            bar {
+              status_command ${e.b.wenzels-i3-status-generator}
+              position top
+              tray_output primary
+            }
+          ' > "$PSEUDO_PRIMARY_DISPLAY_I3_CONFIG"
+        fi
+      )''}
     '';
   };
 in
@@ -63,8 +79,8 @@ in
     package = wenzels-i3;
 
     extraPackages = [
-      (pkgs.callPackage ./wenzels-i3-status-generator {})
-      e.executables.add-i3-pseudo-primary-display-runtime-config
+      e.executables.wenzels-i3-status-generator
+      e.executables.make-i3-runtime-bar-config
       pkgs.i3status
       pkgs.i3lock
       pkgs.adwaita-icon-theme

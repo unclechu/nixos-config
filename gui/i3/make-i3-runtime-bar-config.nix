@@ -3,7 +3,8 @@
 
 let sources = import ../../nix/sources.nix; in
 
-{ callPackage
+{ lib
+, callPackage
 
 , jq
 , i3
@@ -11,6 +12,8 @@ let sources = import ../../nix/sources.nix; in
 
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
 , mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
+
+, wenzels-i3-status-generator ? callPackage ./wenzels-i3-status-generator {}
 }:
 
 let
@@ -18,11 +21,19 @@ let
     jq = jq;
     i3-msg = i3;
     pidof = procps;
+    wenzels-i3-status-generator = wenzels-i3-status-generator;
   };
 in
 
 mk-generic-script {
-  name = "add-i3-pseudo-primary-display-runtime-config";
-  src = ./add-i3-pseudo-primary-display-runtime-config.sh;
+  name = "make-i3-runtime-bar-config";
+  src = ./make-i3-runtime-bar-config.sh;
   inherit e;
+  postPatch = ''
+    substituteInPlace "$src" --replace-fail ${
+      lib.escapeShellArg wenzels-i3-status-generator.meta.mainProgram
+    } ${
+      e.s.wenzels-i3-status-generator
+    }
+  '';
 }

@@ -3,7 +3,9 @@
 let sources = import ../nix/sources.nix; in
 { callPackage
 , writeText
+
 , bash
+, coreutils
 , pulseaudio
 , networkmanagerapplet
 , gpaste
@@ -15,6 +17,7 @@ let sources = import ../nix/sources.nix; in
 , __wenzels-picom ? callPackage ./wenzels-picom { inherit systemConfig; }
 , __screen-saver ? callPackage ./screen-saver {}
 , __pseudo-primary-display ? callPackage ./pseudo-primary-display {}
+, __make-i3-runtime-bar-config ? callPackage ../gui/i3/make-i3-runtime-bar-config.nix {}
 , executable-dependencies ? callPackage ../utils/executable-dependencies.nix {}
 , mk-generic-script ? callPackage ../utils/mk-generic-script.nix {}
 
@@ -32,6 +35,7 @@ let
 
   e = executable-dependencies {
     bash = bash;
+    sleep = coreutils;
     pactl = pulseaudio;
     gpaste-client = gpaste;
     nm-applet = networkmanagerapplet;
@@ -42,6 +46,7 @@ let
     screen-saver = __screen-saver;
     ${__pseudo-primary-display.copyToRuntimeScript.meta.mainProgram} =
       __pseudo-primary-display.copyToRuntimeScript;
+    make-i3-runtime-bar-config = __make-i3-runtime-bar-config;
   };
 
   src = writeText "${name}-source" ''
@@ -55,7 +60,7 @@ let
     ${e.s.${__pseudo-primary-display.copyToRuntimeScript.meta.mainProgram}}
     SCREENLAYOUT=~/.screenlayout/default.sh
     if [[ -f "$SCREENLAYOUT" && -x "$SCREENLAYOUT" ]]; then
-      if "$SCREENLAYOUT"; then sleep 1s; fi
+      if "$SCREENLAYOUT"; then ${e.s.sleep} 1s; fi
     fi
     ${
       let exe = e.s.run-picom; in assert builtins.isString exe;
@@ -64,7 +69,8 @@ let
       then exe
       else ""
     }
-    if [[ -f ~/.fehbg ]]; then ${e.s.bash} -- ~/.fehbg & fi
+    if [[ -f ~/.fehbg ]]; then ${e.s.bash} -- ~/.fehbg & disown; fi
+    ${e.s.make-i3-runtime-bar-config}
 
     ${
       let exe = e.s.autolock; in assert builtins.isString exe;
@@ -86,8 +92,8 @@ let
     }
 
     ${e.s.input-setup}
-    ${e.s.gpaste-client} & # starting local gpaste daemon
-    ${e.s.nm-applet} & # starting system tray network manager applet
+    ${e.s.gpaste-client} & disown # starting local gpaste daemon
+    ${e.s.nm-applet} & disown # starting system tray network manager applet
 
     ${e.s.xsetroot} -cursor_name left_ptr # default cursor on an empty workspace
 

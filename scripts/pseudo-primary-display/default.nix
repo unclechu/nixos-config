@@ -17,8 +17,7 @@ let sources = import ../../nix/sources.nix; in
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
 , mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
 
-, add-i3-pseudo-primary-display-runtime-config ?
-    callPackage ../../gui/i3/add-i3-pseudo-primary-display-runtime-config.nix {}
+, make-i3-runtime-bar-config ? callPackage ../../gui/i3/make-i3-runtime-bar-config.nix {}
 }:
 
 let
@@ -31,8 +30,7 @@ let
     cp = coreutils;
     systemctl = systemd;
     dash = dash;
-    add-i3-pseudo-primary-display-runtime-config =
-      add-i3-pseudo-primary-display-runtime-config;
+    make-i3-runtime-bar-config = make-i3-runtime-bar-config;
   };
 
   scriptSrc = ./pseudo-primary-display.sh;

@@ -640,20 +640,27 @@ bindsym $m+r mode "resize"
 bindsym $m+t mode "positioning"
 bindsym $m+$a+m mode "mouse-cursor"
 
-# The whole bar have to be configured only once.
-# See `$XDG_RUNTIME_DIR/pseudo-primary-display-i3.conf`.
-# See `add-i3-pseudo-primary-display-runtime-config.sh`.
+# Dynamically configuring the i3bar.
+#
+# The bar config must be created dynamically in order to be able to respect the
+# selected `pseudo-primary-display` (pick the right display for `tray_output`,
+# `tray_output` can’t be dynamically configured any other way, it doesn’t for
+# example accept variables as a value for it).
+#
+# The whole bar have to be configured only once. So the bar config can’t be
+# duplicated here and in the included file too.
+#
+# See `$XDG_RUNTIME_DIR/i3-runtime-bar-config.conf`.
+# See `make-i3-runtime-bar-config.sh`.
+# See `pseudo-primary-display.sh`.
+#
 # bar {
 #   status_command wenzels-i3-status-generator
 #   position top
 #   tray_output primary
 # }
-
-# Position the systray respecting the `pseudo-primary-display`.
-# This relies on the i3 wrapper in my NixOS configuration!
-# It must create the file before i3 starts!
-# See `add-i3-pseudo-primary-display-runtime-config.sh`.
-include $XDG_RUNTIME_DIR/pseudo-primary-display-i3.conf
+#
+include $XDG_RUNTIME_DIR/i3-runtime-bar-config.conf
 
 # Red border for focused window (easier to notice)
 # class                 border  backgr. text    indicator child_border
