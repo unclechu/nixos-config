@@ -49,10 +49,6 @@ DISPLAYS_COUNT=$(
 	xrandr --listmonitors | awk '$2 ~ /^\+/ { count++ } END { print count }'
 )
 
-XMONAD_PID=$(pidof xmonad)
-XMONAD_CTL=("/proc/$XMONAD_PID/exe" ctl)
-DUNST_CONF=$XDG_RUNTIME_DIR/dunst-pseudo-primary-display.conf
-
 if ! [[ $DISPLAYS_COUNT =~ ^[1-9]$ ]]; then
 	>&2 printf 'Incorrect displays count number: “%s”' "$DISPLAYS_COUNT"
 	exit 1
@@ -77,7 +73,7 @@ if (( DISPLAY_NUM == 0 )); then
 	>&2 echo 'Resetting the pseudo-primary display…'
 	(
 		set -o xtrace
-		rm -vf -- "$DISPLAY_NUM_FILE" "$DISPLAY_NUM_RUNTIME_FILE" "$DUNST_CONF"
+		rm -vf -- "$DISPLAY_NUM_FILE" "$DISPLAY_NUM_RUNTIME_FILE"
 	)
 else
 	>&2 printf 'Setting display %d as pseudo-primary…\n' "$DISPLAY_NUM"
@@ -86,16 +82,17 @@ else
 	# WARNING! Make sure your X11 session autostart script does the same!
 	# See for `copyToRuntimeScript` helper in `default.nix`.
 	cp -vf -- "$DISPLAY_NUM_FILE" "$DISPLAY_NUM_RUNTIME_FILE"
-
-	printf '
-	[global]
-	monitor = %d
-	follow = none
-	' "$(( DISPLAY_NUM - 1 ))" > "$DUNST_CONF"
 fi
 
 >&2 echo 'Restarting Dunst daemon…'
 (set -o xtrace; systemctl restart --user dunst)
 
->&2 echo 'Shallowly restaring XMonad…'
-(set -o xtrace; "${XMONAD_CTL[@]}" restart-xmonad shallow)
+if XMONAD_PID=$(pidof xmonad); then
+	>&2 echo 'Shallowly restaring XMonad…'
+	(set -o xtrace; "/proc/$XMONAD_PID/exe" ctl restart-xmonad shallow)
+fi
+
+if pidof i3 >/dev/null; then
+	>&2 echo 'Restaring i3…'
+	(set -o xtrace; i3-msg reload)
+fi

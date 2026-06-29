@@ -51,12 +51,14 @@ in
         set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
         exec ${lib.escapeShellArg (lib.getExe pkgs.dunst)} -conf <(
           MAIN_CONF="$HOME/.config/dunst/dunstrc"
-          PSEUDO_PRIMARY_DISPLAY_CONF="$XDG_RUNTIME_DIR/dunst-pseudo-primary-display.conf"
-          CMD=(cat -- "$MAIN_CONF")
-          if [[ -f "$PSEUDO_PRIMARY_DISPLAY_CONF" ]]; then
-            CMD+=("$PSEUDO_PRIMARY_DISPLAY_CONF")
+          config=$(<"$MAIN_CONF")
+          printf '%s\n' "$config"
+
+          DISPLAY_NUM_FILE=$HOME/.pseudo-primary-display
+          if [[ -f "$DISPLAY_NUM_FILE" ]]; then
+            DISPLAY_NUM=$(<"$DISPLAY_NUM_FILE")
+            printf '[global]\nmonitor = %d\nfollow = none\n' "$(( DISPLAY_NUM - 1 ))"
           fi
-          "''${CMD[@]}"
         )
       ''}
     '';
