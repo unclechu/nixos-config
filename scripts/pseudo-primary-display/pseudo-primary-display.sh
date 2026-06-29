@@ -33,6 +33,7 @@ set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 >/dev/null type rm
 >/dev/null type cp
 >/dev/null type systemctl
+>/dev/null type add-i3-pseudo-primary-display-runtime-config
 
 DISPLAY_NUM_FILE=$HOME/.pseudo-primary-display
 
@@ -94,5 +95,9 @@ fi
 
 if pidof i3 >/dev/null; then
 	>&2 echo 'Restaring i3…'
-	(set -o xtrace; i3-msg reload)
+	(
+		set -o xtrace
+		add-i3-pseudo-primary-display-runtime-config
+		i3-msg reload
+	)
 fi

@@ -1,0 +1,5 @@
+root = false
+
+[config]
+indent_style = space
+indent_size = 2
