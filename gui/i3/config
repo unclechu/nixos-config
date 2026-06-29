@@ -18,6 +18,7 @@ set $d3 i3-msg -t get_outputs | jq -r '[.[] | select(.active)] | sort_by(.rect.x
 set $d4 i3-msg -t get_outputs | jq -r '[.[] | select(.active)] | sort_by(.rect.x, .rect.y) | .[3].name'
 
 set $new_workspace "i3-msg workspace -- $(( $(i3-msg -t get_workspaces | jq 'map(select(.num > 0).num) | [range(1; max+2)]-. | min') ))"
+set $move_to_new_workspace "ws=$(( $(i3-msg -t get_workspaces | jq 'map(select(.num > 0).num) | [range(1; max+2)]-. | min') )); i3-msg move container to workspace number -- $(( ws )); i3-msg workspace number -- $(( ws ))"
 
 # useful when another screen isn't used at the moment
 set $tmp_workspace "i3-msg rename workspace to tmp$(( ((RANDOM%9)+1) + (((RANDOM%9)+1)*10) + (((RANDOM%9)+1)*100) ))"
@@ -188,16 +189,31 @@ bindsym $m+$a+8 move container to workspace 8
 bindsym $m+$a+9 move container to workspace 9
 bindsym $m+$a+0 move container to workspace 10
 
+# Next/previous workspace switching keys
 bindsym $m+z workspace prev_on_output
 bindsym $m+x workspace next_on_output
-bindsym $m+$a+z move container to workspace prev_on_output
-bindsym $m+$a+x move container to workspace next_on_output
-bindsym $m+b exec $new_workspace
+# TODO: Greedy / stealing variants
+# i3 does not support this out of the box, maybe write a script for this
+# bindsym $m+$a+z
+# bindsym $m+$a+x
+# Moving windows to workspaces
+bindsym $m+$s+z move container to workspace prev_on_output
+bindsym $m+$s+x move container to workspace next_on_output
+# Open a new workspace
+bindsym $m+b exec --no-startup-id $new_workspace
+# Move the window to a new workspace and switch to that workspace
+bindsym $m+$a+b exec --no-startup-id $move_to_new_workspace
 
-bindsym $m+comma     move workspace to output left
-bindsym $m+$s+comma  move workspace to output down
-bindsym $m+period    move workspace to output right
-bindsym $m+$s+period move workspace to output up
+# TODO: Swap workspaces for `+$a+` keys. i3 does not support this out of the box
+# Maybe write a script for it.
+bindsym $m+comma        move workspace to output left
+# bindsym $m+$a+comma     move workspace to output left  ; focus output right
+bindsym $m+$s+comma     move workspace to output down
+# bindsym $m+$a+$s+comma  move workspace to output down  ; focus output up
+bindsym $m+period       move workspace to output right
+# bindsym $m+$a+period    move workspace to output right ; focus output left
+bindsym $m+$s+period    move workspace to output up
+# bindsym $m+$a+$s+period move workspace to output up    ; focus output down
 
 # reload the configuration file
 bindsym $m+$a+c reload
@@ -543,12 +559,12 @@ mode "workspace" {
   bindsym $s+0 move container to workspace 10; mode "default"
 
   bindsym    z                   workspace prev_on_output
-  bindsym $s+z move container to workspace prev_on_output
   bindsym    x                   workspace next_on_output
+  bindsym $s+z move container to workspace prev_on_output
   bindsym $s+x move container to workspace next_on_output
 
-  bindsym b workspace back_and_forth; mode "default"
-  bindsym n exec $new_workspace; mode "default"
+  bindsym $m+b workspace back_and_forth; mode "default"
+  bindsym    b workspace back_and_forth
 }
 
 mode "mouse-cursor" {
