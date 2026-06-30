@@ -1324,14 +1324,14 @@ doKeysMode ∷ XdgRuntimeDir → Modal.Mode
 
     -- Restart XMonad applying the new configuration.
     -- Mnemonic: ‘r’ is for ‘Restart’.
-    , ((m, XMonad.xK_r), Modal.exitMode >> restartXMonad Normal Full True)
+    , ((m, XMonad.xK_r), Modal.exitMode >> restartXMonad xdgRuntimeDir Normal Full True)
     -- For dev testing
-    , ((m .|. s, XMonad.xK_r), Modal.exitMode >> restartXMonad Dev Full True)
+    , ((m .|. s, XMonad.xK_r), Modal.exitMode >> restartXMonad xdgRuntimeDir Dev Full True)
     -- “Shallow” mode restart (skipping the autostart script)
     -- Mnemonic: ‘t’ is for ‘restarT’.
-    , ((m, XMonad.xK_t), Modal.exitMode >> restartXMonad Normal Shallow True)
+    , ((m, XMonad.xK_t), Modal.exitMode >> restartXMonad xdgRuntimeDir Normal Shallow True)
     -- For dev testing
-    , ((m .|. s, XMonad.xK_t), Modal.exitMode >> restartXMonad Dev Shallow True)
+    , ((m .|. s, XMonad.xK_t), Modal.exitMode >> restartXMonad xdgRuntimeDir Dev Shallow True)
     -- Show termination action prompt.
     -- Mnemonic: ‘e’ is for ‘Exit’.
     , ((m, XMonad.xK_e), terminationPrompt xdgRuntimeDir >> Modal.exitMode)
@@ -1688,16 +1688,63 @@ xmonadExecutable = \case
 --
 -- See "startModeMarkerEnvName" for environment variable name.
 -- See "XMonadStartMode" for possible environment variable values (it’s just “show”n).
-restartXMonad ∷ XMonadExecutableType → XMonadStartMode → Bool → X ()
-restartXMonad xmonadExecutableType mode resume = do
+restartXMonad ∷ XdgRuntimeDir → XMonadExecutableType → XMonadStartMode → Bool → X ()
+restartXMonad xdgRuntimeDir xmonadExecutableType mode resume = do
+  case xmonadExecutableType of
+    Normal →
+      say "Restarting XMonad" $ Just [qmb|
+        Using XMonad executable: {show executable}
+      |]
+    Dev → do
+      say "Restarting XMonad DEV" $ Just [qmb|
+        Using XMonad executable: {show executable}
+        Making a smoke test for the DEV executable first by calling {show smokeTestCmd}…
+      |]
+      XMonad.io makeSureDevXmonadIsHealthy
+
+  -- Release resources and preserve current state
   XMonad.broadcastMessage XMonad.ReleaseResources
   XMonad.io . XMonad.flush =<< XMonad.asks XMonad.display
   when resume XMonad.writeStateToFile
+
   XMonad.catchIO $ do
     env ← (<> [startModeMarker]) . filter ((/= startModeMarkerEnvName) . fst) <$> getEnvironment
-    executeFile (xmonadExecutable xmonadExecutableType) True [] (Just env)
+    executeFile executable True [] (Just env)
+
   where
+    executable = xmonadExecutable xmonadExecutableType
     startModeMarker = (startModeMarkerEnvName, show mode)
+    smokeTestCmd = unwords [xmonadExecutable xmonadExecutableType, "ctl", "help"]
+
+    -- In case restarting in "Dev" mode make a smoke test first against dev
+    -- script in order to avoid XMonad crashing due to not compiled dev
+    -- executable for example.
+    makeSureDevXmonadIsHealthy ∷ IO ()
+    makeSureDevXmonadIsHealthy = do
+      withFifoResponse xdgRuntimeDir "dev-xmonad-health-check" $ \fifoPath getFifoLine → do
+        XMonad.spawn [qmb|
+          finish() \{ echo >> {shellQuote fifoPath}; }
+          trap finish EXIT
+          status=0; {smokeTestCmd} || status=$?
+          printf '%d\n' "$status" >> {shellQuote fifoPath}
+        |]
+        getFifoLine (Just $ _seconds 5) $ \case
+          Left (e ∷ E.SomeException) → do
+            scream "XMonad smoke test FAIL" $ Just [qmb|
+              Exception was thrown: {E.displayException e}
+              Not restaring XMonad in order to avoid XMonad crashing.
+            |]
+            E.throwIO e
+          Right "0" →
+            say
+              "XMonad smoke test OK"
+              (Just [qmb| Restarting XMonad in DEV mode using executable: {show executable} |])
+          Right x → do
+            scream "XMonad smoke test FAIL" $ Just [qmb|
+              Received exit code report: {show x}
+              Not restaring XMonad in order to avoid XMonad crashing.
+            |]
+            fail $ "DEV XMonad smoke test exit code was not successful: " <> show x
 
 -- | Environment variable name
 startModeMarkerEnvName ∷ String
@@ -1833,7 +1880,11 @@ handleXMonadAction opts polybarInterface layout actionStr =
         ShowCommandRunner → runnerCommandsX.runCommandDark
         ShowApplicationRunner → runnerCommandsX.runApplicationDark
         RestartXMonad startMode →
-          restartXMonad opts.options_executableType startMode True
+          restartXMonad
+            opts.options_xdgRuntimeDir
+            opts.options_executableType
+            startMode
+            True
         SwitchWorkspace ws → XMonad.windows (switchToWorkspace ws)
         MusicPlayerAction musicPlayerAction →
           case musicPlayerAction of
@@ -2155,3 +2206,15 @@ finallyX m final = do
 class MonadFinally m where finally' ∷ m a → m b → m a
 instance MonadFinally IO where finally' = E.finally
 instance MonadFinally X where finally' = finallyX
+
+scream ∷ XMonad.MonadIO m ⇒ String → Maybe String → m ()
+scream title text = XMonad.spawn [qms|
+  scream {shellQuote title} {maybe mempty shellQuote text}
+|]
+{-# INLINE scream #-}
+
+say ∷ XMonad.MonadIO m ⇒ String → Maybe String → m ()
+say title text = XMonad.spawn [qms|
+  notify-send -- {shellQuote title} {maybe mempty shellQuote text}
+|]
+{-# INLINE say #-}
