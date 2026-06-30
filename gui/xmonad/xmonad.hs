@@ -1692,11 +1692,11 @@ restartXMonad ∷ XdgRuntimeDir → XMonadExecutableType → XMonadStartMode →
 restartXMonad xdgRuntimeDir xmonadExecutableType mode resume = do
   case xmonadExecutableType of
     Normal →
-      say "Restarting XMonad" $ Just [qmb|
+      say [qms| {mode} XMonad restart |] $ Just [qmb|
         Using XMonad executable: {show executable}
       |]
     Dev → do
-      say "Restarting XMonad DEV" $ Just [qmb|
+      say [qms| {mode} DEV XMonad restart |] $ Just [qmb|
         Using XMonad executable: {show executable}
         Making a smoke test for the DEV executable first by calling {show smokeTestCmd}…
       |]
