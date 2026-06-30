@@ -1685,11 +1685,11 @@ restartXMonad ∷ XdgRuntimeDir → XMonadExecutableType → XMonadStartMode →
 restartXMonad xdgRuntimeDir xmonadExecutableType mode resume = do
   case xmonadExecutableType of
     Normal →
-      say [qms| {mode} XMonad restart |] $ Just [qmb|
+      say [qms| {mode} XMonad restart |] [qmb|
         Using XMonad executable: {show executable}
       |]
     Dev → do
-      say [qms| {mode} DEV XMonad restart |] $ Just [qmb|
+      say [qms| {mode} DEV XMonad restart |] [qmb|
         Using XMonad executable: {show executable}
         Making a smoke test for the DEV executable first by calling {show smokeTestCmd}…
       |]
@@ -1725,7 +1725,7 @@ restartXMonad xdgRuntimeDir xmonadExecutableType mode resume = do
         |]
         getFifoLine (Just $ _seconds 5) $ \case
           Left (e ∷ E.SomeException) → do
-            scream "XMonad smoke test FAIL" $ Just [qmb|
+            scream "XMonad smoke test FAIL" [qmb|
               Exception was thrown: {E.displayException e}
               Not restaring XMonad in order to avoid XMonad crashing.
             |]
@@ -1733,9 +1733,9 @@ restartXMonad xdgRuntimeDir xmonadExecutableType mode resume = do
           Right "0" →
             say
               "XMonad smoke test OK"
-              (Just [qmb| Restarting XMonad in DEV mode using executable: {show executable} |])
+              [qmb| Restarting XMonad in DEV mode using executable: {show executable} |]
           Right x → do
-            scream "XMonad smoke test FAIL" $ Just [qmb|
+            scream "XMonad smoke test FAIL" [qmb|
               Received exit code report: {show x}
               Not restaring XMonad in order to avoid XMonad crashing.
             |]
@@ -2202,14 +2202,14 @@ class MonadFinally m where finally' ∷ m a → m b → m a
 instance MonadFinally IO where finally' = E.finally
 instance MonadFinally X where finally' = finallyX
 
-scream ∷ XMonad.MonadIO m ⇒ String → Maybe String → m ()
+scream ∷ XMonad.MonadIO m ⇒ String → String → m ()
 scream title text = XMonad.spawn [qms|
-  scream {shellQuote title} {maybe mempty shellQuote text}
+  scream {shellQuote title} {if text == mempty then mempty else shellQuote text}
 |]
 {-# INLINE scream #-}
 
-say ∷ XMonad.MonadIO m ⇒ String → Maybe String → m ()
+say ∷ XMonad.MonadIO m ⇒ String → String → m ()
 say title text = XMonad.spawn [qms|
-  notify-send -- {shellQuote title} {maybe mempty shellQuote text}
+  notify-send -- {shellQuote title} {if text == mempty then mempty else shellQuote text}
 |]
 {-# INLINE say #-}
