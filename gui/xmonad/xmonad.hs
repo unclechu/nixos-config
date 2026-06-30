@@ -49,7 +49,7 @@ import qualified XMonad
 import qualified XMonad.Hooks.Modal as HModal
 import qualified XMonad.Hooks.EwmhDesktops as EwmhDesktops
 import qualified Data.Map.Strict as Map
-import Text.InterpolatedString.QM (qms, qns, qmb)
+import Text.InterpolatedString.QM (qms, qnb, qmb)
 import qualified Graphics.X11.ExtraTypes.XF86 as XF86
 import qualified XMonad.StackSet as W
 import qualified XMonad.Hooks.Modal as Modal
@@ -77,7 +77,6 @@ import Data.List (partition, intercalate, find)
 import Data.Maybe (listToMaybe, fromMaybe)
 import XMonad.Hooks.TaffybarPagerHints (pagerHints)
 import qualified Data.List.NonEmpty as NE
-import System.Environment (getEnvironment, lookupEnv, unsetEnv, getArgs)
 import Text.Read (readMaybe)
 import qualified System.Process.Typed as ProcT
 import Network.HostName (getHostName)
@@ -102,20 +101,20 @@ import qualified System.Posix.Files as PosixFiles
 import qualified Data.Time.Clock.POSIX as POSIX
 import qualified Graphics.X11 as X11
 import qualified Graphics.X11.Xlib.Extras as X11Extras
-import GHC.Internal.System.Environment (getProgName)
 import qualified XMonad.Hooks.ServerMode as ServerMode
 import qualified System.Timeout as Timeout
 import qualified System.Posix.Signals as PosixSignals
 import Data.Function ((&))
 import qualified System.Environment as SysEnv
 import qualified System.Process as SysProc
+import Control.Category ((>>>))
 
 main ∷ IO ()
 main = do
-  getArgs >>= \case
+  SysEnv.getArgs >>= \case
     subCommand : xs
       | subCommand == ctlSubcommand && isCtlHelp xs → do
-          progName ← getProgName
+          progName ← SysEnv.getProgName
           SysIO.hPutStr SysIO.stderr (ctlHelp progName)
       | subCommand == ctlSubcommand → ctl xs
     _ → startXMonad
@@ -164,12 +163,12 @@ main = do
       polybarRunScript ← do
         let envVarName = "POLYBAR_RUN_SCRIPT"
         !x ← fromMaybe "run-polybar" <$> getEnv envVarName
-        x <$ unsetEnv envVarName
+        x <$ SysEnv.unsetEnv envVarName
 
       executableType ← do
         let envVarName = "XMONAD_DEV"
         !isDev ← getEnv envVarName <&> \case Just "1" → True; _ → False
-        unsetEnv envVarName
+        SysEnv.unsetEnv envVarName
         pure $ if isDev then Dev else Normal
 
       let
@@ -210,11 +209,11 @@ mkOptions executableType xdgRuntimeDir =
 getRestartMode ∷ IO XMonadStartMode
 getRestartMode = do
   -- Try to look if there’s restart mode value passed by an environment variable
-  raw ← lookupEnv startModeMarkerEnvName
+  raw ← SysEnv.lookupEnv startModeMarkerEnvName
 
   -- We don’t need it to keep forwarding for the next restart.
   -- Just removing the value in case it was set.
-  maybe (pure ()) (const $ unsetEnv startModeMarkerEnvName) raw
+  maybe (pure ()) (const $ SysEnv.unsetEnv startModeMarkerEnvName) raw
 
   -- Parse the restart mode (or just use default mode value if parsing fails)
   pure $ fromMaybe XMonad.def $ readMaybe @XMonadStartMode =<< raw
@@ -574,32 +573,26 @@ terminalCommandsX = TerminalCommands
 cmdExterminate, cmdPause, cmdPauseRecursive, cmdResume, cmdResumeRecursive ∷ String
 cmdExterminate = "kill -KILL -- $(( $(xdotool getactivewindow getwindowpid) ))"
 cmdPause = "kill -STOP -- $(( $(xdotool getactivewindow getwindowpid) ))"
-cmdPauseRecursive = [qns|
-  (
-    n=0;
-    rec() {
-      set -o errexit || return;
-      set -o nounset;
-      if (( ++n > 10 )); then return 1; fi;
-      kill -STOP -- $(($1));
-      pgrep -P $(($1)) | while read -r x; do rec $((x)); done;
-    }
-    && rec $(( $(xdotool getactivewindow getwindowpid) ))
-  )
+cmdPauseRecursive = [qnb|
+  n=0
+  rec() {
+    set -o errexit || return; set -o errtrace; set -o nounset; set -o pipefail
+    if (( ++n > 10 )); then return 1; fi
+    kill -STOP -- $(($1))
+    pgrep -P $(($1)) | while read -r x; do rec $((x)); done
+  }
+  rec $(( $(xdotool getactivewindow getwindowpid) ))
 |]
 cmdResume = "kill -CONT -- $(( $(xdotool getactivewindow getwindowpid) ))"
-cmdResumeRecursive = [qns|
-  (
-    n=0;
-    rec() {
-      set -o errexit || return;
-      set -o nounset;
-      if (( ++n > 10 )); then return 1; fi;
-      kill -CONT -- $(($1));
-      pgrep -P $(($1)) | while read -r x; do rec $((x)); done;
-    }
-    && rec $(( $(xdotool getactivewindow getwindowpid) ))
-  )
+cmdResumeRecursive = [qnb|
+  n=0
+  rec() {
+    set -o errexit || return; set -o errtrace; set -o nounset; set -o pipefail
+    if (( ++n > 10 )); then return 1; fi
+    kill -CONT -- $(($1))
+    pgrep -P $(($1)) | while read -r x; do rec $((x)); done
+  }
+  rec $(( $(xdotool getactivewindow getwindowpid) ))
 |]
 
 -- App/command GUI runners
@@ -1708,7 +1701,9 @@ restartXMonad xdgRuntimeDir xmonadExecutableType mode resume = do
   when resume XMonad.writeStateToFile
 
   XMonad.catchIO $ do
-    env ← (<> [startModeMarker]) . filter ((/= startModeMarkerEnvName) . fst) <$> getEnvironment
+    env ←
+      SysEnv.getEnvironment <&>
+        (filter (fst >>> (/= startModeMarkerEnvName)) >>> (<> [startModeMarker]))
     executeFile executable True [] (Just env)
 
   where
