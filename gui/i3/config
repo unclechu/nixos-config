@@ -45,6 +45,13 @@ set $drun_light "dmenu_run"
 set $select_window_dark  "rofi -show window"
 set $select_window_light "rofi -show window"
 
+set $music_player_play "audacious --play"
+set $music_player_play_toggle "audacious --play-pause"
+set $music_player_previous "audacious --rew"
+set $music_player_next "audacious --fwd"
+set $music_player_stop "audacious --stop"
+set $music_player_spawn_server "audacious"
+
 set $gaps 10px
 
 # Font for window titles. Will also be used by the bar unless a different font
@@ -113,11 +120,12 @@ bindsym $m+Pause exec gnome-screenshot -ia
 
 bindsym XF86Calculator exec gnome-calculator
 
-bindsym $m+XF86AudioPlay exec audacious --play
-bindsym XF86AudioPlay exec audacious --play-pause
-bindsym XF86AudioPrev exec audacious --rew
-bindsym XF86AudioNext exec audacious --fwd
-bindsym XF86AudioStop exec audacious --stop
+bindsym $m+XF86AudioPlay exec $music_player_play
+bindsym XF86AudioPlay    exec $music_player_play_toggle
+bindsym XF86AudioPrev    exec $music_player_previous
+bindsym XF86AudioNext    exec $music_player_next
+bindsym XF86AudioStop    exec $music_player_stop
+bindsym $s+XF86AudioPlay exec $music_player_spawn_server
 
 bindsym $m+XF86AudioMute        exec pamng reset
 bindsym XF86AudioMute           exec pamng mute

@@ -23,8 +23,10 @@ let sources = import ../../nix/sources.nix; in
 , dmenu
 , rofi
 , gnome-screenshot
-, audacious
 , shutter
+
+, audacious
+, mpvc
 
 , place-cursor-at
 
@@ -42,6 +44,7 @@ let sources = import ../../nix/sources.nix; in
 # ↓ Build options ↓
 
 , __configFile ? ./config
+, __musicPlayerControlsFile ? ../music-player-controls.toml
 
 , terminalNew       ? null # Optional path to an executable for “new terminal” action
 , terminalAttach    ? null # Optional path to an executable for “attach terminal” action
@@ -70,8 +73,11 @@ let
     dmenu_run = dmenu;
     rofi = rofi;
     gnome-screenshot = gnome-screenshot;
-    audacious = audacious;
     shutter = shutter;
+
+    # Music players (for substitution when needed)
+    audacious = audacious;
+    mpvc = mpvc;
 
     place-cursor-at = place-cursor-at;
 
@@ -223,11 +229,46 @@ let
       replaceWithSubstitutions
     ];
 
+  # Type: string → string
+  replaceMusicPlayerControlCommands =
+    let
+      config = builtins.fromTOML (builtins.readFile __musicPlayerControlsFile);
+      inherit (config) selected-player player-configuration;
+      cmd = player-configuration.${selected-player}.shell-commands;
+    in
+    assert terminalNew != null -> builtins.isString terminalNew;
+    assert builtins.isAttrs cmd;
+    lib.pipe {
+      play = cmd.play;
+      play_toggle = cmd.play-toggle;
+      previous = cmd.previous;
+      next = cmd.next;
+      stop = cmd.stop;
+      spawn_server = cmd.spawn-server;
+    } [
+      # All those shell commands are supposed to be strings
+      (x: assert builtins.all builtins.isString (builtins.attrValues x); x)
+      # Substitute %RUN_IN_TERMINAL% placeholder
+      (if isNull terminalNew then lib.id else builtins.mapAttrs (n:
+        builtins.replaceStrings
+          ["%RUN_IN_TERMINAL%"]
+          ["${lib.escapeShellArg terminalNew} music"]
+      ))
+      (builtins.mapAttrs (n: replacePathsToExecutables e.s))
+      (lib.mapAttrsToList (n: v: {
+        context = builtins.getContext v;
+        match = builtins.match "^(set \\$music_player_${n} ).*$";
+        sub = x: "${builtins.elemAt x 0}\"${lib.escape ["\""] v}\"";
+      }))
+      replaceWithSubstitutions
+    ];
+
   patchConfig = lib.flip lib.pipe [
     (replacePathsToExecutables e.s)
     replaceTerminals
     replaceRunners
     replaceWindowSelectionApp
+    replaceMusicPlayerControlCommands
   ];
 in
 
