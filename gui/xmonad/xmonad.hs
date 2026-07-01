@@ -34,17 +34,14 @@
 {-# HLINT ignore "Use newtype instead of data" #-}
 {-# HLINT ignore "Use <&>" #-}
 
-{-# LANGUAGE GHC2021 #-}
+{-# LANGUAGE GHC2024 #-}
 {-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ViewPatterns #-}
 
 import XMonad (XConfig (..), X, (.|.), (|||), (-->), (=?), (<&&>))
 import qualified XMonad
