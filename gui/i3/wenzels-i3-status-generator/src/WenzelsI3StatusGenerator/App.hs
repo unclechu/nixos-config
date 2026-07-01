@@ -39,7 +39,7 @@ import WenzelsI3StatusGenerator.Handler.AppState (State (..), appStateHandler)
 import qualified WenzelsI3StatusGenerator.Handler.InputEvents as InputEvents
 import WenzelsI3StatusGenerator.IPC (ipcSwitchAlternativeModeSignal)
 import WenzelsI3StatusGenerator.ParentProc (dieWithParent)
-import WenzelsI3StatusGenerator.Utils (getDisplayName, ($>), (∘), (<&>), (•), fireAndForget, echo, (↔), (≠))
+import WenzelsI3StatusGenerator.Utils (getDisplayName, ($>), (∘), (<&>), (•), echo, (↔), (≠))
 import WenzelsI3StatusGenerator.Utils.Aeson (withFieldNamer)
 import WenzelsI3StatusGenerator.X (initThreads)
 
@@ -125,14 +125,10 @@ runApp = do
 
   dieWithParent -- Make this app die if the parent process (i3 bar) dies
 
-  dzenNotification
-    ← newIORef Nothing <&>
-    \ ref text color → fireAndForget $ dzen ref text color
-
   echo $ encode (def ∷ ProtocolInitialization) { clickEvents = True }
 
   appStateThreadHandle ←
-    appStateHandler dzenNotification getNextStateModification saveState =<< readState
+    appStateHandler dzen getNextStateModification saveState =<< readState
 
   -- Handle POSIX signals to terminate application
   threadHandles ∷ [(IO (), Async.Async ())] ←

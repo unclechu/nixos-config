@@ -14,7 +14,7 @@
 , libX11 ? pkgs.libX11
 , libXtst ? pkgs.libXtst
 
-, dzen2 ? pkgs.dzen2
+, dzen-box ? callPackage ../../../scripts/dzen-box {}
 
 , executable-dependencies ? callPackage ../../../utils/executable-dependencies.nix {}
 
@@ -55,7 +55,7 @@ let
       };
 
   e = executable-dependencies {
-    dzen2 = dzen2;
+    dzen-box = dzen-box;
   };
 
   hsPkgs = haskellPackages.extend (self: super: {
