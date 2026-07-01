@@ -17,7 +17,7 @@ import Data.Word (Word8)
 import GHC.Generics (Generic)
 import Prelude hiding (getLine)
 import Text.InterpolatedString.QM (qm)
-import WenzelsI3StatusGenerator.Utils ((•), (⋄))
+import WenzelsI3StatusGenerator.Utils ((•), (↔))
 import WenzelsI3StatusGenerator.Utils.Aeson (withFieldNamer)
 
 
@@ -26,7 +26,7 @@ subscribeToClickEvents ∷ (ClickEvent → IO ()) → IO (Async.Async ())
 subscribeToClickEvents eventCallback = Async.async $ do
   BS.getLine >>= \case
     "[" → pure () -- Opening of the list items stream
-    x → fail $ "Incorrect opening of JSON list: " ⋄ show x
+    x → fail $ "Incorrect opening of JSON list: " ↔ show x
 
   -- First one (without comma separator)
   BS.getLine >>= parseItem >>= eventCallback

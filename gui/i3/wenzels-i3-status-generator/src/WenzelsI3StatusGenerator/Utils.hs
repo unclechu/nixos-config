@@ -4,7 +4,7 @@
 {-# LANGUAGE UnicodeSyntax, GHC2024, QuasiQuotes #-}
 
 module WenzelsI3StatusGenerator.Utils
-     ( (•), (⋄), (<&!>)
+     ( (•), (↔), (<&!>)
      , module Prelude.Unicode
      , module Data.Function
      , module Data.Functor
@@ -31,7 +31,7 @@ import Text.InterpolatedString.QM (qms)
 -- * Operators
 
 (•) ∷ (α → β) → (β → γ) → α → γ; (•) = flip (∘); {-# INLINE (•) #-}; infixl 9 •
-(⋄) ∷ Semigroup α ⇒ α → α → α;   (⋄) = (<>);     {-# INLINE (⋄) #-}; infixr 6 ⋄
+(↔) ∷ Semigroup α ⇒ α → α → α;   (↔) = (<>);     {-# INLINE (↔) #-}; infixr 6 ↔
 
 (<&!>) ∷ Monad φ ⇒ φ α → (α → β) → φ β
 (<&!>) = flip (<$!>)

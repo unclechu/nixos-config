@@ -54,11 +54,11 @@ dzen procRef text fgColor = do
 
     fontStr (size ∷ Word)
       = "-*-"
-      ⋄ fontFamily ⋄ "-"
-      ⋄ fontStyle  ⋄ "-*-*-*-"
-      ⋄ show size  ⋄ "-*-*-*-*-*-*-*"
+      ↔ fontFamily ↔ "-"
+      ↔ fontStyle  ↔ "-*-*-*-"
+      ↔ show size  ↔ "-*-*-*-*-*-*-*"
 
-    colorfulText = "^fn(" ⋄ fontStr fontSize ⋄ ")^fg(" ⋄ fgColor ⋄ ")" ⋄ text
+    colorfulText = "^fn(" ↔ fontStr fontSize ↔ ")^fg(" ↔ fgColor ↔ ")" ↔ text
 
     args =
       [ "-ta", "c"

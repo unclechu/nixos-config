@@ -16,7 +16,7 @@ import WenzelsI3StatusGenerator.Handler.AppState.Types
 import qualified WenzelsI3StatusGenerator.Indicators as Indicators
 import WenzelsI3StatusGenerator.Layout (colorOfLayout)
 import WenzelsI3StatusGenerator.Render (render)
-import WenzelsI3StatusGenerator.Utils (echo, (≡), (⋄), (≢), (∧), (∨), (∘))
+import WenzelsI3StatusGenerator.Utils (echo, (≡), (↔), (≢), (∧), (∨), (∘))
 
 
 -- | Reactive loop that gets state modifier from an @MVar@
@@ -61,7 +61,7 @@ appStateHandler reportCallback getNextStateUpdate writeState initialState = go w
 
     newStateHandler = do
       writeState newState
-      echo $ "," ⋄ render newState
+      echo $ "," ↔ render newState
       report
 
     report = do

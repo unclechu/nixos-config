@@ -22,7 +22,7 @@ import qualified DBus
 import qualified DBus.Client
 import Text.InterpolatedString.QM (qm)
 import WenzelsI3StatusGenerator.Layout (Layout (..), numToLayout)
-import WenzelsI3StatusGenerator.Utils ((≢), (&), (•), (∘), (<&>), (⋄))
+import WenzelsI3StatusGenerator.Utils ((≢), (&), (•), (∘), (<&>), (↔))
 
 
 subscribeToIPCEvents
@@ -143,8 +143,8 @@ instance Default XmonadrcIfaceParams where
   def
     = XmonadrcIfaceParams
     { objPath = "/"
-    , flushObjPath  = DBus.objectPath_ ∘ ("/com/github/unclechu/xmonadrc/" ⋄)
-    , busName = DBus.busName_ ∘ ("com.github.unclechu.xmonadrc." ⋄)
+    , flushObjPath  = DBus.objectPath_ ∘ ("/com/github/unclechu/xmonadrc/" ↔)
+    , busName = DBus.busName_ ∘ ("com.github.unclechu.xmonadrc." ↔)
     , interfaceName = "com.github.unclechu.xmonadrc"
     }
 
@@ -160,6 +160,6 @@ instance Default XlibKeysHackIfaceParams where
   def
     = XlibKeysHackIfaceParams
     { objPath = "/"
-    , busName = DBus.busName_ ∘ ("com.github.unclechu.xlib_keys_hack." ⋄)
+    , busName = DBus.busName_ ∘ ("com.github.unclechu.xlib_keys_hack." ↔)
     , interfaceName = "com.github.unclechu.xlib_keys_hack"
     }

@@ -21,7 +21,7 @@ import WenzelsI3StatusGenerator.EventSubscriber.Battery (UPowerBatteryState (..)
 import WenzelsI3StatusGenerator.Handler.AppState.Types (State (..))
 import qualified WenzelsI3StatusGenerator.Indicators as Indicators
 import WenzelsI3StatusGenerator.Layout (Layout, colorOfLayout)
-import WenzelsI3StatusGenerator.Utils ((⋄), (<&>), (≡), (∘), (≥))
+import WenzelsI3StatusGenerator.Utils ((↔), (<&>), (≡), (∘), (≥))
 import WenzelsI3StatusGenerator.Utils.Aeson (withFieldNamer)
 
 
@@ -34,15 +34,15 @@ render ∷ State → ByteString
 render s
   = (encode ∷ [Unit] → ByteString)
   $ maybe mempty (\x → [windowTitleView x, _separate]) (windowTitle s)
-  ⋄
+  ↔
   [ numLockView s
   , capsLockView s
   , alternativeView s
   , _separate
   ]
-  ⋄ kbdLayoutView s
-  ⋄ [ _separate, dateAndTimeView s ]
-  ⋄ maybe mempty (\x → [_separate, batteryView x]) (battery s)
+  ↔ kbdLayoutView s
+  ↔ [ _separate, dateAndTimeView s ]
+  ↔ maybe mempty (\x → [_separate, batteryView x]) (battery s)
 
 
 -- * Units
@@ -73,7 +73,7 @@ alternativeView ∷ State → Unit
 alternativeView s
   = def
   { fullText =
-      either (\n → "%UNKNOWN:" ⋄ show n ⋄ "%") Prelude.id $
+      either (\n → "%UNKNOWN:" ↔ show n ↔ "%") Prelude.id $
         Indicators.showAlternativeState alternativeState
 
   , color =
@@ -90,12 +90,12 @@ alternativeView s
 kbdLayoutView ∷ State → [Unit]
 kbdLayoutView s = go where
   f nameSuffix fullText (Just → color) =
-    def { name = Just ("kbdlayout-" ⋄ nameSuffix), fullText, color }
+    def { name = Just ("kbdlayout-" ↔ nameSuffix), fullText, color }
 
   go = case kbdLayout s of
     Nothing → pure $ f "UNDEFINED" "%UNDEFINED%" "#eeeeee"
     Just (Left n) →
-      pure $ f "UNKNOWN" ("%UNKNOWN:" ⋄ show n ⋄ "%") "#eeeeee"
+      pure $ f "UNKNOWN" ("%UNKNOWN:" ↔ show n ↔ "%") "#eeeeee"
     Just (Right layout) →
       [minBound .. maxBound ∷ Layout] <&> \x →
         f (show x) (show x) $
@@ -116,7 +116,7 @@ batteryView ∷ (Double, UPowerBatteryState) → Unit
 batteryView (chargeLeft, batteryState) = go where
   go = def
     { -- Rounding because floating point is always zero
-      fullText = icon batteryState ⋄ show (round chargeLeft ∷ Word8) ⋄ "%"
+      fullText = icon batteryState ↔ show (round chargeLeft ∷ Word8) ↔ "%"
 
     , name = Just "battery"
 

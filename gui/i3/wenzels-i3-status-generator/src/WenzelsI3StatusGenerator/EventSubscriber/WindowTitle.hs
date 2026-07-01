@@ -22,7 +22,7 @@ import Data.Maybe (listToMaybe, mapMaybe)
 import GHC.Generics (Generic)
 import qualified System.Process.Typed as Proc
 import Text.InterpolatedString.QM (qn, qm)
-import WenzelsI3StatusGenerator.Utils ((∘), (•), (⋄), (<&>), (&))
+import WenzelsI3StatusGenerator.Utils ((∘), (•), (↔), (<&>), (&))
 import WenzelsI3StatusGenerator.Utils.Aeson (withFieldNamer)
 
 
@@ -58,7 +58,7 @@ subscribeToFocusedWindowTitleUpdates updateCallback = do
     Proc.withProcessWait procSpec $ \p → do
       forever @IO @() @() $ hGetLine (Proc.getStdout p)
         <&> Aeson.eitherDecodeStrict'
-        >>= either (fail ∘ ("Error while parsing window title event: " ⋄)) pure
+        >>= either (fail ∘ ("Error while parsing window title event: " ↔)) pure
         >>= getFocusedWindowTitle • \case
               Ignore → pure ()
               FocusedWindowNotFound → updateCallback Nothing

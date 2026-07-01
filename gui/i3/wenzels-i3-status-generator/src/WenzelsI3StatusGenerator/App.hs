@@ -39,7 +39,7 @@ import WenzelsI3StatusGenerator.Handler.AppState (State (..), appStateHandler)
 import qualified WenzelsI3StatusGenerator.Handler.InputEvents as InputEvents
 import WenzelsI3StatusGenerator.IPC (ipcSwitchAlternativeModeSignal)
 import WenzelsI3StatusGenerator.ParentProc (dieWithParent)
-import WenzelsI3StatusGenerator.Utils
+import WenzelsI3StatusGenerator.Utils (getDisplayName, ($>), (∘), (<&>), (•), fireAndForget, echo, (↔), (≠))
 import WenzelsI3StatusGenerator.Utils.Aeson (withFieldNamer)
 import WenzelsI3StatusGenerator.X (initThreads)
 
@@ -150,7 +150,7 @@ runApp = do
       go `E.catch` \(e ∷ E.SomeException) →
         log ∘ unwords $
           [ "terminateApplication for"
-          , maybe "main thread" (("for " ⋄) ∘ show) sig
+          , maybe "main thread" (("for " ↔) ∘ show) sig
           , "threw exception:", E.displayException e
           ]
       where
@@ -161,7 +161,7 @@ runApp = do
               Just sig' → unwords [show sig', "signal triggered termination"]
           foldl' E.finally (pure ()) $
             [maybe (pure ()) snd batteryChargeUpdatesSubscription]
-            ⋄ fmap fst threadHandles
+            ↔ fmap fst threadHandles
 
   forM_ [minBound .. maxBound] $ \sig →
     Sig.installHandler
@@ -174,10 +174,10 @@ runApp = do
     Async.waitAnyCatch (threadHandles <&> snd) >>= \(thread, result) →
       log ∘ unwords $
         [ "Main thread termination: Thread watcher"
-        , "(" ⋄ (show ∘ Async.asyncThreadId) thread ⋄ ")"
+        , "(" ↔ (show ∘ Async.asyncThreadId) thread ↔ ")"
         , "reported:"
         ]
-        ⋄ case result of
+        ↔ case result of
             Right () → ["successful exit"]
             Left (E.fromException → Just Async.AsyncCancelled) → ["cancellation"]
             Left e → ["failure:", E.displayException e]
@@ -211,9 +211,9 @@ withTerminationReport log threadName watchedThread = do
     Async.wait watchedThread `E.catch` \(e ∷ E.SomeException) → do
       threadId ← CC.myThreadId
       log ∘ unwords $
-        [ "Thread", show threadName, "watcher", "(" ⋄ show threadId ⋄ "):"
-        , "Thread", show threadName, "(" ⋄ (show ∘ Async.asyncThreadId) watchedThread ⋄ ")"]
-        ⋄ case E.fromException e of
+        [ "Thread", show threadName, "watcher", "(" ↔ show threadId ↔ "):"
+        , "Thread", show threadName, "(" ↔ (show ∘ Async.asyncThreadId) watchedThread ↔ ")"]
+        ↔ case E.fromException e of
             Just Async.AsyncCancelled → ["was cancelled"]
             Nothing → ["failed with:", E.displayException e]
       E.throwIO e
