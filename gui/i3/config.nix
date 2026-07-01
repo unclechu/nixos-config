@@ -30,6 +30,8 @@ let sources = import ../../nix/sources.nix; in
 
 , place-cursor-at
 
+, terminal-emulators ? callPackage ../../terminal-emulators.nix {}
+
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
 
 # When actually used in the system i3 config override this (it’s missing systemConfig)!
@@ -42,27 +44,14 @@ let sources = import ../../nix/sources.nix; in
 , wenzels-i3-status-generator ? callPackage ./wenzels-i3-status-generator {}
 
 # ↓ Build options ↓
-
 , __configFile ? ./config
-, __musicPlayerControlsFile ? ../music-player-controls.toml
-
-, terminalNew       ? null # Optional path to an executable for “new terminal” action
-, terminalAttach    ? null # Optional path to an executable for “attach terminal” action
-, terminalNuke      ? null # Optional path to an executable for “nuke terminal” action
-, terminalNewPrompt ? null # Optional path to an executable for “new prompt terminal” action
-
-, runDark  ? null # Optional path to an executable of command runner (dark  color scheme)
-, runLight ? null # Optional path to an executable of command runner (light color scheme)
-
-, drunDark  ? null # Optional path to an executable of desktop application runner (dark  color scheme)
-, drunLight ? null # Optional path to an executable of desktop application runner (light color scheme)
-
-, selectWindowDark  ? null # Optional path to an executable of window selection app (dark  color scheme)
-, selectWindowLight ? null # Optional path to an executable of window selection app (light color scheme)
+, __wmConfigFile ? ../wm-config.toml
 }:
 
 let
-  e = executable-dependencies {
+  wmConfig = builtins.fromTOML (builtins.readFile __wmConfigFile);
+
+  e = executable-dependencies ({
     i3-nagbar = i3;
     i3-msg = i3;
     i3-sensible-terminal = i3;
@@ -88,7 +77,9 @@ let
     pamng = pamng;
     screen-backlight = screen-backlight;
     wenzels-i3-status-generator = wenzels-i3-status-generator;
-  };
+  } // (
+    terminal-emulators.allTerminalEmulators
+  ));
 
   # Check that `b` preserves context of `a` but can be bigger.
   preservesContext =
@@ -180,32 +171,49 @@ let
       (assertPreservesContext input)
     ];
 
-  # Type: string → string
-  replaceTerminals =
-    lib.pipe {
-      new = terminalNew;
-      attach = terminalAttach;
-      nuke = terminalNuke;
-      new_prompt = terminalNewPrompt;
-    } [
-      (lib.filterAttrs (n: v: v != null))
-      (lib.mapAttrsToList (n: v: {
-        context = builtins.getContext v;
-        match = builtins.match "^(set \\$terminal_${n} ).*$";
-        sub = x: "${builtins.elemAt x 0}\"${lib.escape ["\""] v}\"";
-      }))
-      replaceWithSubstitutions
-    ];
+  # Type: { string = string }
+  wmConfigTerminals =
+    let cmd = wmConfig.terminal-configuration.${wmConfig.terminal}.shell-commands; in
+    assert builtins.isAttrs cmd;
+    {
+      terminal_new = cmd.new;
+      terminal_attach = cmd.attach;
+      terminal_nuke = cmd.nuke;
+      terminal_new_prompt = cmd.new-prompt;
+    };
+
+  # Type: { string = string }
+  wmConfigRunners =
+    let cmd = wmConfig.runner-configuration.${wmConfig.runner}.shell-commands; in
+    assert builtins.isAttrs cmd;
+    {
+      run_command = cmd.run-command;
+      run_application = cmd.run-application;
+      select_window = cmd.select-window;
+    };
+
+  # Type: { string = string }
+  wmConfigMusicPlayer =
+    let cmd = wmConfig.music-player-configuration.${wmConfig.music-player}.shell-commands; in
+    assert builtins.isAttrs cmd;
+    {
+      music_player_play = cmd.play;
+      music_player_play_toggle = cmd.play-toggle;
+      music_player_previous = cmd.previous;
+      music_player_next = cmd.next;
+      music_player_stop = cmd.stop;
+      music_player_spawn_server = cmd.spawn-server;
+    };
 
   # Type: string → string
-  replaceRunners =
-    lib.pipe {
-      run_dark = runDark;
-      run_light = runLight;
-      drun_dark = drunDark;
-      drun_light = drunLight;
-    } [
-      (lib.filterAttrs (n: v: v != null))
+  wmConfigSubstitutions =
+    lib.pipe (
+      wmConfigTerminals // wmConfigRunners // wmConfigMusicPlayer
+    ) [
+      # All those shell commands are supposed to be strings
+      (x: assert builtins.all builtins.isString (builtins.attrValues x); x)
+      (builtins.mapAttrs (n: substituteTerminalNew))
+      (builtins.mapAttrs (n: replacePathsToExecutables e.s))
       (lib.mapAttrsToList (n: v: {
         context = builtins.getContext v;
         match = builtins.match ("^(set \\$" + n + " ).*$");
@@ -214,61 +222,15 @@ let
       replaceWithSubstitutions
     ];
 
-  # Type: string → string
-  replaceWindowSelectionApp =
-    lib.pipe {
-      dark = selectWindowDark;
-      light = selectWindowLight;
-    } [
-      (lib.filterAttrs (n: v: v != null))
-      (lib.mapAttrsToList (n: v: {
-        context = builtins.getContext v;
-        match = builtins.match "^(set \\$select_window_${n} ).*$";
-        sub = x: "${builtins.elemAt x 0}\"${lib.escape ["\""] v}\"";
-      }))
-      replaceWithSubstitutions
-    ];
-
-  # Type: string → string
-  replaceMusicPlayerControlCommands =
-    let
-      config = builtins.fromTOML (builtins.readFile __musicPlayerControlsFile);
-      inherit (config) selected-player player-configuration;
-      cmd = player-configuration.${selected-player}.shell-commands;
-    in
-    assert terminalNew != null -> builtins.isString terminalNew;
-    assert builtins.isAttrs cmd;
-    lib.pipe {
-      play = cmd.play;
-      play_toggle = cmd.play-toggle;
-      previous = cmd.previous;
-      next = cmd.next;
-      stop = cmd.stop;
-      spawn_server = cmd.spawn-server;
-    } [
-      # All those shell commands are supposed to be strings
-      (x: assert builtins.all builtins.isString (builtins.attrValues x); x)
-      # Substitute %RUN_IN_TERMINAL% placeholder
-      (if isNull terminalNew then lib.id else builtins.mapAttrs (n:
-        builtins.replaceStrings
-          ["%RUN_IN_TERMINAL%"]
-          ["${lib.escapeShellArg terminalNew} music"]
-      ))
-      (builtins.mapAttrs (n: replacePathsToExecutables e.s))
-      (lib.mapAttrsToList (n: v: {
-        context = builtins.getContext v;
-        match = builtins.match "^(set \\$music_player_${n} ).*$";
-        sub = x: "${builtins.elemAt x 0}\"${lib.escape ["\""] v}\"";
-      }))
-      replaceWithSubstitutions
-    ];
+  # Substitute %TERMINAL_NEW% placeholder
+  substituteTerminalNew =
+    builtins.replaceStrings
+      ["%TERMINAL_NEW%"]
+      [(lib.escapeShellArg wmConfigTerminals.terminal_new)];
 
   patchConfig = lib.flip lib.pipe [
     (replacePathsToExecutables e.s)
-    replaceTerminals
-    replaceRunners
-    replaceWindowSelectionApp
-    replaceMusicPlayerControlCommands
+    wmConfigSubstitutions
   ];
 in
 

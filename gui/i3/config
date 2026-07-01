@@ -37,13 +37,10 @@ set $terminal_attach     "i3-sensible-terminal"
 set $terminal_nuke       "i3-sensible-terminal"
 set $terminal_new_prompt "i3-sensible-terminal"
 
-set $run_dark   "gmrun"
-set $run_light  "gmrun"
-set $drun_dark  "dmenu_run"
-set $drun_light "dmenu_run"
+set $run_command     "gmrun"
+set $run_application "dmenu_run"
 
-set $select_window_dark  "rofi -show window"
-set $select_window_light "rofi -show window"
+set $select_window "rofi -show window"
 
 set $music_player_play "audacious --play"
 set $music_player_play_toggle "audacious --play-pause"
@@ -82,15 +79,10 @@ bindsym $m+Return    exec $terminal_new
 bindsym $m+$a+Return exec $terminal_attach
 bindsym $m+$s+Return exec $terminal_new_prompt
 
-# also: i3-dmenu-desktop
-bindsym $m+semicolon       exec $run_dark
-bindsym $m+$a+semicolon    exec $run_light
-bindsym $m+$s+semicolon    exec $drun_dark
-bindsym $m+$s+$a+semicolon exec $drun_light
+bindsym $m+semicolon exec $run_command
+bindsym $m+$a+semicolon exec $run_application
 
-# run window selection app
-bindsym $m+slash    exec $select_window_dark
-bindsym $m+$a+slash exec $select_window_light
+bindsym $m+slash exec $select_window
 
 bindsym $m+apostrophe exec gpaste-gui
 bindsym $m+$a+apostrophe exec gpaste-gui -m=choose

@@ -5,7 +5,6 @@ args@{ pkgs, lib, ... }:
 let
   sources = import ../../nix/sources.nix;
   apps = (import ../../my-packages.nix args).my-apps;
-  rofi-commands = import ../rofi-commands.nix { inherit pkgs lib; };
 
   executable-dependencies = pkgs.callPackage ../../utils/executable-dependencies.nix {};
 
@@ -15,25 +14,10 @@ let
     inherit wenzels-i3-status-generator;
   };
 
-  terminalKinds = [ "new" "attach" "nuke" "new-prompt" ];
-  terminalFont = "jetbrains";
-  terminalTheme = "dark";
-
-  getTerminalName = kind:
-    "tmuxed-alacritty-${terminalFont}-font-${terminalTheme}-${kind}";
-
-  terminalExcecutableMap = lib.pipe terminalKinds [
-    (map (kind: let name = getTerminalName kind; in {
-      inherit name;
-      value = apps.allTerminalEmulators.${name};
-    }))
-    builtins.listToAttrs
-  ];
-
-  e = executable-dependencies ({
+  e = executable-dependencies {
     wenzels-i3-status-generator = wenzels-i3-status-generator;
     make-i3-runtime-bar-config = make-i3-runtime-bar-config;
-  } // terminalExcecutableMap);
+  };
 
   i3-config = pkgs.callPackage ./config.nix {
     inherit wenzels-i3-status-generator;
@@ -44,18 +28,6 @@ let
     invert-window-colors = apps.invert-window-colors;
     pamng = apps.pamng;
     screen-backlight = apps.screen-backlight;
-
-    terminalNew = e.b.${getTerminalName "new"};
-    terminalAttach = e.b.${getTerminalName "attach"};
-    terminalNuke = e.b.${getTerminalName "nuke"};
-    terminalNewPrompt = e.b.${getTerminalName "new-prompt"};
-
-    runDark = rofi-commands.run.dark;
-    runLight = rofi-commands.run.light;
-    drunDark = rofi-commands.drun.dark;
-    drunLight = rofi-commands.drun.light;
-    selectWindowDark = rofi-commands.window.dark;
-    selectWindowLight = rofi-commands.window.light;
   };
 
   wenzels-i3 = pkgs.symlinkJoin {
@@ -97,7 +69,6 @@ in
       e.executables.make-i3-runtime-bar-config
       pkgs.i3status
       pkgs.i3lock
-      pkgs.adwaita-icon-theme
     ];
   };
 }

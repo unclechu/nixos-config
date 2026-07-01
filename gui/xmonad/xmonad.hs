@@ -43,6 +43,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 
 import XMonad (XConfig (..), X, (.|.), (|||), (-->), (=?), (<&&>))
 import qualified XMonad
@@ -73,7 +75,6 @@ import qualified XMonad.Actions.FloatKeys as FloatKeys
 import qualified XMonad.Actions.FlexibleResize as FlexibleResize
 import qualified XMonad.Actions.CycleWS as CycleWS
 import qualified XMonad.Hooks.InsertPosition as InsertPosition
-import Data.List (partition, intercalate, find)
 import Data.Maybe (listToMaybe, fromMaybe)
 import XMonad.Hooks.TaffybarPagerHints (pagerHints)
 import qualified Data.List.NonEmpty as NE
@@ -108,16 +109,26 @@ import Data.Function ((&))
 import qualified System.Environment as SysEnv
 import qualified System.Process as SysProc
 import Control.Category ((>>>))
+import qualified Data.List as L
+import qualified Control.Lens as Lens
+import qualified Data.Generics.Product.Fields as GLens
+import GHC.Generics (Generic)
+import qualified Data.Bifunctor as BF
 
 main ∷ IO ()
 main = do
-  SysEnv.getArgs >>= \case
-    subCommand : xs
+  originalArgs ← SysEnv.getArgs
+
+  case parseCommandsArgs originalArgs of
+    -- For “ctl” subcommands these arguments are optional.
+    -- Just discarding them if present.
+    (either (const originalArgs) fst → subCommand : xs)
       | subCommand == ctlSubcommand && isCtlHelp xs → do
           progName ← SysEnv.getProgName
           SysIO.hPutStr SysIO.stderr (ctlHelp progName)
       | subCommand == ctlSubcommand → ctl xs
-    _ → startXMonad
+    Right (args, commands) → SysEnv.withArgs args (startXMonad commands)
+    Left err → fail $ "Arguments parsing failed: " <> err
 
   where
     ctl commandXs =
@@ -154,8 +165,8 @@ main = do
         <> fmap SwitchWorkspace myWorkspaces
         <> fmap MusicPlayerAction [minBound .. maxBound ∷ XMonadMusicPlayerAction]
 
-    startXMonad ∷ IO ()
-    startXMonad = do
+    startXMonad ∷ Commands → IO ()
+    startXMonad commands = do
       writeFile "/tmp/xmonad.log" "XMonad initializes\n"
       xdgRuntimeDir ← mkXdgRuntimeDir
       let polybarStateFiles = mkPolybarStateFiles xdgRuntimeDir
@@ -179,7 +190,7 @@ main = do
             ]
 
       withPolybar polybarStateFiles polybarCmd $ \polybarInterface → do
-        opts ← mkOptions executableType xdgRuntimeDir
+        opts ← mkOptions executableType xdgRuntimeDir commands
 
         let
           myStartupHook = do
@@ -189,22 +200,282 @@ main = do
         writeFile "/tmp/xmonad.log" "XMonad starts\n"
         XMonad.xmonad $ completeConfig opts polybarInterface myStartupHook
 
+-- * Options
+
 data Options = Options
   { options_startMode ∷ XMonadStartMode
   , options_saveMoreSpace ∷ Bool
   , options_tallMasters ∷ Int
   , options_executableType ∷ XMonadExecutableType
   , options_xdgRuntimeDir ∷ XdgRuntimeDir
+  , options_commands ∷ Commands
   }
 
-mkOptions ∷ XMonadExecutableType → XdgRuntimeDir → IO Options
-mkOptions executableType xdgRuntimeDir =
+mkOptions
+  ∷ XMonad.MonadIO m
+  ⇒ XMonadExecutableType
+  → XdgRuntimeDir
+  → Commands
+  → m Options
+mkOptions executableType xdgRuntimeDir commands =
   Options
-    <$> getRestartMode
-    <*> isSavingMoreSpaceNeeded
+    <$> XMonad.io getRestartMode
+    <*> XMonad.io isSavingMoreSpaceNeeded
     <*> pure 1
     <*> pure executableType
     <*> pure xdgRuntimeDir
+    <*> pure commands
+
+-- * 'Commands' type, parsing from command-line arguments
+
+data Commands = Commands
+  { commands_terminals ∷ TerminalCommands String
+  , commands_terminalsM ∷ TerminalCommands CommandM
+  , commands_runners ∷ RunnerCommands String
+  , commands_runnersM ∷ RunnerCommands CommandM
+  , commands_musicPlayerControls ∷ MusicPlayerControlCommands String
+  , commands_musicPlayerControlsM ∷ MusicPlayerControlCommands CommandM
+  }
+
+parseCommandsArgs ∷ [String] → Either String ([String], Commands)
+parseCommandsArgs args = go where
+  parse
+    ∷ Either ArgParseError
+    ( [String]
+    , TerminalCommands String
+    , RunnerCommands String
+    , MusicPlayerControlCommands String
+    )
+  parse = do
+    let parseTerminals = parseTerminalCommandsArgs args
+    (parseRunners, terminals) ← BF.first parseRunnerCommandsArgs <$> parseTerminals
+    (parseMusicPlayerControls, runners) ← BF.first parseMusicPlayerControlCommandsArgs <$> parseRunners
+    (unparsedArgs, musicPlayerControls) ← parseMusicPlayerControls
+    pure (unparsedArgs, terminals, runners, musicPlayerControls)
+
+  go ∷ Either String ([String], Commands)
+  go = do
+    (unparsedArgs, terminals, runners, musicPlayerControls) ←
+      flip BF.first parse $ \case
+        Right arg → "Missing required argument: " <> arg
+        Left err → err
+
+    pure . (unparsedArgs,) $ Commands
+      { commands_terminals = terminals
+      , commands_terminalsM = terminalCommandsM terminals
+      , commands_runners = runners
+      , commands_runnersM = runnerCommandsM runners
+      , commands_musicPlayerControls = musicPlayerControls
+      , commands_musicPlayerControlsM = musicPlayerControlCommandsM musicPlayerControls
+      }
+
+-- ** 'Commands' parsing helpers
+
+data CommandM = CommandM { unCommandM ∷ ∀m. XMonad.MonadIO m ⇒ m () }
+
+type Argument = String
+type ArgParseError = Either String Argument
+
+parseCommandArg
+  ∷ String
+  → Lens.Lens' record (Either ArgParseError String)
+  → record
+  → record
+parseCommandArg arg lens =
+  Lens.over lens $ \case
+    x@(Right _) → x
+    x@(Left (Left _)) → x
+    Left (Right x) →
+      case L.stripPrefix (x <> "=") arg of
+        Nothing → Left $ Right x
+        Just "" → Left $ Left $ x <> " argument value is empty"
+        Just argValue → Right argValue
+
+-- ** 'TerminalCommands'
+
+data TerminalCommands t = TerminalCommands
+  { terminalNew ∷ t
+  , terminalAttach ∷ t
+  , terminalNuke ∷ t
+  , terminalNewPrompt ∷ t
+  }
+  deriving (Generic, Eq, Show)
+
+terminalCommandsM ∷ TerminalCommands String → TerminalCommands CommandM
+terminalCommandsM terminalCommands = TerminalCommands
+  { terminalNew = CommandM $ XMonad.spawn terminalCommands.terminalNew
+  , terminalAttach = CommandM $ XMonad.spawn terminalCommands.terminalAttach
+  , terminalNuke = CommandM $ XMonad.spawn terminalCommands.terminalNuke
+  , terminalNewPrompt = CommandM $ XMonad.spawn terminalCommands.terminalNewPrompt
+  }
+
+parseTerminalCommandsArgs ∷ [String] → Either ArgParseError ([String], TerminalCommands String)
+parseTerminalCommandsArgs args = go where
+  go = foldr reducer ([], initial) args & \(unparsedArgs, parsed) →
+    (unparsedArgs,) <$> do
+      new ← parsed.terminalNew
+      attach ← parsed.terminalAttach
+      nuke ← parsed.terminalNuke
+      newPrompt ← parsed.terminalNewPrompt
+      pure TerminalCommands
+        { terminalNew = new
+        , terminalAttach = attach
+        , terminalNuke = nuke
+        , terminalNewPrompt = newPrompt
+        }
+
+  mkArg = Left . Right . ("--xmonadrc-terminal-command-" <>)
+
+  initial ∷ TerminalCommands (Either ArgParseError String)
+  initial = TerminalCommands
+    { terminalNew = mkArg "new"
+    , terminalAttach = mkArg "attach"
+    , terminalNuke = mkArg "nuke"
+    , terminalNewPrompt = mkArg "new-prompt"
+    }
+
+  reducer ∷ acc ~ ([String], TerminalCommands (Either ArgParseError String)) ⇒ String → acc → acc
+  reducer arg (unparsedArgs, acc)
+    = acc
+    & parseCommandArg arg (GLens.field @"terminalNew")
+    & parseCommandArg arg (GLens.field @"terminalAttach")
+    & parseCommandArg arg (GLens.field @"terminalNuke")
+    & parseCommandArg arg (GLens.field @"terminalNewPrompt")
+    & \x → if x /= acc then (unparsedArgs, x) else (arg : unparsedArgs, acc)
+
+-- ** 'RunnerCommands'
+
+data RunnerCommands t = RunnerCommands
+  { runCommand ∷ t
+  , runApplication ∷ t
+  , selectWindow ∷ t
+  , selectSingleOption ∷ CommandTakesSuffix t
+  }
+  deriving Generic
+
+deriving instance Eq (RunnerCommands String)
+deriving instance Eq (RunnerCommands (Either ArgParseError String))
+
+type family CommandTakesSuffix t where
+  CommandTakesSuffix String = String
+  CommandTakesSuffix CommandM = String → CommandM
+  CommandTakesSuffix (Either ArgParseError String) = (Either ArgParseError String)
+
+runnerCommandsM ∷ RunnerCommands String → RunnerCommands CommandM
+runnerCommandsM runnerCommands = RunnerCommands
+  { runCommand = CommandM $ XMonad.spawn runnerCommands.runCommand
+  , runApplication = CommandM $ XMonad.spawn runnerCommands.runApplication
+  , selectWindow = CommandM $ XMonad.spawn runnerCommands.selectWindow
+  , selectSingleOption = \x → CommandM (XMonad.spawn $ runnerCommands.selectSingleOption <> " " <> x)
+  }
+
+parseRunnerCommandsArgs ∷ [String] → Either ArgParseError ([String], RunnerCommands String)
+parseRunnerCommandsArgs args = go where
+  go = foldr reducer ([], initial) args & \(unparsedArgs, parsed) →
+    (unparsedArgs,) <$> do
+      runCommand' ← parsed.runCommand
+      runApplication' ← parsed.runApplication
+      selectWindow' ← parsed.selectWindow
+      selectSingleOption' ← parsed.selectSingleOption
+      pure RunnerCommands
+        { runCommand = runCommand'
+        , runApplication = runApplication'
+        , selectWindow = selectWindow'
+        , selectSingleOption = selectSingleOption'
+        }
+
+  mkArg = Left . Right . ("--xmonadrc-runner-command-" <>)
+
+  initial ∷ RunnerCommands (Either ArgParseError String)
+  initial = RunnerCommands
+    { runCommand = mkArg "run-cmd"
+    , runApplication = mkArg "run-app"
+    , selectWindow = mkArg "select-window"
+    , selectSingleOption = mkArg "select-single-option"
+    }
+
+  reducer ∷ acc ~ ([String], RunnerCommands (Either ArgParseError String)) ⇒ String → acc → acc
+  reducer arg (unparsedArgs, acc)
+    = acc
+    & parseCommandArg arg (GLens.field @"runCommand")
+    & parseCommandArg arg (GLens.field @"runApplication")
+    & parseCommandArg arg (GLens.field @"selectWindow")
+    & parseCommandArg arg (\f t → (\x → t { selectSingleOption = x }) <$> f (selectSingleOption t))
+    & \x → if x /= acc then (unparsedArgs, x) else (arg : unparsedArgs, acc)
+
+-- ** 'MusicPlayerControlCommands'
+
+data MusicPlayerControlCommands t = MusicPlayerControlCommands
+  { mpPlayCmd ∷ t
+  , mpPlayToggleCmd ∷ t
+  , mpPrevCmd ∷ t
+  , mpNextCmd ∷ t
+  , mpStopCmd ∷ t
+  , mpSpawnServer ∷ t
+  }
+  deriving (Generic, Eq, Show)
+
+musicPlayerControlCommandsM
+  ∷ MusicPlayerControlCommands String
+  → MusicPlayerControlCommands CommandM
+musicPlayerControlCommandsM musicPlayerControlCommands = MusicPlayerControlCommands
+  { mpPlayCmd = CommandM $ XMonad.spawn musicPlayerControlCommands.mpPlayCmd
+  , mpPlayToggleCmd = CommandM $ XMonad.spawn musicPlayerControlCommands.mpPlayToggleCmd
+  , mpPrevCmd = CommandM $ XMonad.spawn musicPlayerControlCommands.mpPrevCmd
+  , mpNextCmd = CommandM $ XMonad.spawn musicPlayerControlCommands.mpNextCmd
+  , mpStopCmd = CommandM $ XMonad.spawn musicPlayerControlCommands.mpStopCmd
+  , mpSpawnServer = CommandM $ XMonad.spawn musicPlayerControlCommands.mpSpawnServer
+  }
+
+parseMusicPlayerControlCommandsArgs
+  ∷ [String]
+  → Either ArgParseError ([String], MusicPlayerControlCommands String)
+parseMusicPlayerControlCommandsArgs args = go where
+  go = foldr reducer ([], initial) args & \(unparsedArgs, parsed) →
+    (unparsedArgs,) <$> do
+      play ← parsed.mpPlayCmd
+      playToggle ← parsed.mpPlayToggleCmd
+      prev ← parsed.mpPrevCmd
+      next ← parsed.mpNextCmd
+      stop ← parsed.mpStopCmd
+      spawnServer ← parsed.mpSpawnServer
+      pure MusicPlayerControlCommands
+        { mpPlayCmd = play
+        , mpPlayToggleCmd = playToggle
+        , mpPrevCmd = prev
+        , mpNextCmd = next
+        , mpStopCmd = stop
+        , mpSpawnServer = spawnServer
+        }
+
+  mkArg = Left . Right . ("--xmonadrc-music-player-control-command-" <>)
+
+  initial ∷ MusicPlayerControlCommands (Either ArgParseError String)
+  initial = MusicPlayerControlCommands
+    { mpPlayCmd = mkArg "play"
+    , mpPlayToggleCmd = mkArg "play-toggle"
+    , mpPrevCmd = mkArg "prev"
+    , mpNextCmd = mkArg "next"
+    , mpStopCmd = mkArg "stop"
+    , mpSpawnServer = mkArg "spawn-server"
+    }
+
+  reducer
+    ∷ acc ~ ([String], MusicPlayerControlCommands (Either ArgParseError String))
+    ⇒ String
+    → acc
+    → acc
+  reducer arg (unparsedArgs, acc)
+    = acc
+    & parseCommandArg arg (GLens.field @"mpPlayCmd")
+    & parseCommandArg arg (GLens.field @"mpPlayToggleCmd")
+    & parseCommandArg arg (GLens.field @"mpPrevCmd")
+    & parseCommandArg arg (GLens.field @"mpNextCmd")
+    & parseCommandArg arg (GLens.field @"mpStopCmd")
+    & parseCommandArg arg (GLens.field @"mpSpawnServer")
+    & \x → if x /= acc then (unparsedArgs, x) else (arg : unparsedArgs, acc)
+
+-- * Etc
 
 getRestartMode ∷ IO XMonadStartMode
 getRestartMode = do
@@ -309,9 +580,9 @@ parseXMonadAction x
   where
     f = xMonadActionToAtomString
     findStartMode y =
-      find ((y ==) . startModeToAtomStringPiece) [minBound .. maxBound]
+      L.find ((y ==) . startModeToAtomStringPiece) [minBound .. maxBound]
     findMusicPlayerAction y =
-      find ((y ==) . xMonadMusicPlayerActionToAtomString) [minBound .. maxBound]
+      L.find ((y ==) . xMonadMusicPlayerActionToAtomString) [minBound .. maxBound]
 
 -- | Send an Atom message to X root window (that XMonad can catch and handle)
 --
@@ -538,37 +809,6 @@ withPolybarReporter polybarIpcHandle file@(moduleName, statusStateFile) run = do
 
 -- * Commands
 
-data TerminalCommands t = TerminalCommands
-  { tmuxedTerminalNew ∷ t
-  , tmuxedTerminalAttach ∷ t
-  , tmuxedTerminalNuke ∷ t
-  , tmuxedTerminalNewPrompt ∷ t
-  }
-
-terminalCommands ∷ TerminalCommands String
-terminalCommands =
-  f "dark" "jetbrains"
-  where
-    f theme font =
-      TerminalCommands
-        { tmuxedTerminalNew =
-            "tmuxed-alacritty-" <> font <> "-font-" <> theme <> "-new"
-        , tmuxedTerminalAttach =
-            "tmuxed-alacritty-" <> font <> "-font-" <> theme <> "-attach"
-        , tmuxedTerminalNuke =
-            "tmuxed-alacritty-" <> font <> "-font-" <> theme <> "-nuke"
-        , tmuxedTerminalNewPrompt =
-            "tmuxed-alacritty-" <> font <> "-font-" <> theme <> "-new-prompt"
-        }
-
-terminalCommandsX ∷ TerminalCommands (X ())
-terminalCommandsX = TerminalCommands
-  { tmuxedTerminalNew = XMonad.spawn terminalCommands.tmuxedTerminalNew
-  , tmuxedTerminalAttach = XMonad.spawn terminalCommands.tmuxedTerminalAttach
-  , tmuxedTerminalNuke = XMonad.spawn terminalCommands.tmuxedTerminalNuke
-  , tmuxedTerminalNewPrompt = XMonad.spawn terminalCommands.tmuxedTerminalNewPrompt
-  }
-
 -- Some SIGsomething sending commands
 cmdExterminate, cmdPause, cmdPauseRecursive, cmdResume, cmdResumeRecursive ∷ String
 cmdExterminate = "kill -KILL -- $(( $(xdotool getactivewindow getwindowpid) ))"
@@ -594,37 +834,6 @@ cmdResumeRecursive = [qnb|
   }
   rec $(( $(xdotool getactivewindow getwindowpid) ))
 |]
-
--- App/command GUI runners
-
-data RunnerCommands t = RunnerCommands
-  { runCommandDark ∷ t
-  , runCommandLight ∷ t
-  , runApplicationDark ∷ t
-  , runApplicationLight ∷ t
-  , selectWindowDark ∷ t
-  , selectWindowLight ∷ t
-  }
-
-runnerCommands ∷ RunnerCommands String
-runnerCommands = RunnerCommands
-  { runCommandDark = rofiCmd RofiThemeDark RofiModeRun
-  , runCommandLight = rofiCmd RofiThemeLight RofiModeRun
-  , runApplicationDark = rofiCmd RofiThemeDark RofiModeDRun
-  , runApplicationLight = rofiCmd RofiThemeLight RofiModeDRun
-  , selectWindowDark = rofiCmd RofiThemeDark RofiModeWindow
-  , selectWindowLight = rofiCmd RofiThemeLight RofiModeWindow
-  }
-
-runnerCommandsX ∷ RunnerCommands (X ())
-runnerCommandsX = RunnerCommands
-  { runCommandDark = XMonad.spawn runnerCommands.runCommandDark
-  , runCommandLight = XMonad.spawn runnerCommands.runCommandLight
-  , runApplicationDark = XMonad.spawn runnerCommands.runApplicationDark
-  , runApplicationLight = XMonad.spawn runnerCommands.runApplicationLight
-  , selectWindowDark = XMonad.spawn runnerCommands.selectWindowDark
-  , selectWindowLight = XMonad.spawn runnerCommands.selectWindowLight
-  }
 
 cmdCursorToDisplay ∷ DisplayN → String
 cmdCursorToDisplay dn = [qms| place-cursor-at rb {displayNToNum dn ∷ Word} |]
@@ -687,7 +896,7 @@ myConfig opts polybarInterface myStartupHook = XMonad.def
 
   -- Key/button bindings:
 
-  , keys = defaultModeKeys
+  , keys = defaultModeKeys opts
   , mouseBindings = myMouseBindings
 
   -- Hooks:
@@ -903,62 +1112,20 @@ navigationBetweenDisplaysKeys (jumpMask, jumpMouseCursorMask, moveToMask) = Map.
     forWsOnDisplay ∷ (DisplayN → XMonad.WorkspaceId → X ()) → DisplayN → X ()
     forWsOnDisplay f n = XMonad.screenWorkspace (displayNToScreenIndex n) >>= traverse_ (f n)
 
-data MusicPlayerControls t = MusicPlayerControls
-  { mpPlayCmd ∷ t
-  , mpPlayToggleCmd ∷ t
-  , mpPrevCmd ∷ t
-  , mpNextCmd ∷ t
-  , mpStopCmd ∷ t
-  , mpSpawnServer ∷ t
-  }
-  deriving (Eq, Show)
-
-musicPlayerControls ∷ MusicPlayerControls String
-musicPlayerControls =
-  _mpvc
-  where
-    _audacious ∷ MusicPlayerControls String
-    _audacious = MusicPlayerControls
-      { mpPlayCmd = "audacious --play"
-      , mpPlayToggleCmd = "audacious --play-pause"
-      , mpPrevCmd = "audacious --rew"
-      , mpNextCmd = "audacious --fwd"
-      , mpStopCmd = "audacious --stop"
-      , mpSpawnServer = "audacious"
-      }
-
-    _mpvc ∷ MusicPlayerControls String
-    _mpvc = MusicPlayerControls
-      { mpPlayCmd = "mpvc play"
-      , mpPlayToggleCmd = "mpvc toggle"
-      , mpPrevCmd = "mpvc prev"
-      , mpNextCmd = "mpvc next"
-      , mpStopCmd = "mpvc stop"
-      , mpSpawnServer = terminalCommands.tmuxedTerminalNew <> " music mpvc-tui -T"
-      }
-
-musicPlayerControlsX ∷ MusicPlayerControls (X ())
-musicPlayerControlsX = MusicPlayerControls
-  { mpPlayCmd = XMonad.spawn musicPlayerControls.mpPlayCmd
-  , mpPlayToggleCmd = XMonad.spawn musicPlayerControls.mpPlayToggleCmd
-  , mpPrevCmd = XMonad.spawn musicPlayerControls.mpPrevCmd
-  , mpNextCmd = XMonad.spawn musicPlayerControls.mpNextCmd
-  , mpStopCmd = XMonad.spawn musicPlayerControls.mpStopCmd
-  , mpSpawnServer = XMonad.spawn musicPlayerControls.mpSpawnServer
-  }
-
-musicPlayerControlsKeyBindings ∷ XMonad.KeyMask → Keys
-musicPlayerControlsKeyBindings m = Map.fromList
-  [ ((m, XF86.xF86XK_AudioPlay), musicPlayerControlsX.mpPlayCmd)
-  , ((0, XF86.xF86XK_AudioPlay), musicPlayerControlsX.mpPlayToggleCmd)
-  , ((0, XF86.xF86XK_AudioPrev), musicPlayerControlsX.mpPrevCmd)
-  , ((0, XF86.xF86XK_AudioNext), musicPlayerControlsX.mpNextCmd)
-  , ((0, XF86.xF86XK_AudioStop), musicPlayerControlsX.mpStopCmd)
-  , ((s, XF86.xF86XK_AudioPlay), musicPlayerControlsX.mpSpawnServer)
+musicPlayerControlsKeyBindings ∷ Options → XMonad.KeyMask → Keys
+musicPlayerControlsKeyBindings opts m = Map.fromList
+  [ ((m, XF86.xF86XK_AudioPlay), unCommandM cmd.mpPlayCmd)
+  , ((0, XF86.xF86XK_AudioPlay), unCommandM cmd.mpPlayToggleCmd)
+  , ((0, XF86.xF86XK_AudioPrev), unCommandM cmd.mpPrevCmd)
+  , ((0, XF86.xF86XK_AudioNext), unCommandM cmd.mpNextCmd)
+  , ((0, XF86.xF86XK_AudioStop), unCommandM cmd.mpStopCmd)
+  , ((s, XF86.xF86XK_AudioPlay), unCommandM cmd.mpSpawnServer)
   ]
+  where
+    cmd = opts.options_commands.commands_musicPlayerControlsM
 
-defaultModeKeys ∷ XConfig XMonad.Layout → Keys
-defaultModeKeys
+defaultModeKeys ∷ Options → XConfig XMonad.Layout → Keys
+defaultModeKeys opts
   XConfig
     { XMonad.modMask = m
     , XMonad.workspaces = ws
@@ -1063,21 +1230,21 @@ defaultModeKeys
       , ((m .|. a, XMonad.xK_m), Modal.setMode mouseCursorKeysModeLabel)
       ]
 
+    terminalsM = opts.options_commands.commands_terminalsM
+    runnersM = opts.options_commands.commands_runnersM
+
     commandSpawningKeys = Map.fromList
       -- Terminals
-      [ ((m, XMonad.xK_Return), terminalCommandsX.tmuxedTerminalNew)
-      , ((m .|. a, XMonad.xK_Return), terminalCommandsX.tmuxedTerminalAttach)
-      , ((m .|. s, XMonad.xK_Return), terminalCommandsX.tmuxedTerminalNewPrompt)
+      [ ((m, XMonad.xK_Return), unCommandM terminalsM.terminalNew)
+      , ((m .|. a, XMonad.xK_Return), unCommandM terminalsM.terminalAttach)
+      , ((m .|. s, XMonad.xK_Return), unCommandM terminalsM.terminalNewPrompt)
 
       -- App/command GUI runners
-      , ((m, XMonad.xK_semicolon), runnerCommandsX.runCommandDark)
-      , ((m .|. a, XMonad.xK_semicolon), runnerCommandsX.runCommandLight)
-      , ((m .|. s, XMonad.xK_semicolon), runnerCommandsX.runApplicationDark)
-      , ((m .|. s .|. a, XMonad.xK_semicolon), runnerCommandsX.runApplicationLight)
+      , ((m, XMonad.xK_semicolon), unCommandM runnersM.runCommand)
+      , ((m .|. a, XMonad.xK_semicolon), unCommandM runnersM.runApplication)
 
       -- Window selection GUI
-      , ((m, XMonad.xK_slash), runnerCommandsX.selectWindowDark)
-      , ((m .|. a, XMonad.xK_slash), runnerCommandsX.selectWindowLight)
+      , ((m, XMonad.xK_slash), unCommandM runnersM.selectWindow)
 
       -- Clipboard management tool
       , ((m, XMonad.xK_apostrophe), XMonad.spawn "gpaste-gui")
@@ -1093,7 +1260,7 @@ defaultModeKeys
     mediaKeys = mconcat
       [ makingScreenshots
       , calculator
-      , musicPlayerControlsKeyBindings m
+      , musicPlayerControlsKeyBindings opts m
       , audioControl
       , screenBacklightControl
       ]
@@ -1265,10 +1432,10 @@ stickyWindowTag ∷ String
 stickyWindowTag = "sticky-window"
 
 doKeysModeLabel ∷ String
-doKeysMode ∷ XdgRuntimeDir → Modal.Mode
+doKeysMode ∷ Options → Modal.Mode
 (doKeysModeLabel, doKeysMode) = (label, mode) where
   label = "Do"
-  mode xdgRuntimeDir = Modal.mode label $ \XConfig { XMonad.modMask = m } →
+  mode opts = Modal.mode label $ \XConfig { XMonad.modMask = m } →
     let
       leaveMode = (>> Modal.exitMode)
 
@@ -1313,21 +1480,24 @@ doKeysMode ∷ XdgRuntimeDir → Modal.Mode
     Map.fromList
     [ ((0, XMonad.xK_Escape), Modal.exitMode)
 
-    , ((m, XMonad.xK_Return), terminalCommandsX.tmuxedTerminalNuke >> Modal.exitMode)
+    , ( (m, XMonad.xK_Return)
+      , unCommandM opts.options_commands.commands_terminalsM.terminalNuke
+        >> Modal.exitMode
+      )
 
     -- Restart XMonad applying the new configuration.
     -- Mnemonic: ‘r’ is for ‘Restart’.
-    , ((m, XMonad.xK_r), Modal.exitMode >> restartXMonad xdgRuntimeDir Normal Full True)
+    , ((m, XMonad.xK_r), Modal.exitMode >> restartXMonad opts Normal Full True)
     -- For dev testing
-    , ((m .|. s, XMonad.xK_r), Modal.exitMode >> restartXMonad xdgRuntimeDir Dev Full True)
+    , ((m .|. s, XMonad.xK_r), Modal.exitMode >> restartXMonad opts Dev Full True)
     -- “Shallow” mode restart (skipping the autostart script)
     -- Mnemonic: ‘t’ is for ‘restarT’.
-    , ((m, XMonad.xK_t), Modal.exitMode >> restartXMonad xdgRuntimeDir Normal Shallow True)
+    , ((m, XMonad.xK_t), Modal.exitMode >> restartXMonad opts Normal Shallow True)
     -- For dev testing
-    , ((m .|. s, XMonad.xK_t), Modal.exitMode >> restartXMonad xdgRuntimeDir Dev Shallow True)
+    , ((m .|. s, XMonad.xK_t), Modal.exitMode >> restartXMonad opts Dev Shallow True)
     -- Show termination action prompt.
     -- Mnemonic: ‘e’ is for ‘Exit’.
-    , ((m, XMonad.xK_e), terminationPrompt xdgRuntimeDir >> Modal.exitMode)
+    , ((m, XMonad.xK_e), terminationPrompt opts >> Modal.exitMode)
 
     -- Mnemonic: ‘a’ is for ‘Autostart’
     , ((m, XMonad.xK_a), XMonad.spawn "autostart-setup" >> Modal.exitMode)
@@ -1474,7 +1644,7 @@ mouseCursorKeysMode ∷ Modal.Mode
 -- | Add all modes to the XMonad config
 withKeysModes ∷ Options → XConfig layout → XConfig layout
 withKeysModes opts = HModal.modal . mconcat $
-  [ [doKeysMode opts.options_xdgRuntimeDir, workspaceKeysMode, mouseCursorKeysMode]
+  [ [doKeysMode opts, workspaceKeysMode, mouseCursorKeysMode]
   , [resizeKeysMode x | x ← [minBound .. maxBound]]
   , [positioningKeysMode x | x ← [minBound .. maxBound]]
   ]
@@ -1543,44 +1713,12 @@ myManageHook = XMonad.composeAll
 
 -- * Helpers
 
-data RofiMode
-  = RofiModeRun
-  | RofiModeDRun
-  | RofiModeWindow
-  | RofiModeDMenu RofiDmenuOptions
-
-data RofiDmenuOptions = RofiDmenuOptions
-  { rofiDmenu_prompt ∷ String
-  , rofiDmenu_strict ∷ Bool -- Do not allow arbitrary text (only provided options)
-  , rofiDmenu_selectRow ∷ Maybe Word
-  }
-
-data RofiTheme = RofiThemeDark | RofiThemeLight
-rofiThemeForCmd ∷ RofiTheme → String
-rofiThemeForCmd = \case RofiThemeDark → "gruvbox-dark" ; RofiThemeLight → "gruvbox-light-soft"
-
-rofiCmd ∷ RofiTheme → RofiMode → String
-rofiCmd theme mode =
-  unwords . mconcat $
-    [ ["rofi", "-theme", rofiThemeForCmd theme]
-    , case mode of
-        RofiModeRun → ["-show", "run"]
-        RofiModeDRun → ["-show", "drun"]
-        RofiModeWindow → ["-show", "window"]
-        RofiModeDMenu opts → mconcat
-          [ ["-dmenu", "-matching", "fuzzy", "-case-smart"]
-          , if opts.rofiDmenu_strict then ["-no-custom"] else mempty
-          , maybe mempty (\x → ["-select-row", show x]) opts.rofiDmenu_selectRow
-          , ["-p", shellQuote opts.rofiDmenu_prompt]
-          ]
-    ]
-
 exitXMonad ∷ XMonad.MonadIO io ⇒ io ()
 exitXMonad = XMonad.io $
   PosixProc.getProcessID >>= PosixSignals.signalProcess PosixSignals.sigTERM
 
-terminationPrompt ∷ ∀m. (XMonad.MonadIO m, MonadFinally m) ⇒ XdgRuntimeDir → m ()
-terminationPrompt xdgRuntimeDir = do
+terminationPrompt ∷ ∀m. (XMonad.MonadIO m, MonadFinally m) ⇒ Options → m ()
+terminationPrompt opts = do
   withFifoResponse xdgRuntimeDir "termination-prompt" $ \fifoPath getFifoLine → do
     let shOptions = foldMap (\x → shellQuote x.title <> "$'\n'") options
 
@@ -1591,7 +1729,7 @@ terminationPrompt xdgRuntimeDir = do
             if [[ "$answer" == {shellQuote title} ]];
               then printf '%s\n' {shellQuote cmd} >> {shellQuote fifoPath}
           |])
-        & intercalate "\nel"
+        & L.intercalate "\nel"
         & (<> "\nfi")
 
     XMonad.spawn [qmb|
@@ -1601,17 +1739,21 @@ terminationPrompt xdgRuntimeDir = do
       trap finish EXIT
 
       options={shOptions}'Cancel'
-      answer=$(<<<"$options" {prompt}) || true
+      answer=$({promptCmd} {shellQuote prompt} <<<"$options") || true
       {shHandleAnswer}
     |]
 
     -- Do not set a timeout, because the prompt window can be shown
     -- for undefined amount of time.
     getFifoLine Nothing $ \case
-      Right ((\x → find ((x ==) . (.cmd)) options) → Just ((.xAction) → m)) → m
+      Right ((\x → L.find ((x ==) . (.cmd)) options) → Just ((.xAction) → m)) → m
       _ → pure ()
 
   where
+    xdgRuntimeDir = opts.options_xdgRuntimeDir
+    promptCmd = opts.options_commands.commands_runners.selectSingleOption
+    prompt = "What action do you want to take?"
+
     options ∷ [TerminationPromptOption]
     options =
       [ TerminationPromptOption
@@ -1645,14 +1787,6 @@ terminationPrompt xdgRuntimeDir = do
           }
       ]
 
-    prompt ∷ String
-    prompt =
-      rofiCmd RofiThemeDark . RofiModeDMenu $ RofiDmenuOptions
-        { rofiDmenu_prompt = "What action do you want to take?"
-        , rofiDmenu_strict = True
-        , rofiDmenu_selectRow = Just 1
-        }
-
 data TerminationPromptOption = TerminationPromptOption
   { cmd ∷ String
   , title ∷ String
@@ -1681,13 +1815,12 @@ xmonadExecutable = \case
 --
 -- See "startModeMarkerEnvName" for environment variable name.
 -- See "XMonadStartMode" for possible environment variable values (it’s just “show”n).
-restartXMonad ∷ XdgRuntimeDir → XMonadExecutableType → XMonadStartMode → Bool → X ()
-restartXMonad xdgRuntimeDir xmonadExecutableType mode resume = do
+restartXMonad ∷ Options → XMonadExecutableType → XMonadStartMode → Bool → X ()
+restartXMonad opts xmonadExecutableType mode resume = do
   case xmonadExecutableType of
-    Normal →
-      say [qms| {mode} XMonad restart |] [qmb|
-        Using XMonad executable: {show executable}
-      |]
+    Normal → do
+      say [qms| {mode} XMonad restart |] [qmb| Using XMonad executable: {show executable} |]
+      say [qms| XMonad arguments |] [qmb| {unlines (fmap shellQuote xmonadArgs)} |]
     Dev → do
       say [qms| {mode} DEV XMonad restart |] [qmb|
         Using XMonad executable: {show executable}
@@ -1704,12 +1837,42 @@ restartXMonad xdgRuntimeDir xmonadExecutableType mode resume = do
     env ←
       SysEnv.getEnvironment <&>
         (filter (fst >>> (/= startModeMarkerEnvName)) >>> (<> [startModeMarker]))
-    executeFile executable True [] (Just env)
+    executeFile
+      executable
+      True
+      (case xmonadExecutableType of Normal → xmonadArgs; Dev → [])
+      (Just env)
 
   where
+    xdgRuntimeDir = opts.options_xdgRuntimeDir
     executable = xmonadExecutable xmonadExecutableType
     startModeMarker = (startModeMarkerEnvName, show mode)
     smokeTestCmd = unwords [xmonadExecutable xmonadExecutableType, "ctl", "help"]
+
+    -- WARNING! Keep consistent with `gui/xmonad/xmonad-dev.sh` and `gui/xmonad/default.nix`.
+    xmonadArgs ∷ [String]
+    xmonadArgs =
+      [ "--xmonadrc-terminal-command-new=" <> terminal.terminalNew
+      , "--xmonadrc-terminal-command-attach=" <> terminal.terminalAttach
+      , "--xmonadrc-terminal-command-nuke=" <> terminal.terminalAttach
+      , "--xmonadrc-terminal-command-new-prompt=" <> terminal.terminalNewPrompt
+
+      , "--xmonadrc-runner-command-run-cmd=" <> runner.runCommand
+      , "--xmonadrc-runner-command-run-app=" <> runner.runApplication
+      , "--xmonadrc-runner-command-select-window=" <> runner.selectWindow
+      , "--xmonadrc-runner-command-select-single-option=" <> runner.selectSingleOption
+
+      , "--xmonadrc-music-player-control-command-play=" <> musicPlayer.mpPlayCmd
+      , "--xmonadrc-music-player-control-command-play-toggle=" <> musicPlayer.mpPlayToggleCmd
+      , "--xmonadrc-music-player-control-command-prev=" <> musicPlayer.mpPrevCmd
+      , "--xmonadrc-music-player-control-command-next=" <> musicPlayer.mpNextCmd
+      , "--xmonadrc-music-player-control-command-stop=" <> musicPlayer.mpStopCmd
+      , "--xmonadrc-music-player-control-command-spawn-server=" <> musicPlayer.mpSpawnServer
+      ]
+      where
+        terminal = opts.options_commands.commands_terminals
+        runner = opts.options_commands.commands_runners
+        musicPlayer = opts.options_commands.commands_musicPlayerControls
 
     -- In case restarting in "Dev" mode make a smoke test first against dev
     -- script in order to avoid XMonad crashing due to not compiled dev
@@ -1788,7 +1951,7 @@ toggleFloatingTiledFocus =
     -- “Current” means all windows of current screen/workspace
     let allCurrentWindows = W.integrate' . W.stack . W.workspace . W.current $ windowSet
     let allFloatingWindows = Map.keys . W.floating $ windowSet
-    let (currentFloating, currentTiled) = partition (`elem` allFloatingWindows) allCurrentWindows
+    let (currentFloating, currentTiled) = L.partition (`elem` allFloatingWindows) allCurrentWindows
     let current = if isFloating then currentTiled else currentFloating
     maybe (pure ()) XMonad.focus (listToMaybe current)
 
@@ -1835,7 +1998,7 @@ polybarWindowFlags executableType =
       isSticky ← TagWindows.hasTag stickyWindowTag window
       isFloating ← isWindowFloating window
       let disabled = pbBg _cBorderUrgent
-      pure $ intercalate (pbPad "4px" "")
+      pure $ L.intercalate (pbPad "4px" "")
         [ pbLMB executableType (xMonadActionToAtomString ToggleStickyWindow) $
           (if isSticky then pbFgBg _cFgActive _cBgSecondaryActive else disabled)
           (pbPad' (if isSticky then "\984067" else "\985393"))
@@ -1859,7 +2022,7 @@ handleXMonadAction opts polybarInterface layout actionStr =
     Just action →
       case action of
         ExitXMonad → exitXMonad
-        ShowTerminationPrompt → terminationPrompt opts.options_xdgRuntimeDir
+        ShowTerminationPrompt → terminationPrompt opts
         ToggleStickyWindow → do
           toggleStickyWindow
           -- Report the flags, otherwise toggled sticky status
@@ -1871,24 +2034,21 @@ handleXMonadAction opts polybarInterface layout actionStr =
         CycleLayout → XMonad.sendMessage XMonad.NextLayout
         ResetLayout → XMonad.setLayout (XMonad.Layout layout)
         ResetMode → Modal.exitMode
-        OpenTerminal → terminalCommandsX.tmuxedTerminalNew
-        ShowCommandRunner → runnerCommandsX.runCommandDark
-        ShowApplicationRunner → runnerCommandsX.runApplicationDark
-        RestartXMonad startMode →
-          restartXMonad
-            opts.options_xdgRuntimeDir
-            opts.options_executableType
-            startMode
-            True
+        OpenTerminal → unCommandM cmd.commands_terminalsM.terminalNew
+        ShowCommandRunner → unCommandM cmd.commands_runnersM.runCommand
+        ShowApplicationRunner → unCommandM cmd.commands_runnersM.runApplication
+        RestartXMonad startMode → restartXMonad opts opts.options_executableType startMode True
         SwitchWorkspace ws → XMonad.windows (switchToWorkspace ws)
         MusicPlayerAction musicPlayerAction →
           case musicPlayerAction of
-            MusicPlayerPlay → musicPlayerControlsX.mpPlayCmd
-            MusicPlayerToggle → musicPlayerControlsX.mpPlayToggleCmd
-            MusicPlayerPrev → musicPlayerControlsX.mpPrevCmd
-            MusicPlayerNext → musicPlayerControlsX.mpNextCmd
-            MusicPlayerStop → musicPlayerControlsX.mpStopCmd
-            MusicPlayerSpawnServer → musicPlayerControlsX.mpSpawnServer
+            MusicPlayerPlay → unCommandM cmd.commands_musicPlayerControlsM.mpPlayCmd
+            MusicPlayerToggle → unCommandM cmd.commands_musicPlayerControlsM.mpPlayToggleCmd
+            MusicPlayerPrev → unCommandM cmd.commands_musicPlayerControlsM.mpPrevCmd
+            MusicPlayerNext → unCommandM cmd.commands_musicPlayerControlsM.mpNextCmd
+            MusicPlayerStop → unCommandM cmd.commands_musicPlayerControlsM.mpStopCmd
+            MusicPlayerSpawnServer → unCommandM cmd.commands_musicPlayerControlsM.mpSpawnServer
+  where
+    cmd = opts.options_commands
 
 polybarLogHook ∷ Options → PolybarInterface → XMonad.X ()
 polybarLogHook opts polybarInterface = do

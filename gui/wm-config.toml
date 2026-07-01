@@ -1,0 +1,69 @@
+# Window manager shared configuration (used both for XMonad and i3wm)
+
+# See `terminal-configuration.{terminal}`
+terminal = "tmuxed-alacritty-jetbrains-dark"
+# See `runner-configuration.{runner}`
+runner = "rofi-dark"
+# See `music-player-configuration.{music-player}`
+music-player = "mpvc"
+
+# For all `shell-commands` but in `terminal-configuration` `%TERMINAL_NEW%` has
+# to be substituted with `terminal-configuration.{terminal}.shell-commands.new`
+# and that terminal command must support first argument as tmux session name
+# (or at least discard it).
+
+# Dark theme tmuxed-alacritty configuration
+[terminal-configuration.tmuxed-alacritty-jetbrains-dark.shell-commands]
+new = "tmuxed-alacritty-jetbrains-font-dark-new"
+attach = "tmuxed-alacritty-jetbrains-font-dark-attach"
+nuke = "tmuxed-alacritty-jetbrains-font-dark-nuke"
+new-prompt = "tmuxed-alacritty-jetbrains-font-dark-new-prompt"
+
+# Light theme tmuxed-alacritty configuration
+[terminal-configuration.tmuxed-alacritty-jetbrains-light.shell-commands]
+new = "tmuxed-alacritty-jetbrains-font-light-new"
+attach = "tmuxed-alacritty-jetbrains-font-light-attach"
+nuke = "tmuxed-alacritty-jetbrains-font-light-nuke"
+new-prompt = "tmuxed-alacritty-jetbrains-font-light-new-prompt"
+
+# Dark theme Rofi runner configuration
+[runner-configuration.rofi-dark.shell-commands]
+run-command = "rofi -theme gruvbox-dark -show run"
+run-application = "rofi -theme gruvbox-dark -show drun"
+select-window = "rofi -theme gruvbox-dark -show window"
+
+# Show Rofi dmenu to select an option from provided options list.
+#
+# Takes a non-empty list of options from stdin
+# and optional title from the first argument.
+#
+# Will return a single string with a selected option.
+# Will return nothing and exit with `1` if cancelled.
+#
+# Usage examples:
+#   {select-single-option} 'Select something' <<<$'foo\nbar'
+#   {select-single-option} <<<$'foo\nbar'
+select-single-option = "f() { c=(rofi -theme gruvbox-dark -dmenu -matching fuzzy -case-smart -no-custom -select-row 1); if [[ -n \"$1\" ]]; then c+=(-p \"$1\"); fi; \"${c[@]}\"; }; f"
+
+# Light theme Rofi runner configuration
+[runner-configuration.rofi-light.shell-commands]
+run-command = "rofi -theme gruvbox-light-soft -show run"
+run-application = "rofi -theme gruvbox-light-soft -show drun"
+select-window = "rofi -theme gruvbox-light-soft -show window"
+select-single-option = "f() { c=(rofi -theme gruvbox-light-soft -dmenu -matching fuzzy -case-smart -no-custom -select-row 1); if [[ -n \"$1\" ]]; then c+=(-p \"$1\"); fi; \"${c[@]}\"; }; f"
+
+[music-player-configuration.audacious.shell-commands]
+play = "audacious --play"
+play-toggle = "audacious --play-pause"
+previous = "audacious --rew"
+next = "audacious --fwd"
+stop = "audacious --stop"
+spawn-server = "audacious"
+
+[music-player-configuration.mpvc.shell-commands]
+play = "mpvc play"
+play-toggle = "mpvc toggle"
+previous = "mpvc prev"
+next = "mpvc next"
+stop = "mpvc stop"
+spawn-server = "%TERMINAL_NEW% music mpvc-tui -T"

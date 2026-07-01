@@ -16,6 +16,45 @@ let
   useLocalXmonad = args.useLocalXmonad or false;
 
   localXmonadPath = args.localXmonadPath or ./xmonad-src;
+
+  wmConfig = builtins.fromTOML (builtins.readFile ../wm-config.toml);
+
+  customArgsMap =
+    let
+      terminal = wmConfig.terminal-configuration.${wmConfig.terminal}.shell-commands;
+      runner = wmConfig.runner-configuration.${wmConfig.runner}.shell-commands;
+      musicPlayer = wmConfig.music-player-configuration.${wmConfig.music-player}.shell-commands;
+
+      argsMap = {
+        "--xmonadrc-terminal-command-new" = terminal.new;
+        "--xmonadrc-terminal-command-attach" = terminal.attach;
+        "--xmonadrc-terminal-command-nuke" = terminal.nuke;
+        "--xmonadrc-terminal-command-new-prompt" = terminal.new-prompt;
+
+        "--xmonadrc-runner-command-run-cmd" = runner.run-command;
+        "--xmonadrc-runner-command-run-app" = runner.run-application;
+        "--xmonadrc-runner-command-select-window" = runner.select-window;
+        "--xmonadrc-runner-command-select-single-option" = runner.select-single-option;
+
+        "--xmonadrc-music-player-control-command-play" = musicPlayer.play;
+        "--xmonadrc-music-player-control-command-play-toggle" = musicPlayer.play-toggle;
+        "--xmonadrc-music-player-control-command-prev" = musicPlayer.previous;
+        "--xmonadrc-music-player-control-command-next" = musicPlayer.next;
+        "--xmonadrc-music-player-control-command-stop" = musicPlayer.stop;
+        "--xmonadrc-music-player-control-command-spawn-server" = musicPlayer.spawn-server;
+      };
+
+      final = lib.pipe argsMap [
+        (builtins.mapAttrs (n:
+          # Substitute %TERMINAL_NEW% placeholder
+          builtins.replaceStrings
+            ["%TERMINAL_NEW%"]
+            [(lib.escapeShellArg terminal.new)]
+        ))
+      ];
+    in
+      assert builtins.all builtins.isString (builtins.attrValues final);
+      final;
 in
 
 {
@@ -30,6 +69,9 @@ in
       "-rtsopts"
       "-with-rtsopts=-N"
     ];
+
+    # WARNING! Keep consistent with `gui/xmonad/xmonad-dev.sh` and `gui/xmonad/xmonad.hs`.
+    xmonadCliArgs = lib.mapAttrsToList (n: v: "${n}=${v}") customArgsMap;
 
     extraPackages = hsPkgs:
       let
@@ -50,12 +92,8 @@ in
         newHsPkgs.async
         newHsPkgs.xmonad
         newHsPkgs.xmonad-contrib
+        newHsPkgs.generic-lens
+        newHsPkgs.lens
       ];
-
-    # ghcArgs = [
-    #   "-hidir /tmp" # Prevent from trying to save to Nix store
-    #   "-odir /tmp" # Prevent from trying to save to Nix store
-    #   "-i${somePkg}" # Extra package example
-    # ];
   };
 }

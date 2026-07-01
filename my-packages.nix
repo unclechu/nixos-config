@@ -281,6 +281,7 @@ in
       # Useful for testing stuff, like an urgency window marker for example:
       # win="$(xdotool getactivewindow)"; sleep 3s; wmctrl -i -r "$win" -b add,demands_attention
       pkgs.wmctrl
+      pkgs.adwaita-icon-theme
 
       # camera
       pkgs.v4l-utils
