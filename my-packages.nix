@@ -121,6 +121,7 @@ in
       pkgs.nix-index
       pkgs.niv
       pkgs.direnv
+      (pkgs.callPackage scripts/print-extra-gc-roots.nix {})
 
       # system stuff
       pkgs.htop
