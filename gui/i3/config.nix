@@ -107,6 +107,11 @@ let
     let
       f = executablesBinPaths: input: lib.pipe executablesBinPaths [
         (lib.mapAttrsToList (from: to: { inherit from to; }))
+        # When there are partial clashes make sure
+        # the longest executables are replaced first.
+        # For example `tmuxed-alacritty-…-new` vs. `tmuxed-alacritty-…-new-prompt`
+        # (the latter must be replaced first or there will be a broken path).
+        (builtins.sort (a: b: builtins.stringLength a.from > builtins.stringLength b.from))
         (lib.foldAttrs (x: a: [x] ++ a) [])
         ({ from, to }: builtins.replaceStrings from to input)
         # Something was actually changed
