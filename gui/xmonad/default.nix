@@ -55,6 +55,8 @@ let
     in
       assert builtins.all builtins.isString (builtins.attrValues final);
       final;
+
+  shared-config = builtins.fromTOML (builtins.readFile ./shared-config.toml);
 in
 
 {
@@ -62,13 +64,7 @@ in
     enable = true;
     enableContribAndExtras = false; # Added in “extraPackages” instead
     config = builtins.readFile ./xmonad.hs;
-
-    # Keep up-to-date with `./build.sh`
-    ghcArgs = [
-      "-threaded"
-      "-rtsopts"
-      "-with-rtsopts=-N"
-    ];
+    ghcArgs = shared-config.ghc-arguments;
 
     # WARNING! Keep consistent with `gui/xmonad/xmonad-dev.sh` and `gui/xmonad/xmonad.hs`.
     xmonadCliArgs = lib.mapAttrsToList (n: v: "${n}=${v}") customArgsMap;

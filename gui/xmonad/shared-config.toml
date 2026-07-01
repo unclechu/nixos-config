@@ -1,0 +1,7 @@
+# Parameters shared between XMonad Nix config and `gui/xmonad/build.sh`.
+
+ghc-arguments = [
+	"-threaded",
+	"-rtsopts",
+	"-with-rtsopts=-N",
+]
