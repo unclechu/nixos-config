@@ -12,6 +12,11 @@ music-player = "mpvc"
 # and that terminal command must support first argument as tmux session name
 # (or at least discard it).
 
+# About Rofi:
+#
+# `-monitor -4` is to show Rofi window on the display that has the focused
+# window instead of where the mouse pointer is.
+
 # Dark theme tmuxed-alacritty configuration
 [terminal-configuration.tmuxed-alacritty-jetbrains-dark.shell-commands]
 new = "tmuxed-alacritty-jetbrains-font-dark-new"
@@ -28,9 +33,9 @@ new-prompt = "tmuxed-alacritty-jetbrains-font-light-new-prompt"
 
 # Dark theme Rofi runner configuration
 [runner-configuration.rofi-dark.shell-commands]
-run-command = "rofi -theme gruvbox-dark -show run"
-run-application = "rofi -theme gruvbox-dark -show drun"
-select-window = "rofi -theme gruvbox-dark -show window"
+run-command = "rofi -monitor -4 -theme gruvbox-dark -show run"
+run-application = "rofi -monitor -4 -theme gruvbox-dark -show drun"
+select-window = "rofi -monitor -4 -theme gruvbox-dark -show window"
 
 # Show Rofi dmenu to select an option from provided options list.
 #
@@ -43,14 +48,14 @@ select-window = "rofi -theme gruvbox-dark -show window"
 # Usage examples:
 #   {select-single-option} 'Select something' <<<$'foo\nbar'
 #   {select-single-option} <<<$'foo\nbar'
-select-single-option = "f() { c=(rofi -theme gruvbox-dark -dmenu -matching fuzzy -case-smart -no-custom -select-row 1); if [[ -n \"$1\" ]]; then c+=(-p \"$1\"); fi; \"${c[@]}\"; }; f"
+select-single-option = "f() { c=(rofi -monitor -4 -theme gruvbox-dark -dmenu -matching fuzzy -case-smart -no-custom -select-row 1); if [[ -n \"$1\" ]]; then c+=(-p \"$1\"); fi; \"${c[@]}\"; }; f"
 
 # Light theme Rofi runner configuration
 [runner-configuration.rofi-light.shell-commands]
-run-command = "rofi -theme gruvbox-light-soft -show run"
-run-application = "rofi -theme gruvbox-light-soft -show drun"
-select-window = "rofi -theme gruvbox-light-soft -show window"
-select-single-option = "f() { c=(rofi -theme gruvbox-light-soft -dmenu -matching fuzzy -case-smart -no-custom -select-row 1); if [[ -n \"$1\" ]]; then c+=(-p \"$1\"); fi; \"${c[@]}\"; }; f"
+run-command = "rofi -monitor -4 -theme gruvbox-light-soft -show run"
+run-application = "rofi -monitor -4 -theme gruvbox-light-soft -show drun"
+select-window = "rofi -monitor -4 -theme gruvbox-light-soft -show window"
+select-single-option = "f() { c=(rofi -monitor -4 -theme gruvbox-light-soft -dmenu -matching fuzzy -case-smart -no-custom -select-row 1); if [[ -n \"$1\" ]]; then c+=(-p \"$1\"); fi; \"${c[@]}\"; }; f"
 
 [music-player-configuration.audacious.shell-commands]
 play = "audacious --play"
