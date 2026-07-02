@@ -3,6 +3,8 @@
 let sources = import ../../nix/sources.nix; in
 { callPackage
 
+, coreutils
+
 # Overridable dependencies
 , __xlib-keys-hack ? callPackage sources.xlib-keys-hack {}
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
@@ -15,6 +17,7 @@ let sources = import ../../nix/sources.nix; in
 let
   e = executable-dependencies {
     xlib-keys-hack = __xlib-keys-hack;
+    sleep = coreutils;
   };
 in
 

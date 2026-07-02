@@ -5,6 +5,7 @@
 # Guard dependencies
 >/dev/null type grant-access-to-input-devices
 >/dev/null type xlib-keys-hack
+>/dev/null type sleep
 
 exec <&- # Close stdin
 
@@ -284,7 +285,30 @@ ALL_XKH_ARGS=(
 	"${PLANCK_EZ[@]}"
 )
 
-cleanup() { kill -- "$XKH_PID"; }
+cleanup() {
+	local ORIGINAL_STATUS=$?
+
+	# Prevent recursive cleanup through EXIT/signals.
+	trap - ABRT EXIT HUP INT PIPE QUIT TERM TRAP
+
+	if [[ -v XKH_PID ]] && kill -0 -- "$XKH_PID" 2>/dev/null; then
+		kill -TERM -- "$XKH_PID" 2>/dev/null || :
+		local DEADLINE=$(( SECONDS + 5 ))
+
+		while kill -0 -- "$XKH_PID" 2>/dev/null; do
+			if (( SECONDS >= DEADLINE )); then
+				kill -KILL -- "$XKH_PID" 2>/dev/null || :
+				break
+			fi
+			sleep .1s
+		done
+
+		# Reap it because it is our child.
+		wait -- "$XKH_PID" 2>/dev/null || :
+	fi
+
+	exit "$ORIGINAL_STATUS"
+}
 trap cleanup ABRT EXIT HUP INT PIPE QUIT TERM TRAP
 
 xlib-keys-hack "${ALL_XKH_ARGS[@]}" &
