@@ -36,14 +36,14 @@ done
 
 if (( IS_DEBUG == 1 )); then
 	# Print the logs to the stdout & stderr instead of
-	# redirecting everything to the log file (default behavior).
+	# redirecting everything to the log file.
 
 	# Debug all commands
 	set -o xtrace
 else
 	# By default redirect the logs with potential
 	# failures to the file for later analysis.
-	_LOGFILE=$HOME/.xlib-keys-hack-fails
+	_LOGFILE=$XDG_RUNTIME_DIR/wenzels-xlib-keys-hack.log
 	exec 1>>"$_LOGFILE" 2>&1
 	printf -- '->> STARTING at %s … <<-\n' "$(date)"
 fi
@@ -284,11 +284,11 @@ ALL_XKH_ARGS=(
 	"${PLANCK_EZ[@]}"
 )
 
-xlib-keys-hack "${ALL_XKH_ARGS[@]}" &
-XKH_PID=$!
-
 cleanup() { kill -- "$XKH_PID"; }
 trap cleanup ABRT EXIT HUP INT PIPE QUIT TERM TRAP
+
+xlib-keys-hack "${ALL_XKH_ARGS[@]}" &
+XKH_PID=$!
 
 exit_status=0
 if ! wait -- "$XKH_PID"; then exit_status=$?; fi
