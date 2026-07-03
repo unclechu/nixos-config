@@ -6,6 +6,12 @@
 >/dev/null type grant-access-to-input-devices
 >/dev/null type xlib-keys-hack
 >/dev/null type sleep
+>/dev/null type setsid
+>/dev/null type dash
+>/dev/null type xinput
+>/dev/null type sed
+>/dev/null type xargs
+>/dev/null type sort
 
 exec <&- # Close stdin
 
@@ -288,8 +294,11 @@ ALL_XKH_ARGS=(
 cleanup() {
 	local ORIGINAL_STATUS=$?
 
-	# Prevent recursive cleanup through EXIT/signals.
-	trap - ABRT EXIT HUP INT PIPE QUIT TERM TRAP
+	# Avoid recursive EXIT cleanup.
+	trap - EXIT
+	# Ignore further signals while cleanup is running.
+	# Child processes started during cleanup inherit these ignored dispositions.
+	trap '' ABRT HUP INT PIPE QUIT TERM TRAP
 
 	if [[ -v XKH_PID ]] && kill -0 -- "$XKH_PID" 2>/dev/null; then
 		kill -TERM -- "$XKH_PID" 2>/dev/null || :
@@ -307,9 +316,23 @@ cleanup() {
 		wait -- "$XKH_PID" 2>/dev/null || :
 	fi
 
+	# Trigger release events for all currently pressed keys.
+	# When “xlib-keys-hack” is terminated before it has a chance to process the key release event
+	# the key can get stuck and repeat indefinitely until you press the key again.
+	# `setsid` prevents it from being interrupted (e.g. by SIGINT).
+	# shellcheck disable=SC2016
+	setsid --wait dash -c '
+		xinput list --short |
+			sed -n "s/.*id=\([0-9][0-9]*\).*\[slave[[:space:]]*keyboard.*/\1/p" |
+			while IFS= read -r id; do xinput query-state "$id" 2>/dev/null || :; done |
+			sed -n "s/^[[:space:]]*key\[\([0-9][0-9]*\)\]=down$/\1/p" |
+			sort -nu |
+			xargs -r xdotool keyup
+	' || :
+
 	exit "$ORIGINAL_STATUS"
 }
-trap cleanup ABRT EXIT HUP INT PIPE QUIT TERM TRAP
+trap cleanup EXIT ABRT HUP INT PIPE QUIT TERM TRAP
 
 xlib-keys-hack "${ALL_XKH_ARGS[@]}" &
 XKH_PID=$!

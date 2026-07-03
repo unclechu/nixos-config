@@ -4,6 +4,11 @@ let sources = import ../../nix/sources.nix; in
 { callPackage
 
 , coreutils
+, util-linux
+, dash
+, xinput
+, gnused
+, findutils
 
 # Overridable dependencies
 , __xlib-keys-hack ? callPackage sources.xlib-keys-hack {}
@@ -18,6 +23,12 @@ let
   e = executable-dependencies {
     xlib-keys-hack = __xlib-keys-hack;
     sleep = coreutils;
+    setsid = util-linux;
+    dash = dash;
+    xinput = xinput;
+    sed = gnused;
+    xargs = findutils;
+    sort = coreutils;
   };
 in
 
