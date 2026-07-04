@@ -9,6 +9,9 @@ To enable it for my [Neovim config](https://github.com/unclechu/neovimrc) I do t
 ``` vim
 se cc=81,101
 
+if !exists('g:ale_linters') | let g:ale_linters = {} | endif
+let g:ale_linters.nim = []
+
 if executable('nimlsp')
 lua <<EOF
 vim.g.SetupNeovimLsp({
