@@ -38,9 +38,14 @@ in
 , __nimLsp ? "nimlsp" # one of: `[null "nimlsp" "nimlangserver"]`
 
 # Build options
-, __srcFile ? ./pointer_setup.nim
-, __nimModulesSrc ? [ ./cliargs.nim ./log.nim ./either.nim ]
 , __config ? ./config.toml
+, __srcFile ? ./pointer_setup.nim
+, __nimModulesSrc ?
+    [
+      ../../utils/nim/cliargs.nim
+      ../../utils/nim/log.nim
+      ../../utils/nim/either.nim
+    ]
 }:
 
 let
