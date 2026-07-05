@@ -4,7 +4,7 @@ let sources = import ../nix/sources.nix; in
 { lib
 , callPackage
 , writeText
-, dash
+
 , xinput
 
 # Overridable dependencies
@@ -18,25 +18,36 @@ let
   pointers = lib.filterAttrs (n: v: lib.isDerivation v) __pointers;
 
   e = executable-dependencies ({
-    dash = dash;
     xinput = xinput;
   } // pointers);
 
   src = writeText "${name}-source" ''
-    #! /usr/bin/env dash
-    exec <&- 1>/dev/null 2>/dev/null # silent
+    #! /usr/bin/env bash
+    set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+    exec <&-
 
-    # all pointer setup scripts (mice)
+    pids=()
+
+    # All pointer setup scripts (mice)
     ${lib.pipe pointers [
       builtins.attrNames
-      (map (name: "${e.s.${name}} &"))
+      (map (x: ''(set -o xtrace; ${e.s.${x}} 2>/dev/null) & pids+=("$!")''))
       (builtins.concatStringsSep "\n")
     ]}
 
-    # laptop touchscreen
-    ${e.s.xinput} --map-to-output 'ELAN25B6:00 04F3:0732' eDP1
+    # Assign laptop touchscreen to the laptop display (by default it expands to
+    # all screens and when you touch it it sends the cursor to who knows where)
+    (
+      set -o xtrace
+      ${e.s.xinput} --map-to-output 'ELAN25B6:00 04F3:0732' eDP1 2>/dev/null
+    ) & pids+=("$!")
 
-    # prevent returning exit status of the latest command (it’s okay to fail)
+    # Wait for all background jobs to finish.
+    # Wait for each individually to avoid `wait` exiting early on failure
+    # of any of the jobs.
+    for pid in "''${pids[@]}"; do wait -- "$pid" || :; done
+
+    # Prevent returning exit status of the latest command (it’s okay to fail)
     exit 0
   '';
 in
@@ -44,5 +55,4 @@ in
 mk-generic-script {
   inherit name src e;
   dontAddDependencies = true;
-  buildInputs = [ e.executables.dash ];
 }

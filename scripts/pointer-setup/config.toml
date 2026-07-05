@@ -1,0 +1,18 @@
+[nim]
+
+build-arguments = [
+	"--mm:atomicArc",
+	"-o:pointer-setup",
+	"./pointer_setup.nim",
+]
+
+nix-build-extra-arguments = [
+	"-d:release",
+	"--nimcache:nimcache",
+]
+
+lint-arguments = [
+	"--colors:off",
+	"--styleCheck:error",
+	"--hintAsError:XDeclaredButNotUsed:on",
+]
