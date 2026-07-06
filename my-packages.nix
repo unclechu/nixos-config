@@ -292,7 +292,7 @@ in
       (pkgs.callPackage apps/psi-plus.nix {})
       pkgs.hexchat
       pkgs.weechat
-      (pkgs.callPackage apps/nheko {})
+      pkgs.nheko
       pkgs.dino
       pkgs.thunderbird
 
