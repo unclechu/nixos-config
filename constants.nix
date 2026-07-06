@@ -1,27 +1,12 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
-{
-  wenzelUserName            = "wenzel";
 
-  rawdevinputGroupName      = "rawdevinput";
-  backlightcontrolGroupName = "backlightcontrol";
-  cpumodecontrolGroupName   = "cpumodecontrol";
-  jackaudioGroupName        = "jackaudio";
-  audioGroupName            = "audio";
+let constants = builtins.fromTOML (builtins.readFile ./constants.toml); in
 
-  keyRepeat = {
-    delay    = 170;
-    interval = 30;
-  };
-
-  xkb = {
-    layout  = "us,ru,fi";
-    options = "eurosign:e,grp:shifts_toggle";
-  };
-
-  systemProfile = builtins.foldl' (acc: name: acc // { ${name} = name; }) {} [
-    "default"
-    "audio"
-    "graphics"
-  ];
+constants // {
+  systemProfile =
+    builtins.foldl'
+      (acc: name: acc // { ${name} = name; })
+      {}
+      constants.systemProfiles;
 }
