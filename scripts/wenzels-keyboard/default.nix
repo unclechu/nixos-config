@@ -38,7 +38,13 @@ in
 , inNixShell ? false
 
 # Build options
+, __config ? ./config.toml
 , __srcFile ? ./wenzels_keyboard.nim
+, __nimModulesSrc ?
+    [
+      ../../utils/nim/cliargs.nim
+      ../../utils/nim/log.nim
+    ]
 , __nimLsp ? "nimlsp" # one of: `[null "nimlsp" "nimlangserver"]`
 , keyRepeatDelay ? constants.keyRepeat.delay
 , keyRepeatInterval ? constants.keyRepeat.interval
@@ -53,6 +59,7 @@ assert builtins.isString xkbOptions && xkbOptions != "";
 
 let
   pkgs = null; # Prevent from using directly
+  config = builtins.fromTOML (builtins.readFile __config);
 
   # TODO: Remove when https://github.com/NixOS/nixpkgs/pull/537634 is released to nixos-26.05
   newer-nimlsp =
@@ -102,6 +109,12 @@ let
     ];
 
     prePatch = ''
+      # Add dependencies
+      ${lib.pipe __nimModulesSrc [
+        (map (x: ''cp -- ${lib.escapeShellArg "${x}"} ${lib.escapeShellArg (baseNameOf x)}''))
+        (builtins.concatStringsSep "\n")
+      ]}
+
       # Nim is not happy about dashes in the name but Nix adds some hashes prefix with a dash after.
       # Getting rid of them by `''${foo##*-}`.
 
@@ -132,7 +145,7 @@ let
 
     preConfigure = ''
       for file in "$pre_patched_src" "$src"; do
-        nim check --colors:off --styleCheck:error --hintAsError:XDeclaredButNotUsed:on "$file"
+        nim check ${lib.escapeShellArgs config.nim.lint-arguments} "$file"
       done
     '';
 
@@ -140,8 +153,11 @@ let
       runHook preBuild
       (
         set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
-        nim compile -d:release --nimcache:nimcache --mm:atomicArc \
-          -o:${lib.escapeShellArg meta.mainProgram} "$src"
+        nim compile ${
+          lib.escapeShellArgs config.nim.nix-build-extra-arguments
+        } ${
+          lib.escapeShellArgs config.nim.build-arguments
+        }
       )
       runHook postBuild
     '';

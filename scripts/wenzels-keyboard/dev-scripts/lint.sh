@@ -1,7 +1,14 @@
-#! /usr/bin/env dash
-set -o errexit || exit; set -o nounset; set -o pipefail
+#! /usr/bin/env bash
+set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 SCRIPT_DIR=$(dirname -- "$0"); CDPATH='' cd -- "$SCRIPT_DIR/.." # Project root
+
+# Guard dependencies
+>/dev/null type nim
+>/dev/null type clunky-toml-json-converter
+>/dev/null type jq
+
+ARGS=$(<./config.toml clunky-toml-json-converter toml2json | jq -re '.nim."lint-arguments" | .[]')
+readarray -t ARGS_LIST <<< "$ARGS"
+
 set -o xtrace
-exec nim check \
-	--colors:off --styleCheck:error --hintAsError:XDeclaredButNotUsed:on \
-	./wenzels_keyboard.nim "$@"
+exec nim check "${ARGS_LIST[@]}" ./wenzels_keyboard.nim "$@"

@@ -4,12 +4,14 @@ from std/monotimes import nil
 from std/options import nil
 from std/os import nil
 from std/osproc import nil
-from std/parseopt import nil
 from std/posix import nil
 from std/sequtils import nil
 from std/streams import nil
 from std/strutils import nil
 from std/times import nil
+
+from cliargs import nil
+from log as logging import fail, debug, skip, ok, warn, stage, error
 
 type
   # Subprocess command
@@ -58,23 +60,10 @@ proc writeStderr(line: string): void {.inline.} =
 template withStderr(body: untyped) =
   (locks.initLock(stderrLock); try: body finally: locks.deinitLock(stderrLock))
 
-# Fail the program with a message written to stderr
-proc fail(msg: string, exitCode: int = 1): void {.inline.} =
-  writeStderr("[FAIL] " & msg); quit exitCode
+let log: logging.DefaultLog = logging.Log(writeLine: writeStderr)
 
-# Logging
-
-type Log = object
-
-proc log(_: typedesc[Log], msg: string): void {.inline.} =
-  writeStderr("[" & times.format(times.now(), "HH:mm:ss'.'fff") & "]" & msg)
-
-proc debug(_: typedesc[Log], msg: string): void {.inline.} = Log.log("[DEBUG] " & msg)
-proc warn(_: typedesc[Log], msg: string): void {.inline.} = Log.log("[WARNING] " & msg)
-proc stage(_: typedesc[Log], msg: string): void {.inline.} = Log.log("[STAGE] " & msg)
-proc skip(_: typedesc[Log], msg: string): void {.inline.} = Log.log("[SKIP] " & msg)
-proc ok(_: typedesc[Log], msg: string): void {.inline.} = Log.log("[OK] " & msg)
-proc error(_: typedesc[Log], msg: string): void {.inline.} = Log.log("[ERROR] " & msg)
+# Fail the program with a message
+template fail(msg: string, exitCode: int = 1): void = (log.fail(msg); quit exitCode)
 
 # Executable name constants
 
@@ -192,7 +181,7 @@ proc startInOutInteraction(
   resetSignals: seq[string] = @[],
 ): InOutProc =
   let newCmd = if resetSignals.len > 0: SubProc.withResetSignals(cmd, resetSignals) else: cmd
-  Log.debug("startInOutInteraction: " & $newCmd)
+  log.debug("startInOutInteraction: " & $newCmd)
   let p = osproc.startProcess(newCmd.cmd, args = newCmd.args, options = {osproc.poUsePath})
   var stderrThread: Thread[osproc.Process]
   createThread(stderrThread, forwardStderr, p)
@@ -209,7 +198,7 @@ proc startInOutInteraction(
 # Spawn a sub-process in background inheriting stdin, stdout, and stderr.
 proc spawn(_: typedesc[SubProc], cmd: Command, resetSignals: seq[string] = @[]): void {.inline.} =
   let newCmd = if resetSignals.len > 0: SubProc.withResetSignals(cmd, resetSignals) else: cmd
-  Log.debug("spawn: " & $newCmd)
+  log.debug("spawn: " & $newCmd)
   discard osproc.startProcess(
     newCmd.cmd,
     args = newCmd.args,
@@ -219,7 +208,7 @@ proc spawn(_: typedesc[SubProc], cmd: Command, resetSignals: seq[string] = @[]):
 # Start a sub-process in background inheriting stdin, stdout, and stderr and wait for success.
 proc callCmd(_: typedesc[SubProc], cmd: Command, resetSignals: seq[string] = @[]): void {.inline.} =
   let newCmd = if resetSignals.len > 0: SubProc.withResetSignals(cmd, resetSignals) else: cmd
-  Log.debug("callCmd: " & $newCmd)
+  log.debug("callCmd: " & $newCmd)
   let p: osproc.Process = osproc.startProcess(
     newCmd.cmd,
     args = newCmd.args,
@@ -235,7 +224,7 @@ proc startCmd(
   resetSignals: seq[string] = @[],
 ): osproc.Process {.inline.} =
   let newCmd = if resetSignals.len > 0: SubProc.withResetSignals(cmd, resetSignals) else: cmd
-  Log.debug("startCmd: " & $newCmd)
+  log.debug("startCmd: " & $newCmd)
   osproc.startProcess(
     newCmd.cmd,
     args = newCmd.args,
@@ -275,21 +264,21 @@ template withLockFile(path: string; body: untyped) =
           urgent = true,
         )
         fail("Lock file already exists: " & lockPath)
-      Log.debug("Overriding stale lock file: " & lockPath)
+      log.debug("Overriding stale lock file: " & lockPath)
 
-    Log.debug("Acquiring lock file: " & lockPath)
+    log.debug("Acquiring lock file: " & lockPath)
     writeFile(lockPath, lockToken)
 
     try:
       body
     finally:
       try:
-        Log.debug("Releasing lock file: " & lockPath)
+        log.debug("Releasing lock file: " & lockPath)
         # Avoid deleting a lock that another process may have replaced.
         if os.fileExists(lockPath) and readFile(lockPath) == lockToken:
           os.removeFile(lockPath)
         else:
-          Log.warn("Another process took over the lock file: " & lockPath)
+          log.warn("Another process took over the lock file: " & lockPath)
       except IOError, OSError:
         discard
 
@@ -347,7 +336,7 @@ proc isProcessAlive(_: typedesc[Pid], pid: uint): bool {.raises: [OSError], inli
 
 # Try to terminate a list of PIDs, or kill them if they refuse to terminate.
 proc terminateOrKill(_: typedesc[Pid], pids: seq[uint]): void {.gcsafe.} =
-  Log.debug("terminateOrKill: Terminating these PIDs: " & $pids)
+  log.debug("terminateOrKill: Terminating these PIDs: " & $pids)
   for pid in pids: Pid.terminate(pid)
   template allDead(): bool =
     block:
@@ -355,12 +344,12 @@ proc terminateOrKill(_: typedesc[Pid], pids: seq[uint]): void {.gcsafe.} =
       for pid in pids: (if Pid.isProcessAlive(pid): (isAllDead = false; break))
       isAllDead
   if Poll.waitForCondition(allDead()):
-    Log.debug("terminateOrKill: These PIDs are successfully terminated: " & $pids)
+    log.debug("terminateOrKill: These PIDs are successfully terminated: " & $pids)
     return
-  Log.warn("terminateOrKill: Some of these PIDs are still alive (killing them now): " & $pids)
+  log.warn("terminateOrKill: Some of these PIDs are still alive (killing them now): " & $pids)
   for pid in pids: Pid.forceKill(pid)
   if Poll.waitForCondition(allDead()):
-    Log.warn("terminateOrKill: These PIDs were successfully killed: " & $pids)
+    log.warn("terminateOrKill: These PIDs were successfully killed: " & $pids)
     return
   let errMsg: string = "terminateOrKill: Failed to kill PIDs: " & $pids
   DesktopNotification.notify(wenzelsKeyboard, errMsg, urgent = true)
@@ -368,60 +357,68 @@ proc terminateOrKill(_: typedesc[Pid], pids: seq[uint]): void {.gcsafe.} =
 
 # Parsing command-line-arguments
 
+const
+  noXlibHackOpt: string = "no-xlib-hack"
+  keyRepeatedDelayOpt: string = "key-repeated-delay"
+  keyRepeatedIntervalOpt: string = "key-repeated-interval"
+  xkbLayoutOpt: string = "xkb-layout"
+  xkbOptionsOpt: string = "xkb-options"
+
 proc parseCommandLineArgs(): CommandLineArgs =
-  var noXlibHack: bool = false
-  var keyRepeatedDelay: options.Option[uint] = options.none(uint)
-  var keyRepeatedInterval: options.Option[uint] = options.none(uint)
-  var xkbLayout: options.Option[string] = options.none(string)
-  var xkbOptions: options.Option[string] = options.none(string)
-  let usageInfo: string = strutils.join([
-    "Usage: " & os.extractFilename(os.getAppFilename()) & " REQUIRED [OPTIONAL]",
-    "",
-    "REQUIRED options:",
-    "  --key-repeated-delay     UINT",
-    "  --key-repeated-interval  UINT",
-    "  --xkb-layout             STR",
-    "  --xkb-options            STR",
-    "",
-    "OPTIONAL options:",
-    "  -h --help                Show this usage info",
-    "  --no-xlib-hack           Do not start xlib-keys-hack",
-  ], "\n")
-  for kind, key, value in parseopt.getopt(
-    shortNoVal = {'h'},
-    longNoVal = @[
-      "help",
-      "no-xlib-hack",
-      "key-repeated-delay",
-      "key-repeated-interval",
-      "xkb-layout",
-      "xkb-options",
-    ],
-  ):
-    case kind
-    of parseopt.cmdEnd: discard
-    of parseopt.cmdArgument: fail("This application does not accept any positional arguments", 2)
-    of parseopt.cmdShortOption, parseopt.cmdLongOption:
-      case key
-      of "h", "help": (stdout.writeLine(usageInfo); quit 0)
-      of "no-xlib-hack": noXlibHack = true
-      of "key-repeated-delay": keyRepeatedDelay = options.some(strutils.parseUInt(value))
-      of "key-repeated-interval": keyRepeatedInterval = options.some(strutils.parseUInt(value))
-      of "xkb-layout": (doAssert (value != ""); xkbLayout = options.some(value))
-      of "xkb-options": (doAssert (value != ""); xkbOptions = options.some(value))
-      else: fail("Unknown option: " & strutils.escape(key) & "\n\n" & usageInfo, 2)
-  template requiredFail(arg: string): void =
-    fail("Required argument " & strutils.escape("--" & arg) & " is not provided\n\n" & usageInfo, 2)
-  if options.isNone keyRepeatedDelay: requiredFail("key-repeated-delay")
-  if options.isNone keyRepeatedInterval: requiredFail("key-repeated-interval")
-  if options.isNone xkbLayout: requiredFail("xkb-layout")
-  if options.isNone xkbOptions: requiredFail("xkb-options")
+  let args: cliargs.ParsedArgs = cliargs.parseArgs(
+    optsSpec = cliargs.makeOptionsSpec({
+      keyRepeatedDelayOpt: cliargs.makeStrOption(
+        optRequired = true,
+        optPlaceholder = strutils.escape("UINT"),
+      ),
+      keyRepeatedIntervalOpt: cliargs.makeStrOption(
+        optRequired = true,
+        optPlaceholder = strutils.escape("UINT"),
+      ),
+      xkbLayoutOpt: cliargs.makeStrOption(optRequired = true),
+      xkbOptionsOpt: cliargs.makeStrOption(optRequired = true),
+      noXlibHackOpt: cliargs.makeFlagOption(
+        optInfo = "Do not start xlib-keys-hack.",
+      ),
+      "help": cliargs.makeFlagOption(
+        optShort = 'h',
+        optInfo = "Show this usage information.",
+      ),
+    }),
+    errWriteLine = proc (line: string): void = writeStderr(line),
+    usageDescription = "My keyboard automatic setup utility.",
+    usageInfoTransform = proc (usage: string, errors: string): string =
+      (if errors.len > 0: "\n" & errors & "\n" else: "") & "\n" & usage & "\n",
+    validate = proc (args: cliargs.ParsedArgs, _: string): string =
+      var errors: seq[string] = @[]
+
+      if args.positional.len > 0: errors.add(
+        "This application does not accept any positional arguments!\n" &
+        "Got: " & $args.positional
+      )
+
+      # Validate UINT options
+      for uintOpt in [keyRepeatedDelayOpt, keyRepeatedIntervalOpt]:
+        let str: string = options.get(cliargs.getOptionValue(args, uintOpt).strValue)
+        try:
+          let x = strutils.parseInt(str)
+          if x < 0: raise newException(ValueError, "Not an unsigned integer")
+        except ValueError as e:
+          errors.add("--" & uintOpt & " value is incorrect (must be an unsigned integer): " & e.msg)
+
+      if errors.len <= 0: "" else: strutils.join(errors, "\n\n")
+  )
+
   CommandLineArgs(
-    noXlibHack: noXlibHack,
-    keyRepeatedDelay: options.get(keyRepeatedDelay),
-    keyRepeatedInterval: options.get(keyRepeatedInterval),
-    xkbLayout: options.get(xkbLayout),
-    xkbOptions: options.get(xkbOptions),
+    noXlibHack: cliargs.getOptionValue(args, noXlibHackOpt).flagValue,
+    keyRepeatedDelay: strutils.parseInt(
+      options.get(cliargs.getOptionValue(args, keyRepeatedDelayOpt).strValue)
+    ).uint,
+    keyRepeatedInterval: strutils.parseInt(
+      options.get(cliargs.getOptionValue(args, keyRepeatedIntervalOpt).strValue)
+    ).uint,
+    xkbLayout: options.get(cliargs.getOptionValue(args, xkbLayoutOpt).strValue),
+    xkbOptions: options.get(cliargs.getOptionValue(args, xkbOptionsOpt).strValue),
   )
 
 # Sub-processes supervision
@@ -431,24 +428,24 @@ proc cleanArtifacts(): void =
   var artifactPids: seq[uint] = @[]
   for x in artifactExecutables:
     let pids: seq[uint] = Pid.findExecutablePids(x)
-    Log.debug("cleanArtifacts: " & strutils.escape(x) & " PIDs: " & $pids)
+    log.debug("cleanArtifacts: " & strutils.escape(x) & " PIDs: " & $pids)
     artifactPids.add(pids)
-  Log.debug("cleanArtifacts: Terminating PIDs: " & $artifactPids)
+  log.debug("cleanArtifacts: Terminating PIDs: " & $artifactPids)
   Pid.terminateOrKill(artifactPids)
 
 # Take over previous run of `wenzels-keyboard.lock`
 proc takeOverPreviousRun(): void =
   const cmd: string = strutils.escape(wenzelsKeyboard)
-  Log.stage("Taking over of the previous run of " & cmd)
+  log.stage("Taking over of the previous run of " & cmd)
 
   let pids: seq[uint] = sequtils.filterIt(Pid.findExecutablePids(wenzelsKeyboard), it != pid.uint)
-  if pids.len == 0: Log.skip("No previous run of " & cmd & " found")
+  if pids.len == 0: log.skip("No previous run of " & cmd & " found")
   else: Pid.terminateOrKill(pids)
 
-  Log.stage("Cleaning potentially survived artifacts: " & $artifactExecutables)
+  log.stage("Cleaning potentially survived artifacts: " & $artifactExecutables)
   cleanArtifacts()
 
-  Log.ok("Took over of the previous " & cmd & " run (" & $pids & ")")
+  log.ok("Took over of the previous " & cmd & " run (" & $pids & ")")
 
 # Main events bus
 
@@ -516,7 +513,7 @@ proc startSubProcWorker(cmd: ref Command): void {.thread gcsafe.} =
 
 proc startSubProcWorkers(args: CommandLineArgs): void {.thread.} =
   try:
-    Log.debug("startSubProcWorkers: Thread starting")
+    log.debug("startSubProcWorkers: Thread starting")
 
     var threads: seq[ref SubProcWorkerSpec] = @[]
     let noPidYet: options.Option[uint] = options.none(uint)
@@ -529,7 +526,7 @@ proc startSubProcWorkers(args: CommandLineArgs): void {.thread.} =
           subProcPid: noPidYet,
           isRunning: true
         )
-      Log.debug("startSubProcWorkers: Spawning worker thread for: " & $cmd[])
+      log.debug("startSubProcWorkers: Spawning worker thread for: " & $cmd[])
       createThread(spec.thread, startSubProcWorker, cmd)
       threads.add(spec)
 
@@ -542,10 +539,10 @@ proc startSubProcWorkers(args: CommandLineArgs): void {.thread.} =
           isRunning: true
         )
       if args.noXlibHack:
-        Log.debug("startSubProcWorkers: NOT spawning (--no-xlib-hack) worker thread for: " & $cmd[])
+        log.debug("startSubProcWorkers: NOT spawning (--no-xlib-hack) worker thread for: " & $cmd[])
         break addWorker
       else:
-        Log.debug("startSubProcWorkers: Spawning worker thread for: " & $cmd[])
+        log.debug("startSubProcWorkers: Spawning worker thread for: " & $cmd[])
       createThread(spec.thread, startSubProcWorker, cmd)
       threads.add(spec)
 
@@ -565,12 +562,12 @@ proc startSubProcWorkers(args: CommandLineArgs): void {.thread.} =
 
     template terminateAll(): void =
       block:
-        Log.debug("startSubProcWorkers: Terminating all the sub processes that are still running")
+        log.debug("startSubProcWorkers: Terminating all the sub processes that are still running")
         var pids: seq[uint] = @[]
         for thread in threads:
           let subProcPid: options.Option[uint] = thread.subProcPid
           if options.isNone(subProcPid):
-            Log.warn(
+            log.warn(
               "startSubProcWorkers/terminateAll: No PID reported yet for " & $thread.thread.data[]
             )
           else:
@@ -596,7 +593,7 @@ proc startSubProcWorkers(args: CommandLineArgs): void {.thread.} =
         # If no threads are running anymore we are done here
         block areAllDone:
           for thread in threads: (if thread.isRunning: break areAllDone)
-          Log.debug("startSubProcWorkers: No threads are still running, wrapping things up")
+          log.debug("startSubProcWorkers: No threads are still running, wrapping things up")
           # Wait for all the threads to be done
           if Poll.waitForCondition(
             block:
@@ -604,25 +601,25 @@ proc startSubProcWorkers(args: CommandLineArgs): void {.thread.} =
               for thread in threads: (if running(thread.thread): (allThreadsAreDone = false; break))
               allThreadsAreDone
           ):
-            Log.error(
+            log.error(
               "startSubProcWorkers: Some of the threads seems to be stuck (not joining them)"
             )
           else:
-            Log.debug("startSubProcWorkers: All threads are done, joining them")
+            log.debug("startSubProcWorkers: All threads are done, joining them")
             for thread in threads: joinThread(thread.thread)
-          Log.debug("startSubProcWorkers: The event loop is done")
+          log.debug("startSubProcWorkers: The event loop is done")
           break eventLoop
         let event: ref SubProcWorkerEvent = subProcWorkerEvents.recv()
         case event.kind:
         of started:
-          Log.debug(
+          log.debug(
             "startSubProcWorkers: Thread reports PID " & $event.pid &
             " for " & $getEventCmd(event)[]
           )
           updateThread(event, thread): thread.subProcPid = options.some(event.pid)
           notifyWhenReady(getEventCmd(event)[].cmd)
         of exited:
-          Log.debug(
+          log.debug(
             "startSubProcWorkers: Thread reports exit code " & $event.exitCode &
             " for " & $getEventCmd(event)[]
           )
@@ -631,7 +628,7 @@ proc startSubProcWorkers(args: CommandLineArgs): void {.thread.} =
           block termination:
             for thread in threads: (if thread.isRunning: (terminateAll(); break termination))
         of failed:
-          Log.error(
+          log.error(
             "startSubProcWorkers: Thread reports failure for " &
             $getEventCmd(event)[] & ": " & strutils.escape(event.message)
           )
@@ -639,11 +636,11 @@ proc startSubProcWorkers(args: CommandLineArgs): void {.thread.} =
           block termination:
             for thread in threads: (if thread.isRunning: (terminateAll(); break termination))
         of cleanup:
-          Log.debug("startSubProcWorkers: Received cleanup request")
+          log.debug("startSubProcWorkers: Received cleanup request")
           block termination:
             for thread in threads: (if thread.isRunning: (terminateAll(); break termination))
   finally:
-    Log.debug("startSubProcWorkers: Reporting subprocesses workers thread finished")
+    log.debug("startSubProcWorkers: Reporting subprocesses workers thread finished")
     mainEvents.send(MainEvent(kind: workersFinished))
 
 # POSIX signals control
@@ -670,14 +667,14 @@ proc blockTerminationSignals(): void =
 # Shutdown
 
 proc terminationSignalWaiter(): void {.thread.} =
-  Log.debug("terminationSignalWaiter: Thread starting")
+  log.debug("terminationSignalWaiter: Thread starting")
   var signal: cint
   let error = posix.sigwait(terminationSigset, signal)
   if error == 0:
-    Log.debug("terminationSignalWaiter: Received signal: " & $signal)
+    log.debug("terminationSignalWaiter: Received signal: " & $signal)
     mainEvents.send(MainEvent(kind: signalReceived, signal: signal))
   else:
-    Log.error("terminationSignalWaiter: sigwait failed with code: " & $error)
+    log.error("terminationSignalWaiter: sigwait failed with code: " & $error)
     mainEvents.send(MainEvent(kind: signalWaitFailed, errorCode: error))
 
 # Main program, stages
@@ -711,7 +708,7 @@ withStderr:
   allKnownExecutablesAreChecked()
 
   let commandLineArgs: CommandLineArgs = parseCommandLineArgs()
-  Log.debug("Parsed command-line arguments: " & $commandLineArgs)
+  log.debug("Parsed command-line arguments: " & $commandLineArgs)
 
   # Terminate previous run of wenzels-keyboard and its possible zombified artifacts
   # (or kill those if it they refuse to terminate within a timeout).
@@ -726,26 +723,26 @@ withStderr:
     withLockFile(xdgRuntimeDir & "/wenzels-keyboard.lock"):
       DesktopNotification.notify(wenzelsKeyboard, "Setting things up")
 
-      Log.stage("Basic setup")
+      log.stage("Basic setup")
       basicSetup(commandLineArgs)
 
-      Log.debug("Opening communications channels")
+      log.debug("Opening communications channels")
       subProcWorkerEvents.open()
       mainEvents.open()
 
-      Log.debug("Blocking POSIX termination signals (for graceful shutdown)")
+      log.debug("Blocking POSIX termination signals (for graceful shutdown)")
       blockTerminationSignals()
 
-      Log.stage("Starting termination signal waiter thread")
+      log.stage("Starting termination signal waiter thread")
       createThread(signalThread, terminationSignalWaiter)
-      Log.stage("Starting subprocesses workers thread")
+      log.stage("Starting subprocesses workers thread")
       createThread(workersThread, startSubProcWorkers, commandLineArgs)
 
       block mainEventLoop:
         let event = mainEvents.recv()
         case event.kind
         of signalReceived:
-          Log.stage("Received termination signal (terminating): " & $event.signal)
+          log.stage("Received termination signal (terminating): " & $event.signal)
           receivedSignal = options.some(event.signal)
           DesktopNotification.notify(
             wenzelsKeyboard & " exiting",
@@ -753,7 +750,7 @@ withStderr:
           )
           break mainEventLoop
         of workersFinished:
-          Log.warn(
+          log.warn(
             "Subprocesses workers thread reported finishing " &
             "(probably watched subprocess died, terminating)"
           )
@@ -772,39 +769,39 @@ withStderr:
           fail("Signal waiter failed with error code: " & $event.errorCode)
 
   finally:
-    Log.stage("Cleaning up")
+    log.stage("Cleaning up")
 
-    Log.debug("Sending clean up event to subprocesses workers thread")
+    log.debug("Sending clean up event to subprocesses workers thread")
     subProcWorkerEvents.send((ref SubProcWorkerEvent)(kind: cleanup))
-    Log.debug("Waiting for the subprocesses workers thread to finish")
+    log.debug("Waiting for the subprocesses workers thread to finish")
     if Poll.waitForCondition(not running(workersThread)):
-      Log.debug("Joining the subprocesses workers thread")
+      log.debug("Joining the subprocesses workers thread")
       joinThread(workersThread)
     else:
-      Log.error("Failed to cleanup subprocesses workers thread (ignoring it)")
+      log.error("Failed to cleanup subprocesses workers thread (ignoring it)")
 
-    Log.debug("Triggering SIGUSR1 to make sure termination signal waiter thread is finishing")
+    log.debug("Triggering SIGUSR1 to make sure termination signal waiter thread is finishing")
     if posix.kill(pid, posix.SIGUSR1) != 0: os.raiseOSError(os.osLastError())
-    Log.debug("Waiting for the termination signal waiter thread to finish")
+    log.debug("Waiting for the termination signal waiter thread to finish")
     if Poll.waitForCondition(not running(signalThread)):
-      Log.debug("Joining the termination signal waiter thread")
+      log.debug("Joining the termination signal waiter thread")
       joinThread(signalThread)
     else:
-      Log.error("Failed to cleanup termination signal waiter thread (ignoring it)")
+      log.error("Failed to cleanup termination signal waiter thread (ignoring it)")
 
-    Log.debug("Closing communication channels")
+    log.debug("Closing communication channels")
     subProcWorkerEvents.close()
     mainEvents.close()
 
-    Log.debug("Cleaning up artifacts if any left (normally there should be none)")
+    log.debug("Cleaning up artifacts if any left (normally there should be none)")
     cleanArtifacts()
 
-  Log.stage("Final exiting")
+  log.stage("Final exiting")
   if options.isNone(receivedSignal):
-    Log.error("Unexpected exit, without a termination signal (probably watched process died)")
+    log.error("Unexpected exit, without a termination signal (probably watched process died)")
     quit 1
   else:
     # Conventional shell exit status: 128 + signal number.
     let finalSignal: int = 128 + options.get(receivedSignal)
-    Log.ok("Received signal " & $options.get(receivedSignal) & ", exiting with " & $finalSignal)
+    log.ok("Received signal " & $options.get(receivedSignal) & ", exiting with " & $finalSignal)
     quit finalSignal
