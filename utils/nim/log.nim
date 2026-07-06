@@ -5,6 +5,8 @@
 
 from std/times import nil
 
+const defaultTimeFormat*: string = "HH:mm:ss'.'fff"
+
 type
   LogNoisinessLevel* = enum
     silenceLevel # Log is silent with this level
@@ -17,6 +19,18 @@ type
     skipLevel
     debugLevel
 
+  LogWriter* = proc(line: string) {.nimcall, gcsafe, inline.}
+
+  # TODO: Try when nimlsp works with Nim 2.2.*
+  #
+  # There seem to be some compiler bugs in Nim 2.0.*
+  # > Error: unhandled exception: types.nim(1850, 11) `ty.kind in {tyTuple, tyObject}`  [AssertionDefect]
+  #
+  # Log*[TimeFormat: static string = defaultTimeFormat] = object
+  # template log*[TimeFormat: static string](x: lent Log[TimeFormat], msg: string): void =
+  # DefaultLog* = Log[defaultTimeFormat]
+  # x.writeLine("[" & times.format(times.now(), TimeFormat) & "]" & msg)
+  #
   Log* = object
     # Booleans are cheaper to check on each log write than for example checking something like
     # `set[LogNoisinessLevel]`.
@@ -29,23 +43,39 @@ type
     showSkip*: bool = true
     showDebug*: bool = true
 
-    timeFormat*: string = "HH:mm:ss'.'fff"
+    writeLine*: LogWriter =
+      proc (line: string): void {.nimcall, gcsafe, inline.} =
+        stderr.writeLine(line)
 
-    writeLine*: proc (line: string): void {.inline.} =
-      proc (line: string): void {.inline.} = stderr.writeLine(line)
+  DefaultLog* = Log
 
 # Generic log function to construct the other log functions of
-template log*(x: Log, msg: string): void =
-  x.writeLine("[" & times.format(times.now(), x.timeFormat) & "]" & msg)
+template log*(x: lent Log, msg: string): void =
+  x.writeLine("[" & times.format(times.now(), defaultTimeFormat) & "]" & msg)
 
-template fail*(x: Log, msg: string): void = (if x.showFail: x.log("[FAIL] " & msg))
-template error*(x: Log, msg: string): void = (if x.showError: x.log("[ERROR] " & msg))
-template warn*(x: Log, msg: string): void = (if x.showWarn: x.log("[WARNING] " & msg))
-template stage*(x: Log, msg: string): void = (if x.showStage: x.log("[STAGE] " & msg))
-template info*(x: Log, msg: string): void = (if x.showInfo: x.log("[INFO] " & msg))
-template ok*(x: Log, msg: string): void = (if x.showOk: x.log("[OK] " & msg))
-template skip*(x: Log, msg: string): void = (if x.showSkip: x.log("[SKIP] " & msg))
-template debug*(x: Log, msg: string): void = (if x.showDebug: x.log("[DEBUG] " & msg))
+template fail*(x: lent Log, msg: string): void =
+  if x.showFail: x.log("[FAIL] " & msg)
+
+template error*(x: lent Log, msg: string): void =
+  if x.showError: x.log("[ERROR] " & msg)
+
+template warn*(x: lent Log, msg: string): void =
+  if x.showWarn: x.log("[WARNING] " & msg)
+
+template stage*(x: lent Log, msg: string): void =
+  if x.showStage: x.log("[STAGE] " & msg)
+
+template info*(x: lent Log, msg: string): void =
+  if x.showInfo: x.log("[INFO] " & msg)
+
+template ok*(x: lent Log, msg: string): void =
+  if x.showOk: x.log("[OK] " & msg)
+
+template skip*(x: lent Log, msg: string): void =
+  if x.showSkip: x.log("[SKIP] " & msg)
+
+template debug*(x: lent Log, msg: string): void =
+  if x.showDebug: x.log("[DEBUG] " & msg)
 
 # Set maximum noisiness level for the log.
 #

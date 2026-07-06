@@ -45,7 +45,7 @@ proc writeStderr(line: string): void {.inline.} =
 template withStderr(body: untyped) =
   (locks.initLock(stderrLock); try: body finally: locks.deinitLock(stderrLock))
 
-let log: logging.Log = logging.Log(writeLine: writeStderr)
+let log: logging.DefaultLog = logging.Log(writeLine: writeStderr)
 
 # Fail the program with a message
 template fail(msg: string, exitCode: int = 1): void = (log.fail(msg); quit exitCode)
