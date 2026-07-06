@@ -3,9 +3,10 @@
 
 let
   constants = import ../../constants.nix;
+  sources = import ../../nix/sources.nix;
 in
 
-{ pkgs ? import <nixpkgs> {}
+{ pkgs ? import sources.nixpkgs-master {}
 
 , lib ? pkgs.lib
 , callPackage ? pkgs.callPackage
@@ -16,7 +17,6 @@ in
 , stdenv ? pkgs.stdenv
 
 , nim ? pkgs.nim
-, nim-2_0 ? pkgs.nim-2_0 # npmlsp is not okay to work with newer Nim
 , buildNimPackage ? pkgs.buildNimPackage
 
 # LSP
@@ -51,20 +51,6 @@ in
 let
   pkgs = null; # Prevent from using directly
   config = builtins.fromTOML (builtins.readFile __config);
-
-  # TODO: Remove when https://github.com/NixOS/nixpkgs/pull/537634 is released to nixos-26.05
-  newer-nimlsp =
-    assert lib.getVersion nimlsp == "0.4.6";
-    nimlsp.overrideAttrs (old: rec {
-      version = "0.4.7";
-
-      src = fetchFromGitHub {
-        owner = "PMunch";
-        repo = "nimlsp";
-        rev = "v${version}";
-        hash = "sha256-jUNW+tukZXv41HTWP2F2BdEn7nesFXVg2TffKPWfSss=";
-      };
-    });
 
   # Runtime dependencies for the app
   e = (executable-dependencies {
@@ -221,16 +207,12 @@ let
 
   shell = mkShell {
     buildInputs =
-      (
-        builtins.filter
-          (x: __nimLsp != "nimlsp" || x != nim)
-          pointer-setup.nativeBuildInputs
-      )
+      pointer-setup.nativeBuildInputs
       ++ pointer-setup.buildInputs
       ++ builtins.attrValues e.executables
       ++ (
         if isNull __nimLsp then [] else
-        if __nimLsp == "nimlsp" then [ nim-2_0 newer-nimlsp ] else
+        if __nimLsp == "nimlsp" then [ nimlsp ] else
         if __nimLsp == "nimlangserver" then [ nimlangserver ] else
         throw "Unexpected __nimLsp: ${builtins.toJSON __nimLsp}"
       )

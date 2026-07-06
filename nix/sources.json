@@ -83,6 +83,18 @@
         "url": "https://github.com/zielmicha/nim-dbus/archive/9aedf3c455554ccef2c7741d2379f5af0ac85e55.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "nixpkgs-master": {
+        "branch": "master",
+        "description": "Nix Packages collection & NixOS",
+        "homepage": "",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "2cb59732bcd4d20da6037f37d2fc106992068f5d",
+        "sha256": "07zli5nm6ilwi3hjj87fgl7zibs72v06qf4m73hp7kwax06091ih",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/2cb59732bcd4d20da6037f37d2fc106992068f5d.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "place-cursor-at": {
         "branch": "v1.0.1",
         "description": "Utility for X11 that helps to move cursor using only keyboard written in Haskell",
