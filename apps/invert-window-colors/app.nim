@@ -5,6 +5,7 @@ from strutils import parseInt, format
 from re       import Regex, re, find
 
 import osproc, streams, locks, types, ipc
+from needexe import xdotool, xwininfo
 
 type
   Filter = object
@@ -95,7 +96,7 @@ proc getRootWnd(): uint32 =
     if matches[0] == "":
       L.acquire; quit("Root window id not found!", 1)
 
-  childProc( "xwininfo", ["-int", "-root"], handler
+  childProc( xwininfo, ["-int", "-root"], handler
            , "Getting root window id".just )
   matches[0].parseInt.uint32
 
@@ -115,7 +116,7 @@ proc getParentWnd(childWnd: uint32): Maybe[uint32] =
       L.acquire
       quit("Parent window id for '$1' not found!".format(childWnd), 1)
 
-  childProc( "xwininfo", ["-int", "-children", "-id", $childWnd], handler
+  childProc( xwininfo, ["-int", "-children", "-id", $childWnd], handler
            , nothing[string]() )
 
   if matches[0] == "":
@@ -145,7 +146,7 @@ proc handleAppFilter(filter: Filter; state: State) =
     var line: string = ""
     while sout.readLine(line): handleWnd(line.parseInt.uint32, state)
 
-  childProc("xdotool", args, handler, nothing[string]())
+  childProc(xdotool, args, handler, nothing[string]())
 
 proc handleApp(idx: int, state: State) =
   let app: AppDecl = mapping[idx]
