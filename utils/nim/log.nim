@@ -7,6 +7,11 @@ from std/times import nil
 
 const defaultTimeFormat*: string = "HH:mm:ss'.'fff"
 
+type StderrWriter* = object
+
+template writeLogLine*(writer: StderrWriter, line: string): void =
+  stderr.writeLine(line)
+
 type
   LogNoisinessLevel* = enum
     silenceLevel # Log is silent with this level
@@ -19,19 +24,10 @@ type
     skipLevel
     debugLevel
 
-  LogWriter* = proc(line: string) {.nimcall, gcsafe, inline.}
-
-  # TODO: Try when nimlsp works with Nim 2.2.*
-  #
-  # There seem to be some compiler bugs in Nim 2.0.*
-  # > Error: unhandled exception: types.nim(1850, 11) `ty.kind in {tyTuple, tyObject}`  [AssertionDefect]
-  #
-  # Log*[TimeFormat: static string = defaultTimeFormat] = object
-  # template log*[TimeFormat: static string](x: lent Log[TimeFormat], msg: string): void =
-  # DefaultLog* = Log[defaultTimeFormat]
-  # x.writeLine("[" & times.format(times.now(), TimeFormat) & "]" & msg)
-  #
-  Log* = object
+  Log*[
+    TimeFormat: static string = defaultTimeFormat,
+    Writer = StderrWriter,
+  ] = object
     # Booleans are cheaper to check on each log write than for example checking something like
     # `set[LogNoisinessLevel]`.
     showFail*: bool = true
@@ -42,45 +38,70 @@ type
     showOk*: bool = true
     showSkip*: bool = true
     showDebug*: bool = true
-
-    writeLine*: LogWriter =
-      proc (line: string): void {.nimcall, gcsafe, inline.} =
-        stderr.writeLine(line)
-
-  DefaultLog* = Log
+    writer*: Writer
 
 # Generic log function to construct the other log functions of
-template log*(x: lent Log, msg: string): void =
-  x.writeLine("[" & times.format(times.now(), defaultTimeFormat) & "]" & msg)
+template log*[TimeFormat: static string, Writer](
+  x: lent Log[TimeFormat, Writer],
+  msg: string,
+): void =
+  x.writer.writeLogLine("[" & times.format(times.now(), TimeFormat) & "]" & msg)
 
-template fail*(x: lent Log, msg: string): void =
+template fail*[TimeFormat: static string, Writer](
+  x: lent Log[TimeFormat, Writer],
+  msg: string,
+): void =
   if x.showFail: x.log("[FAIL] " & msg)
 
-template error*(x: lent Log, msg: string): void =
+template error*[TimeFormat: static string, Writer](
+  x: lent Log[TimeFormat, Writer],
+  msg: string,
+): void =
   if x.showError: x.log("[ERROR] " & msg)
 
-template warn*(x: lent Log, msg: string): void =
+template warn*[TimeFormat: static string, Writer](
+  x: lent Log[TimeFormat, Writer],
+  msg: string
+): void =
   if x.showWarn: x.log("[WARNING] " & msg)
 
-template stage*(x: lent Log, msg: string): void =
+template stage*[TimeFormat: static string, Writer](
+  x: lent Log[TimeFormat, Writer],
+  msg: string
+): void =
   if x.showStage: x.log("[STAGE] " & msg)
 
-template info*(x: lent Log, msg: string): void =
+template info*[TimeFormat: static string, Writer](
+  x: lent Log[TimeFormat, Writer],
+  msg: string
+): void =
   if x.showInfo: x.log("[INFO] " & msg)
 
-template ok*(x: lent Log, msg: string): void =
+template ok*[TimeFormat: static string, Writer](
+  x: lent Log[TimeFormat, Writer],
+  msg: string
+): void =
   if x.showOk: x.log("[OK] " & msg)
 
-template skip*(x: lent Log, msg: string): void =
+template skip*[TimeFormat: static string, Writer](
+  x: lent Log[TimeFormat, Writer],
+  msg: string
+): void =
   if x.showSkip: x.log("[SKIP] " & msg)
 
-template debug*(x: lent Log, msg: string): void =
+template debug*[TimeFormat: static string, Writer](
+  x: lent Log[TimeFormat, Writer],
+  msg: string
+): void =
   if x.showDebug: x.log("[DEBUG] " & msg)
 
 # Set maximum noisiness level for the log.
 #
 # Note that it will override your individual `show*` flags configuration.
-proc setNoisinessLevel*(x: var Log, maxLogLevel: LogNoisinessLevel): void {.inline.} =
+proc setNoisinessLevel*[TimeFormat: static string, Writer](
+  x: var Log[TimeFormat, Writer],
+  maxLogLevel: LogNoisinessLevel,
+): void {.inline.} =
   x.showFail = maxLogLevel >= failLevel
   x.showError = maxLogLevel >= errorLevel
   x.showWarn = maxLogLevel >= warnLevel
@@ -93,4 +114,7 @@ proc setNoisinessLevel*(x: var Log, maxLogLevel: LogNoisinessLevel): void {.inli
 # Make the log absolutely silent.
 #
 # Note that it will override your individual `show*` flags configuration.
-proc silence*(x: var Log): void {.inline.} = x.setNoisinessLevel(silenceLevel)
+proc silence*[TimeFormat: static string, Writer](
+  x: var Log[TimeFormat, Writer],
+): void {.inline.} =
+  x.setNoisinessLevel(silenceLevel)
