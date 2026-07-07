@@ -16,8 +16,8 @@ proc toDbusDisplayName(display: string): string =
       result.add '_'
 
 let
-  bus: Bus        = getbus dbus.DBUS_BUS_SESSION
-  dpy: string     = getenv("DISPLAY").toDbusDisplayName
+  bus: Bus        = getBus dbus.DBUS_BUS_SESSION
+  dpy: string     = getEnv("DISPLAY").toDbusDisplayName
   dst: string     = "com.github.chjj.compton." & dpy
   obj: ObjectPath = "/com/github/chjj/compton".ObjectPath
 
@@ -26,7 +26,7 @@ var L: Lock
 
 proc dbusReq*(callMethod: string; args: varargs[DbusValue]): Reply =
   L.acquire
-  let msg: Message = makecall(dst, obj, "com.github.chjj.compton", callMethod)
+  let msg: Message = makeCall(dst, obj, "com.github.chjj.compton", callMethod)
   for x in args: msg.append x
   result = waitForReply sendMessageWithReply(bus, msg)
   L.release
@@ -55,7 +55,7 @@ proc setState*(wnd: Maybe[uint32]; state: State, failProtect: bool = false) =
 
       try:
         newState = iter.unpackCurrent(uint32) != 1
-      except FieldError:
+      except FieldDefect:
         isOldCompton = true
         newState = iter.unpackCurrent(uint16) != 1
 
@@ -73,7 +73,7 @@ proc setState*(wnd: Maybe[uint32]; state: State, failProtect: bool = false) =
 
   except DbusRemoteException:
     if failProtect:
-      stderr.writeline(
+      stderr.writeLine(
         "Prevented fail by remote DBus exception: " & getCurrentExceptionMsg())
     else:
       raise

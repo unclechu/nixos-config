@@ -3,117 +3,58 @@
 
 let sources = import ../../nix/sources.nix; in
 
-{ lib
-, callPackage
-, mkShell
-, symlinkJoin
-, makeBinaryWrapper
-, stdenv
-, nim
-, dbus
-, pcre
-, xdotool
-, xwininfo
+{ pkgs ? import sources.nixpkgs-master {}
+
+, lib ? pkgs.lib
+, callPackage ? pkgs.callPackage
+, runCommand ? pkgs.runCommand
+
+, dbus ? pkgs.dbus
+, pcre ? pkgs.pcre
+, xdotool ? pkgs.xdotool
+, xwininfo ? pkgs.xwininfo
+
+# Nim packages
+, nim-dbus-src ? sources.nim-dbus
+
+, executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
+, mk-nim-app ? callPackage ../../utils/nim/mk-nim-app.nix {}
 
 # nix-shell arguments
 , inNixShell ? false
-
-# Overridable dependencies
-, nim-dbus-src ? sources.nim-dbus
+, __nimLsp ? "nimlsp" # one of: `[null "nimlsp" "nimlangserver"]`
 
 # Build options
-, __src ? ./.
+, __srcFile ? ./invert_window_colors.nim
 }:
 
 let
-  src =
-    builtins.filterSource (path: type:
-      type == "regular" &&
-      builtins.elem (baseNameOf path) [
-        "app.nim"
-        "ipc.nim"
-        "main.nim"
-        "types.nim"
-      ]
-    ) __src;
+  pkgs = null; # Prevent from using directly
 
-  invert-window-colors = stdenv.mkDerivation rec {
-    pname = "invert-window-colors";
-    name = pname;
-    meta.mainProgram = name;
-    inherit src;
-
-    nativeBuildInputs = [
-      nim
+  invert-window-colors = mk-nim-app {
+    name = "invert-window-colors";
+    src = __srcFile;
+    extraSrcFiles = [
+      nim-dbus-source
+      ./nim.cfg
+      ./app.nim
+      ./ipc.nim
+      ./types.nim
     ];
-
-    buildInputs = [
-      dbus
-      pcre
-    ];
-
-    buildPhase = ''
-      runHook preBuild
-      (
-        set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
-
-        BUILD_CMD=(
-          nim c
-          --nimcache:nimcache
-          -p:${lib.escapeShellArg "${nim-dbus-src}"}
-          -o:${lib.escapeShellArg meta.mainProgram}
-          -d:nimOldCaseObjects
-          main.nim
-        )
-
-        "''${BUILD_CMD[@]}"
-      )
-      runHook postBuild
-    '';
-
-    installPhase = ''
-      runHook preInstall
-      (
-        set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
-        mkdir -p -- "$out"/bin
-        cp -- ${lib.escapeShellArg meta.mainProgram} "$out"/bin
-      )
-      runHook postInstall
-    '';
+    buildInputs = [ dbus pcre ];
+    lspForShell = __nimLsp;
+    e = executable-dependencies {
+      xdotool = xdotool;
+      xwininfo = xwininfo;
+    };
   };
 
-  runtimeExecutableDependenies = [
-    xdotool
-    xwininfo
-  ];
-
-  invert-window-colors-wrapped = symlinkJoin rec {
-    pname = "${lib.getName invert-window-colors}-wrapped";
-    name = pname;
-    meta.mainProgram = invert-window-colors.meta.mainProgram;
-    nativeBuildInputs = [ makeBinaryWrapper ];
-    paths = [ invert-window-colors ];
-    postBuild = ''
-      CMD=(
-        wrapProgram
-        "$out"/bin/${lib.escapeShellArg invert-window-colors.meta.mainProgram}
-        --prefix PATH : ${lib.escapeShellArg (lib.makeBinPath runtimeExecutableDependenies)}
-      )
-      "''${CMD[@]}"
-    '';
-  };
-
-  shell = mkShell {
-    buildInputs =
-      invert-window-colors.nativeBuildInputs
-      ++ invert-window-colors.buildInputs
-      ++ runtimeExecutableDependenies
-      ;
-  };
+  nim-dbus-source = runCommand "nim-dbus-source" {} ''
+    ln -s -- ${lib.escapeShellArg "${nim-dbus-src}"} "$out"
+  '';
 in
 
-(if inNixShell then shell else invert-window-colors-wrapped) // {
-  invert-window-colors = invert-window-colors-wrapped;
-  invert-window-colors-unwrapped = invert-window-colors;
-  inherit shell;
+(if inNixShell then invert-window-colors.shell else invert-window-colors) // {
+  inherit invert-window-colors nim-dbus-source;
+  inherit (invert-window-colors) shell;
 }

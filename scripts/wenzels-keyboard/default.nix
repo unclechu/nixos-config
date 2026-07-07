@@ -30,7 +30,6 @@ in
 , __nimLsp ? "nimlsp" # one of: `[null "nimlsp" "nimlangserver"]`
 
 # Build options
-, __config ? ./config.toml
 , __srcFile ? ./wenzels_keyboard.nim
 , keyRepeatDelay ? constants.keyRepeat.delay
 , keyRepeatInterval ? constants.keyRepeat.interval
@@ -45,17 +44,15 @@ assert builtins.isString xkbOptions && xkbOptions != "";
 
 let
   pkgs = null; # Prevent from using directly
-  config = builtins.fromTOML (builtins.readFile __config);
 
   wenzels-keyboard = mk-nim-app {
     name = "wenzels-keyboard";
     src = __srcFile;
     extraSrcFiles = [
+      ./nim.cfg
       ../../utils/nim/cliargs.nim
       ../../utils/nim/log.nim
     ];
-    nimLintArguments = config.nim.lint-arguments;
-    nimBuildArguments = config.nim.nix-build-extra-arguments ++ config.nim.build-arguments;
     wrapProgramArgs = [
       "--add-flag" "--key-repeated-delay=${toString keyRepeatDelay}"
       "--add-flag" "--key-repeated-interval=${toString keyRepeatInterval}"
@@ -81,5 +78,5 @@ in
 
 (if inNixShell then wenzels-keyboard.shell else wenzels-keyboard) // {
   inherit wenzels-keyboard;
-  shell = wenzels-keyboard;
+  inherit (wenzels-keyboard) shell;
 }

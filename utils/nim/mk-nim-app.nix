@@ -3,9 +3,7 @@
 
 let sources = import ../../nix/sources.nix; in
 
-{ pkgs
-
-, lib
+{ lib
 , callPackage
 , mkShell
 , symlinkJoin
@@ -37,10 +35,13 @@ let
     { name
 
     , src # A path to the main module source file (e.g. `./app.nim`)
-    , extraSrcFiles ? [] # A list of paths of files to add (e.g. `[ ./cliargs.nim ./log.nim ]`)
 
-    , nimLintArguments # Lint arguments (for `nim check`)
-    , nimBuildArguments # Build arguments (for `nim compile`)
+    # A list of paths of files to add
+    # (e.g. `[ ./nim.cfg ./cliargs.nim ./log.nim ]`).
+    , extraSrcFiles ? []
+
+    , nimLintArguments ? [] # Lint arguments (for `nim check`)
+    , nimBuildArguments ? [] # Build arguments (for `nim compile`)
 
     # [string | {raw=string}]
     # {raw=string} for unescaped shell expression, just in case you ever need it.
@@ -76,6 +77,10 @@ let
     # Type: null | "nimlsp" | "nimlangserver"
     , lspForShell ? null
 
+    # Extra `nativeBuildInputs` and/or `buildInputs` for the Nim app derivation
+    , nativeBuildInputs ? []
+    , buildInputs ? []
+
     # Additional `buildInputs` for `.shell` nix-shell configuration
     , shellBuildInputs ? []
 
@@ -99,7 +104,7 @@ let
         pname = name;
         e = nimE;
         inherit src extraSrcFiles nimLintArguments nimBuildArguments;
-        inherit cutOffRuntimeDependenciesCheckPhase;
+        inherit nativeBuildInputs buildInputs cutOffRuntimeDependenciesCheckPhase;
       };
 
       nim-app-wrapped =
@@ -111,7 +116,7 @@ let
         };
 
       shell = mk-shell {
-        inherit nim-app lspForShell shellBuildInputs;
+        inherit nim-app lspForShell nativeBuildInputs buildInputs shellBuildInputs;
         e = nimE;
       };
     in
@@ -124,6 +129,8 @@ let
     { pname
     , src # A path to the main module source file (e.g. `./app.nim`)
     , extraSrcFiles # A list of paths of files to add (e.g. `[ ./cliargs.nim ./log.nim ]`)
+    , nativeBuildInputs
+    , buildInputs
     , nimLintArguments
     , nimBuildArguments
     , cutOffRuntimeDependenciesCheckPhase
@@ -131,26 +138,27 @@ let
     }:
     assert builtins.isString pname;
     assert builtins.isList extraSrcFiles;
-    assert builtins.all builtins.isPath extraSrcFiles;
+    assert builtins.all (x: builtins.isPath x || lib.isDerivation x) extraSrcFiles;
+    assert builtins.isList nativeBuildInputs;
+    assert builtins.all lib.isDerivation nativeBuildInputs;
+    assert builtins.isList buildInputs;
+    assert builtins.all lib.isDerivation buildInputs;
     assert builtins.isList nimLintArguments;
-    assert builtins.length nimLintArguments > 0;
     assert builtins.isList nimBuildArguments;
-    assert builtins.length nimBuildArguments > 0;
     assert builtins.all builtins.isString nimLintArguments;
     assert builtins.all builtins.isString nimBuildArguments;
     assert builtins.isString cutOffRuntimeDependenciesCheckPhase;
     assert e != null -> builtins.isAttrs e;
-    stdenv.mkDerivation rec {
+    stdenv.mkDerivation (lib.fix (self: {
+      inherit pname src;
       name = pname;
       meta.mainProgram = pname;
-      inherit pname src;
 
       dontUnpack = true;
       doCheck = true;
 
-      nativeBuildInputs = [
-        nim
-      ];
+      nativeBuildInputs = [ nim ] ++ nativeBuildInputs;
+      buildInputs = buildInputs;
 
       prePatch = ''
         # Check executable dependencies before building the Nim app
@@ -159,7 +167,13 @@ let
         # Just copy-pasting some files next to the main `src` file.
         # For example extra Nim modules (e.g. `cliargs.nim`, `log.nim`).
         ${lib.pipe extraSrcFiles [
-          (map (x: ''cp -- ${lib.escapeShellArg "${x}"} ${lib.escapeShellArg (baseNameOf x)}''))
+          (map (x:
+            if builtins.isPath x
+            then ''cp -- ${lib.escapeShellArg "${x}"} ${lib.escapeShellArg (baseNameOf x)}''
+            else if lib.isDerivation x
+            then ''ln -s -- ${lib.escapeShellArg "${x}"} ${lib.escapeShellArg (lib.getName x)}''
+            else throw "Unexpected extraSrcFiles item type"
+          ))
           (builtins.concatStringsSep "\n")
         ]}
 
@@ -187,8 +201,8 @@ let
         runHook preBuild
         (
           set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
-          nim compile ${lib.escapeShellArgs (
-            nimBuildArguments ++ [ "-o:${meta.mainProgram}" ]
+          nim compile -d:release --nimcache:nimcache ${lib.escapeShellArgs (
+            nimBuildArguments ++ [ "-o:${self.meta.mainProgram}" ]
           )} "$src"
         )
         runHook postBuild
@@ -199,11 +213,11 @@ let
         (
           set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
           mkdir -p -- "$out"/bin
-          cp -- ${lib.escapeShellArg meta.mainProgram} "$out"/bin
+          cp -- ${lib.escapeShellArg self.meta.mainProgram} "$out"/bin
         )
         runHook postInstall
       '';
-    };
+    }));
 
   # A wrapper is made as a separate derivation with this `symlinkJoin` in case
   # you need to make a bunch of instances of the same application with bound
@@ -281,27 +295,54 @@ let
   mk-shell =
     { nim-app
     , lspForShell
+    , nativeBuildInputs
+    , buildInputs
     , shellBuildInputs
     , e # An instance of `executable-dependencies.nix`
     }:
     assert lspForShell != null -> builtins.elem lspForShell [ "nimlsp" "nimlangserver" ];
     assert builtins.isList shellBuildInputs;
     assert builtins.all lib.isDerivation shellBuildInputs;
-    mkShell {
+    assert builtins.isList nativeBuildInputs;
+    assert builtins.all lib.isDerivation nativeBuildInputs;
+    assert builtins.isList buildInputs;
+    assert builtins.all lib.isDerivation buildInputs;
+    mkShell (lib.fix (self: {
       buildInputs =
-        nim-app.nativeBuildInputs
-        ++ nim-app.buildInputs
+        # Note that by taking these only `*.dev` variants are picked.
+        # And you don’t get `*.so` runtime dependencies for those.
+        # Adding `[ nim ]` (which is the only default `nativeBuildInputs`)
+        # and forwarding extra `nativeBuildInputs` and `buildInputs` below.
+        # (nim-app.nativeBuildInputs ++ nim-app.buildInputs)
+        [ nim ]
+
         ++ lib.optionals (e != null) (builtins.attrValues e.executables)
+
         ++ (
           if isNull lspForShell then [] else
           if lspForShell == "nimlsp" then [ nimlsp ] else
           if lspForShell == "nimlangserver" then [ nimlangserver ] else
           throw "Unexpected lspForShell value: ${builtins.toJSON lspForShell}"
         )
+
         ++ [ jq __clunky-toml-json-converter ] # For dev.sh
+
+        ++ nativeBuildInputs
+        ++ buildInputs
         ++ shellBuildInputs
         ;
-    };
+
+      shellHook = ''
+        # Make `*.so` runtime dependencies be discoverable by Nim.
+        export LD_LIBRARY_PATH=${
+          lib.pipe self.buildInputs [
+            (map lib.getLib)
+            lib.makeLibraryPath
+            lib.escapeShellArg
+          ]
+        }"''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      '';
+    }));
 in
 
 mk-nim-app

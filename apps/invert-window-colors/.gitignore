@@ -1,3 +1,8 @@
-app
+# Nim build artifacts
 invert-window-colors
-nimcache
+
+# Nix build artifacts
+nim-dbus-source
+
+# direnv configuration
+.envrc

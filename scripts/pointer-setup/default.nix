@@ -24,13 +24,11 @@ let sources = import ../../nix/sources.nix; in
 , __nimLsp ? "nimlsp" # one of: `[null "nimlsp" "nimlangserver"]`
 
 # Build options
-, __config ? ./config.toml
 , __srcFile ? ./pointer_setup.nim
 }:
 
 let
   pkgs = null; # Prevent from using directly
-  config = builtins.fromTOML (builtins.readFile __config);
 
   e = executable-dependencies {
     xinput = xinput;
@@ -40,6 +38,7 @@ let
   };
 
   extraSrcFiles = [
+    ./nim.cfg
     ../../utils/nim/cliargs.nim
     ../../utils/nim/log.nim
     ../../utils/nim/either.nim
@@ -47,9 +46,6 @@ let
 
   name = "pointer-setup";
   src = __srcFile;
-
-  nimLintArguments = config.nim.lint-arguments;
-  nimBuildArguments = config.nim.nix-build-extra-arguments ++ config.nim.build-arguments;
 
   make-pointer-setup-wrapper =
     args@
@@ -67,7 +63,7 @@ let
       builtins.isList values && builtins.all builtins.isString values
     ) (builtins.attrValues set-props);
     mk-nim-app {
-      inherit name src extraSrcFiles nimLintArguments nimBuildArguments e;
+      inherit name src extraSrcFiles e;
       wrapProgramArgs =
         lib.pipe args [
           (lib.filterAttrs (n: v: builtins.elem n [
@@ -94,5 +90,5 @@ in
 
 (if inNixShell then pointer-setup.shell else pointer-setup) // {
   inherit pointer-setup make-pointer-setup-wrapper;
-  shell = pointer-setup.shell;
+  inherit (pointer-setup) shell;
 }

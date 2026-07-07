@@ -1,0 +1,3 @@
+[nim]
+main-program = "invert-window-colors"
+main-source = "./invert_window_colors.nim"

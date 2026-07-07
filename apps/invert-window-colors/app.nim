@@ -2,7 +2,6 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
 from strutils import parseInt, format
-from posix    import exitnow
 from re       import Regex, re, find
 
 import osproc, streams, locks, types, ipc
@@ -41,7 +40,7 @@ proc getApps*(): seq[string] =
          for x in mapping: result.add x.name
          appsCache = result.just
 
-proc childProc( cmd: string; args: openarray[string]
+proc childProc( cmd: string; args: openArray[string]
               ; handler: proc (hproc: Process; sout: Stream)
               ; careAboutFail: Maybe[string] ) =
 
@@ -55,7 +54,7 @@ proc childProc( cmd: string; args: openarray[string]
     serr  = hproc.errorStream
   except OSError:
     L.acquire
-    stderr.writeline "Gotcha OSError [1]: " & getCurrentExceptionMsg()
+    stderr.writeLine "Gotcha OSError [1]: " & getCurrentExceptionMsg()
     L.release
 
     childProc(cmd, args, handler, careAboutFail)
@@ -69,14 +68,13 @@ proc childProc( cmd: string; args: openarray[string]
     if careAboutFail.isJust and code != 0:
       var line: string = ""
       L.acquire
-      while serr.readline(line): stderr.writeline line
-      stderr.writeline careAboutFail.value & " failed with exit code: " & $code
-      exitnow 1
+      while serr.readLine(line): stderr.writeLine line
+      quit(careAboutFail.value & " failed with exit code: " & $code, 1)
 
     hproc.close
   except OSError:
     L.acquire
-    stderr.writeline "Gotcha OSError [2]: " & getCurrentExceptionMsg()
+    stderr.writeLine "Gotcha OSError [2]: " & getCurrentExceptionMsg()
     L.release
 
     childProc(cmd, args, handler, careAboutFail)
@@ -88,14 +86,14 @@ proc getRootWnd(): uint32 =
 
   proc handler(hproc: Process; sout: Stream) =
     var line: string = ""
-    while sout.readline(line):
+    while sout.readLine(line):
       if line == "":
         continue
       elif line.find(re"Window\sid:\s+(\d+)", matches) != -1:
         hproc.terminate
         break
     if matches[0] == "":
-      L.acquire; stderr.writeline "Root window id not found!"; exitnow 1
+      L.acquire; quit("Root window id not found!", 1)
 
   childProc( "xwininfo", ["-int", "-root"], handler
            , "Getting root window id".just )
@@ -107,7 +105,7 @@ proc getParentWnd(childWnd: uint32): Maybe[uint32] =
 
   proc handler(hproc: Process; sout: Stream) =
     var line: string = ""
-    while sout.readline(line):
+    while sout.readLine(line):
       if line == "":
         continue
       elif line.find(re"Parent\swindow\sid:\s+(\d+)", matches) != -1:
@@ -115,8 +113,7 @@ proc getParentWnd(childWnd: uint32): Maybe[uint32] =
         break
     if matches[0] == "":
       L.acquire
-      stderr.writeline "Parent window id for '$1' not found!".format(childWnd)
-      exitnow 1
+      quit("Parent window id for '$1' not found!".format(childWnd), 1)
 
   childProc( "xwininfo", ["-int", "-children", "-id", $childWnd], handler
            , nothing[string]() )
@@ -146,7 +143,7 @@ proc handleAppFilter(filter: Filter; state: State) =
 
   proc handler(hproc: Process; sout: Stream) =
     var line: string = ""
-    while sout.readline(line): handleWnd(line.parseInt.uint32, state)
+    while sout.readLine(line): handleWnd(line.parseInt.uint32, state)
 
   childProc("xdotool", args, handler, nothing[string]())
 

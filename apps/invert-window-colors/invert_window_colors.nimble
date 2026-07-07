@@ -1,14 +1,10 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-# Package
-
 version = "0.0.0"
 author = "Viacheslav Lotsmanov"
-description = "-"
+description = "My own utility to send requests to invert window colors to Picom"
 license = "MIT"
 
-# Dependencies
-
-requires "nim >= 0.17.2"
+requires "nim >= 2.2.10"
 requires "dbus 0.0.1"

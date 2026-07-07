@@ -12,8 +12,6 @@ CDPATH='' cd -- "$SCRIPT_DIR" # Expecting project root
 # It relies on a presence of `config.toml` file in the project root with these
 # paths:
 #
-#   - `.nim.lint-arguments` —  `[string]`
-#   - `.nim.build-arguments` — `[string]`
 #   - `.nim.main-program` — `string`
 #   - `.nim.main-source` — `string`
 
@@ -34,34 +32,29 @@ CONFIG_JSON=$(<./config.toml clunky-toml-json-converter toml2json)
 MAIN_PROGRAM=$(<<<"$CONFIG_JSON" jq -re '.nim."main-program"')
 MAIN_SOURCE=$(<<<"$CONFIG_JSON" jq -re '.nim."main-source"')
 
-LINT_ARGS=$(<<<"$CONFIG_JSON" jq -re '.nim."lint-arguments" | .[]')
-readarray -t LINT_ARGS_LIST <<< "$LINT_ARGS"
-
-BUILD_ARGS=$(<<<"$CONFIG_JSON" jq -re '.nim."build-arguments" | .[]')
-readarray -t BUILD_ARGS_LIST <<< "$BUILD_ARGS"
-
 case "$SUB_COMMAND" in
 	clean)
-		(set -o xtrace; exec rm -vf -- "$MAIN_PROGRAM")
+		(
+			set -o xtrace
+			exec rm -vf -- "$MAIN_PROGRAM"
+		)
 		;;
 	lint)
 		(
 			set -o xtrace
-			exec nim check "${LINT_ARGS_LIST[@]}" "$MAIN_SOURCE" "$@"
+			exec nim check "$MAIN_SOURCE" "$@"
 		)
 		;;
 	build)
 		(
 			set -o xtrace
-			exec nim compile \
-				"${BUILD_ARGS_LIST[@]}" "-o:$MAIN_PROGRAM" "$MAIN_SOURCE" "$@"
+			exec nim compile "-o:$MAIN_PROGRAM" "$MAIN_SOURCE" "$@"
 		)
 		;;
 	run)
 		(
 			set -o xtrace
-			exec nim compile --run \
-				"${BUILD_ARGS_LIST[@]}" "-o:$MAIN_PROGRAM" "$MAIN_SOURCE" "$@"
+			exec nim compile --run "-o:$MAIN_PROGRAM" "$MAIN_SOURCE" "$@"
 		)
 		;;
 	*)
