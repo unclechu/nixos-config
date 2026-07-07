@@ -103,6 +103,17 @@ executablesMap: lib.makeExtensible (final: {
     dependenciesStartRegex:
     dependencyLineRegex:
     scriptSrc:
+      let x = final.tryDependencies dependenciesStartRegex dependencyLineRegex scriptSrc; in
+      assert x != null; # Executable dependencies must be found
+      x;
+
+  # Like `dependencies` but returns `null` if dependencies not found in the source file.
+  #
+  # Type ∷ string → string → path → (null | [string])
+  tryDependencies =
+    dependenciesStartRegex:
+    dependencyLineRegex:
+    scriptSrc:
       lib.pipe scriptSrc [
         builtins.readFile
         (lib.splitString "\n")
@@ -116,8 +127,11 @@ executablesMap: lib.makeExtensible (final: {
               ) else acc
             ) else if builtins.match dependenciesStartRegex line != null then [] else acc
         ) null)
-        (x: assert builtins.isAttrs x; x)
-        (x: assert builtins.length x.result > 0; x.result)
+        (x:
+          assert x != null -> builtins.isAttrs x;
+          assert x != null -> builtins.length x.result > 0;
+          if isNull x then x else x.result
+        )
       ];
 
   # Convert script dependencies list to a list of derivations (unique list).

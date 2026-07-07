@@ -37,6 +37,7 @@ let
     extraSrcFiles = [
       nim-dbus-source
       ./nim.cfg
+      ./needexe.nim
       ./app.nim
       ./ipc.nim
       ./types.nim

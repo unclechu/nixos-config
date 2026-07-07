@@ -59,16 +59,42 @@ let
     , dependencyLineRegex ? ''^[[:space:]]*needExe[(]"([^"]+)"[)]([[:space:]]*[#].*)?$''
 
     # Used only if `e != null`
+    # The dependencies are already checked, no need to do it in runtime.
+    # So cutting off the runtime checking.
     , cutOffRuntimeDependenciesCheckPhase ? ''(
         set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 
-        # The dependencies are already checked, no need to do it in runtime.
-        sed -i '/^\s*# Guard dependencies\( .*\)\?$/,/^$/d' "$src"
+        TMPDIR=$(mktemp -d --suffix=-pre-runtime-dependencies-check-cut-off)
+        found_in=
+        for nim_file in *.nim; do
+          pre_patched_file=$TMPDIR/$nim_file
+          cp -- "$nim_file" "$pre_patched_file"
 
-        # Make sure the changes were actually made
-        a=$(<"$pre_patched_src"); b=$(<"$src")
-        if [[ "$a" == "$b" ]]; then
-          >&2 echo 'Failed to remove runtime dependencies checking'
+          # Sanity check
+          a=$(<"$pre_patched_file"); b=$(<"$nim_file")
+          if [[ "$a" != "$b" ]]; then
+            >&2 printf 'Unexpectedly “%s” and “%s” are not equal\n' "$pre_patched_file" "$nim_file"
+            exit 1
+          fi
+
+          sed -i -E '
+            /^([[:space:]]*)# Guard dependencies( .*)?$/,/^$/ {
+              s/^([[:space:]]*)# Guard dependencies( .*)?$/\1discard/
+              t
+              d
+            }
+          ' "$nim_file"
+
+          # Check if changes were actually made
+          a=$(<"$pre_patched_file"); b=$(<"$nim_file")
+          if [[ "$a" != "$b" ]]; then
+            found_in=$nim_file
+            break
+          fi
+        done
+
+        if [[ -z "$found_in" ]]; then
+          >&2 echo 'Failed to remove runtime dependencies checking (could not find the checking)'
           exit 1
         fi
       )''
@@ -92,18 +118,26 @@ let
     let
       isWrapperAdded =
         builtins.length wrapProgramArgs > 0
-        || nimE != null
+        || e != null
         || renameExecutableTo != null
         ;
 
-      nimE = if isNull e then null else e.extend (final: prev: {
-        scriptDependencies = final.dependencies dependenciesStartRegex dependencyLineRegex;
-      });
+      dependenciesBinPath =
+        if isNull e then null else lib.pipe ([ src ] ++ extraSrcFiles) [
+          (builtins.filter builtins.isPath)
+          (map (e.tryDependencies dependenciesStartRegex dependencyLineRegex))
+          # The dependencies checking can be placed in a separate module.
+          # Trying to find in all source modules.
+          (lib.findFirst (x: x != null) null)
+          # Executable dependencies must be found
+          (x: assert x != null; x)
+          e.scriptDependenciesToDerivations
+          lib.makeBinPath
+        ];
 
       nim-app = mk-derivation {
         pname = name;
-        e = nimE;
-        inherit src extraSrcFiles nimLintArguments nimBuildArguments;
+        inherit e src extraSrcFiles nimLintArguments nimBuildArguments;
         inherit nativeBuildInputs buildInputs cutOffRuntimeDependenciesCheckPhase;
       };
 
@@ -111,13 +145,11 @@ let
         # Not adding a wrapper if there is no need for it
         if ! isWrapperAdded then nim-app else
         mk-wrapper {
-          inherit nim-app wrapProgramArgs renameExecutableTo;
-          dependenciesBinPath = if isNull nimE then null else nimE.scriptDependenciesBinPath src;
+          inherit nim-app wrapProgramArgs renameExecutableTo dependenciesBinPath;
         };
 
       shell = mk-shell {
-        inherit nim-app lspForShell nativeBuildInputs buildInputs shellBuildInputs;
-        e = nimE;
+        inherit e nim-app lspForShell nativeBuildInputs buildInputs shellBuildInputs;
       };
     in
     nim-app-wrapped // {
@@ -179,22 +211,25 @@ let
 
         # Nim is not happy about dashes in the name but Nix adds some hashes prefix with a dash after.
         # Getting rid of them by `''${foo##*-}`.
-
-        pre_patched_src=''${src##*/}
-        pre_patched_src=original_''${pre_patched_src##*-}
-        cp -- "$src" "$pre_patched_src"
-
         _new_src=''${src##*/}
         _new_src=''${_new_src##*-}
-
         cp -- "$src" "$_new_src"
         src="$_new_src"
+
+        pre_patched_dir=$(mktemp -d --suffix=-pre-patched-sources)
+        trap 'rm -rf -- "$pre_patched_dir"' EXIT
+        find -mindepth 1 -maxdepth 1 -not -type d -exec cp -d -t "$pre_patched_dir" -- {} +
+
+        ${cutOffRuntimeDependenciesCheckPhase}
       '';
 
       preConfigure = ''
-        for file in "$pre_patched_src" "$src"; do
-          nim check ${lib.escapeShellArgs nimLintArguments} "$file"
-        done
+        (
+          set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+          for dir in "$pre_patched_dir" ./; do
+            (cd -- "$dir"; nim check ${lib.escapeShellArgs nimLintArguments} "$src")
+          done
+        )
       '';
 
       buildPhase = ''

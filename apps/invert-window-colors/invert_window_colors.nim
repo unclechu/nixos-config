@@ -1,4 +1,5 @@
-# Author: Viacheslav Lotsmanov License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
+# Author: Viacheslav Lotsmanov
+# License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
 from strutils import format, join, parseUInt, replace, split
 from sequtils import filterIt, mapIt, newSeqWith, keepItIf
@@ -6,44 +7,10 @@ from re       import re, match
 from os       import paramStr, paramCount, commandLineParams
 from dbus     import asDbusValue, close
 
+from needexe import checkExecutableDependencies
 import types, ipc, app
 
-# Runtime executables checking
-
-const xdotool: string = "xdotool"
-const xwininfo: string = "xwininfo"
-
-const knownExecutables: array[2, string] = [
-  xdotool,
-  xwininfo,
-]
-
-var uncheckedExecutables: seq[string] = @knownExecutables
-
-# Mark as {.used.} because runtime dependencies checking is removed for Nix derivation
-proc needExe(executableName: string): void {.used.} =
-  if not (executableName in knownExecutables):
-    quit(
-      "Unknown executable: " & strutils.escape(executableName) &
-      " (must be one of: " & $knownExecutables & ")",
-      1
-    )
-  elif os.findExe(executableName) == "":
-    quit("Missing executable dependency: " & strutils.escape(executableName), 1)
-  else:
-    keepItIf(uncheckedExecutables, it != executableName)
-
-# Mark as {.used.} because runtime dependencies checking is removed for Nix derivation
-proc allKnownExecutablesAreChecked(): void {.used,inline.} =
-  if uncheckedExecutables.len > 0:
-    quit("Some executables left unchecked: " & $uncheckedExecutables, 1)
-
-# Guard dependencies (this piece is parsed by Nix, the shape is important to match the regex)
-needExe("xdotool")
-needExe("xwininfo")
-allKnownExecutablesAreChecked()
-
-# END: Runtime executables checking
+checkExecutableDependencies()
 
 const
   stCmd     = [ "on",     "off",     "toggle"     ]
