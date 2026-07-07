@@ -2,55 +2,58 @@
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
 from strutils import parseInt, format
-from re       import Regex, re, find
+from re import Regex, re, find
+from options import Option, isSome, isNone, some, none, get
+from streams import Stream, readLine, writeLine
+from locks import Lock, initLock, acquire, release
+from osproc import outputStream, errorStream, waitForExit, close, terminate
 
-import osproc, streams, locks, types, ipc
+from ipc import nil
+from types import State
 from needexe import xdotool, xwininfo
 
 type
   Filter = object
-    class: Maybe[string]
-    name:  Maybe[string]
+    class: Option[string]
+    name:  Option[string]
   AppDecl = tuple[name: string, filters: seq[Filter]]
   AppMapping = array[2, AppDecl]
   # AppMapping = array[9, AppDecl]
 
 let
-  nop = nothing[string]()
+  nop = string.none
   mapping*: AppMapping =
-    [ #("audacious",   @[Filter(class: just("^Audacious$"),   name: nop)])
-    # , ("thunderbird", @[Filter(class: just("^Thunderbird$"), name: nop)])
-    # , ("gajim",       @[Filter(class: just("^Gajim$"),       name: nop)])
-      ("nheko",       @[Filter(class: just("^nheko$"),       name: nop)])
-    # , ("keepassx",    @[Filter(class: just("^Keepassx$"),    name: nop)])
-    , ("qbittorrent", @[Filter(class: just("^qBittorrent$"), name: nop)])
-    # , ("hexchat",     @[Filter(class: just("^Hexchat$"),     name: nop)])
-    # , ("doublecmd",   @[Filter(class: just("^Doublecmd$"),   name: nop)])
-    # , ("gmrun",       @[Filter(class: just("^Gmrun$"),       name: nop)])
+    [ #("audacious",   @[Filter(class: "^Audacious$".some,   name: nop)])
+    # , ("thunderbird", @[Filter(class: "^Thunderbird$".some, name: nop)])
+    # , ("gajim",       @[Filter(class: "^Gajim$".some,       name: nop)])
+      ("nheko",       @[Filter(class: "^nheko$".some,       name: nop)])
+    # , ("keepassx",    @[Filter(class: "^Keepassx$".some,    name: nop)])
+    , ("qbittorrent", @[Filter(class: "^qBittorrent$".some, name: nop)])
+    # , ("hexchat",     @[Filter(class: "^Hexchat$".some,     name: nop)])
+    # , ("doublecmd",   @[Filter(class: "^Doublecmd$".some,   name: nop)])
+    # , ("gmrun",       @[Filter(class: "^Gmrun$".some,       name: nop)])
     ]
 
 var
-  appsCache: Maybe[seq[string]] = nothing[seq[string]]()
+  appsCache: Option[seq[string]] = seq[string].none
   L: Lock
 
 proc getApps*(): seq[string] =
-  case appsCache.kind
-    of Just: result = appsCache.value
-    of Nothing:
-         result = @[]
-         for x in mapping: result.add x.name
-         appsCache = result.just
+  if appsCache.isSome: return appsCache.get
+  result = @[]
+  for x in mapping: result.add x.name
+  appsCache = result.some
 
 proc childProc( cmd: string; args: openArray[string]
-              ; handler: proc (hproc: Process; sout: Stream)
-              ; careAboutFail: Maybe[string] ) =
+              ; handler: proc (hproc: osproc.Process; sout: Stream)
+              ; careAboutFail: Option[string] ) =
 
   var
-    hproc: Process
+    hproc: osproc.Process
     sout:  Stream
     serr:  Stream
   try: # FIXME this is hacky
-    hproc = startProcess(command=cmd, args=args, options={poUsePath})
+    hproc = osproc.startProcess(command=cmd, args=args, options={osproc.poUsePath})
     sout  = hproc.outputStream
     serr  = hproc.errorStream
   except OSError:
@@ -66,11 +69,11 @@ proc childProc( cmd: string; args: openArray[string]
   try: # FIXME this is hacky
     let code: int = hproc.waitForExit
 
-    if careAboutFail.isJust and code != 0:
+    if careAboutFail.isSome and code != 0:
       var line: string = ""
       L.acquire
       while serr.readLine(line): stderr.writeLine line
-      quit(careAboutFail.value & " failed with exit code: " & $code, 1)
+      quit(careAboutFail.get & " failed with exit code: " & $code, 1)
 
     hproc.close
   except OSError:
@@ -85,7 +88,7 @@ proc getRootWnd(): uint32 =
 
   var matches: array[1, string] = [""]
 
-  proc handler(hproc: Process; sout: Stream) =
+  proc handler(hproc: osproc.Process; sout: Stream) =
     var line: string = ""
     while sout.readLine(line):
       if line == "":
@@ -96,15 +99,16 @@ proc getRootWnd(): uint32 =
     if matches[0] == "":
       L.acquire; quit("Root window id not found!", 1)
 
-  childProc( xwininfo, ["-int", "-root"], handler
-           , "Getting root window id".just )
+  childProc(
+    xwininfo, ["-int", "-root"], handler, "Getting root window id".some
+  )
   matches[0].parseInt.uint32
 
-proc getParentWnd(childWnd: uint32): Maybe[uint32] =
+proc getParentWnd(childWnd: uint32): Option[uint32] =
 
   var matches: array[1, string] = [""]
 
-  proc handler(hproc: Process; sout: Stream) =
+  proc handler(hproc: osproc.Process; sout: Stream) =
     var line: string = ""
     while sout.readLine(line):
       if line == "":
@@ -116,19 +120,18 @@ proc getParentWnd(childWnd: uint32): Maybe[uint32] =
       L.acquire
       quit("Parent window id for '$1' not found!".format(childWnd), 1)
 
-  childProc( xwininfo, ["-int", "-children", "-id", $childWnd], handler
-           , nothing[string]() )
+  childProc(
+    xwininfo, ["-int", "-children", "-id", $childWnd], handler, string.none
+  )
 
-  if matches[0] == "":
-    nothing[uint32]()
-  else:
-    matches[0].parseInt.uint32.just
+  if matches[0] == "": uint32.none
+  else: matches[0].parseInt.uint32.some
 
 var rootWnd: uint32
 
 proc handleWnd(wnd: uint32; state: State) =
-  let parwnd: Maybe[uint32] = wnd.getParentWnd
-  if parwnd.isNothing or parwnd.value == rootWnd: return
+  let parwnd: Option[uint32] = wnd.getParentWnd
+  if parwnd.isNone or parwnd.get == rootWnd: return
   {.gcsafe.}:
     if state == toggle:
       # TODO do this hacky stuff different way
@@ -139,14 +142,14 @@ proc handleWnd(wnd: uint32; state: State) =
 
 proc handleAppFilter(filter: Filter; state: State) =
   var args: seq[string] = @["search", "--onlyvisible", "--all"]
-  if isJust filter.class: args.add(["--class", filter.class.value])
-  if isJust filter.name: args.add(["--name", filter.name.value])
+  if filter.class.isSome: args.add(["--class", filter.class.get])
+  if filter.name.isSome: args.add(["--name", filter.name.get])
 
-  proc handler(hproc: Process; sout: Stream) =
+  proc handler(hproc: osproc.Process; sout: Stream) =
     var line: string = ""
     while sout.readLine(line): handleWnd(line.parseInt.uint32, state)
 
-  childProc(xdotool, args, handler, nothing[string]())
+  childProc(xdotool, args, handler, string.none)
 
 proc handleApp(idx: int, state: State) =
   let app: AppDecl = mapping[idx]

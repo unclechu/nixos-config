@@ -3,12 +3,16 @@
 
 from strutils import format, join, parseUInt, replace, split
 from sequtils import filterIt, mapIt, newSeqWith, keepItIf
-from re       import re, match
-from os       import paramStr, paramCount, commandLineParams
-from dbus     import asDbusValue, close
+from re import re, match
+from os import paramStr, paramCount, commandLineParams
+from options import Option, isSome, isNone, some, none, get
+
+from dbus import asDbusValue, close
 
 from needexe import checkExecutableDependencies
-import types, ipc, app
+from types import State
+from ipc import dbusReq, setState
+from app import getApps, handleApps
 
 checkExecutableDependencies()
 
@@ -61,10 +65,10 @@ dbusReq("opts_set", "track_focus".asDbusValue, true.asDbusValue).close
 
 if paramCount() == 0 or (paramCount() == 1 and paramStr(1) in stCmd):
   let s = if paramCount() == 0: toggle else: toState(paramStr 1)
-  setState(nothing[uint32](), s)
+  setState(uint32.none, s)
 elif isForCommand():
   let s = if paramCount() == 2: toggle else: toState(paramStr 3)
-  setState(paramStr(2).parseUInt.uint32.just, s)
+  setState(paramStr(2).parseUInt.uint32.some, s)
 
 elif isAppCommand():
 
