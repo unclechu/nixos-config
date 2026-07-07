@@ -50,6 +50,7 @@ let
     src = __srcFile;
     extraSrcFiles = [
       ./nim.cfg
+      ./needexe.nim
       ../../utils/nim/cliargs.nim
       ../../utils/nim/log.nim
     ];

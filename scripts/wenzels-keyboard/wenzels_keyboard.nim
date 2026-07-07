@@ -12,6 +12,9 @@ from std/times import nil
 
 from cliargs import nil
 from log as logging import fail, debug, skip, ok, warn, stage, error
+from needexe as exe import checkExecutableDependencies
+
+checkExecutableDependencies()
 
 type
   # Subprocess command
@@ -65,70 +68,6 @@ let log: logging.DefaultLog = logging.Log(writeLine: writeStderr)
 # Fail the program with a message
 template fail(msg: string, exitCode: int = 1): void = (log.fail(msg); quit exitCode)
 
-# Executable name constants
-
-const env: string = "env"
-const setsid: string = "setsid"
-const pgrep: string = "pgrep"
-const xset: string = "xset"
-const setxkbmap: string = "setxkbmap"
-const numlockx: string = "numlockx"
-const notifySend: string = "notify-send"
-const xbindkeys: string = "xbindkeys"
-const wenzelsXlibKeysHack: string = "wenzels-xlib-keys-hack"
-
-# Not adding to `knownExecutables` by design
-# (Nix should not add them as dependencies directly).
-const wenzelsKeyboard: string = "wenzels-keyboard"
-const xlibKeysHack: string = "xlib-keys-hack"
-const xlibKeysHackWatchForWindowFocusEvents: string = "xlib-keys-hack-watch-for-window-focus-events"
-
-const knownExecutables: array[9, string] = [
-  env,
-  setsid,
-  pgrep,
-  xset,
-  setxkbmap,
-  numlockx,
-  notifySend,
-  xbindkeys,
-  wenzelsXlibKeysHack,
-]
-
-var uncheckedExecutables: seq[string] = @knownExecutables
-
-const artifactExecutables: array[4, string] = [
-  xbindkeys,
-  wenzelsXlibKeysHack,
-  xlibKeysHack,
-  xlibKeysHackWatchForWindowFocusEvents,
-]
-
-template assertExecutableNames(executableNames: untyped): void =
-  for name in executableNames: doAssert strutils.allCharsInSet(name, {'a'..'z', '-'})
-# Assert executable name restrictions in compile-time
-# (so that they can be safely interpolated into `pgrep` regexes).
-static:
-  assertExecutableNames(knownExecutables)
-  assertExecutableNames(artifactExecutables)
-
-# Mark as {.used.} because runtime dependencies checking is removed for Nix derivation
-proc needExe(executableName: string): void {.used.} =
-  if not (executableName in knownExecutables):
-    fail(
-      "Unknown executable: " & strutils.escape(executableName) &
-      " (must be one of: " & $knownExecutables & ")"
-    )
-  elif os.findExe(executableName) == "":
-    fail("Missing executable dependency: " & strutils.escape(executableName))
-  else:
-    sequtils.keepItIf(uncheckedExecutables, it != executableName)
-
-# Mark as {.used.} because runtime dependencies checking is removed for Nix derivation
-proc allKnownExecutablesAreChecked(): void {.used,inline.} =
-  if uncheckedExecutables.len > 0:
-    fail("Some executables left unchecked: " & $uncheckedExecutables)
-
 # Redirect stderr of a subprocess to the main process stderr, line-by-line, clash-free.
 proc forwardStderr(p: osproc.Process): void {.thread.} =
   let source = osproc.errorStream(p)
@@ -170,8 +109,8 @@ proc withResetSignals(
     if not (signal in knownSignals):
       raiseAssert("Signal " & strutils.escape(signal) & " is not one of " & $knownSignals)
   Command(
-    cmd: setsid,
-    args: @["--", env, "--default-signal=" & strutils.join(signals, ","), "--", cmd.cmd] & cmd.args
+    cmd: exe.setsid,
+    args: @["--", exe.env, "--default-signal=" & strutils.join(signals, ","), "--", cmd.cmd] & cmd.args
   )
 
 # Open a new process with stdin and stdout streams
@@ -245,7 +184,7 @@ proc notify(
   if urgent: args.add(@["-u", "critical"])
   args.add(@["--", title])
   if text != "": args.add(text)
-  SubProc.spawn(Command(cmd: notifySend, args: args))
+  SubProc.spawn(Command(cmd: exe.notifySend, args: args))
 
 template withLockFile(path: string; body: untyped) =
   block:
@@ -259,7 +198,7 @@ template withLockFile(path: string; body: untyped) =
         times.inSeconds(times.`-`(currentTime, os.getLastModificationTime(lockPath)))
       if ageSeconds <= 60:
         DesktopNotification.notify(
-          wenzelsKeyboard & "locked",
+          exe.wenzelsKeyboard & "locked",
           "Lock file already exists: " & lockPath,
           urgent = true,
         )
@@ -290,7 +229,7 @@ proc findExecutablePids(_: typedesc[Pid], executableName: string): seq[uint] =
   # Make sure pgrep regex substitution is safe
   doAssert strutils.allCharsInSet(executableName, {'a'..'z', '-'})
   let p: InOutProc = SubProc.startInOutInteraction(Command(
-    cmd: pgrep,
+    cmd: exe.pgrep,
     args: @[
       "-u", $uid,
       "-f", "^(/[^ ]+ )?(|/[^ ]+/)?(" & executableName & "|[.]" & executableName & "-wrapped)($| )",
@@ -352,7 +291,7 @@ proc terminateOrKill(_: typedesc[Pid], pids: seq[uint]): void {.gcsafe.} =
     log.warn("terminateOrKill: These PIDs were successfully killed: " & $pids)
     return
   let errMsg: string = "terminateOrKill: Failed to kill PIDs: " & $pids
-  DesktopNotification.notify(wenzelsKeyboard, errMsg, urgent = true)
+  DesktopNotification.notify(exe.wenzelsKeyboard, errMsg, urgent = true)
   fail(errMsg)
 
 # Parsing command-line-arguments
@@ -426,7 +365,7 @@ proc parseCommandLineArgs(): CommandLineArgs =
 # Clean all the processes that are potentially still running
 proc cleanArtifacts(): void =
   var artifactPids: seq[uint] = @[]
-  for x in artifactExecutables:
+  for x in exe.artifactExecutables:
     let pids: seq[uint] = Pid.findExecutablePids(x)
     log.debug("cleanArtifacts: " & strutils.escape(x) & " PIDs: " & $pids)
     artifactPids.add(pids)
@@ -435,14 +374,14 @@ proc cleanArtifacts(): void =
 
 # Take over previous run of `wenzels-keyboard.lock`
 proc takeOverPreviousRun(): void =
-  const cmd: string = strutils.escape(wenzelsKeyboard)
+  const cmd: string = strutils.escape(exe.wenzelsKeyboard)
   log.stage("Taking over of the previous run of " & cmd)
 
-  let pids: seq[uint] = sequtils.filterIt(Pid.findExecutablePids(wenzelsKeyboard), it != pid.uint)
+  let pids: seq[uint] = sequtils.filterIt(Pid.findExecutablePids(exe.wenzelsKeyboard), it != pid.uint)
   if pids.len == 0: log.skip("No previous run of " & cmd & " found")
   else: Pid.terminateOrKill(pids)
 
-  log.stage("Cleaning potentially survived artifacts: " & $artifactExecutables)
+  log.stage("Cleaning potentially survived artifacts: " & $exe.artifactExecutables)
   cleanArtifacts()
 
   log.ok("Took over of the previous " & cmd & " run (" & $pids & ")")
@@ -519,7 +458,7 @@ proc startSubProcWorkers(args: CommandLineArgs): void {.thread.} =
     let noPidYet: options.Option[uint] = options.none(uint)
 
     block addWorker:
-      let cmd: ref Command = (ref Command)(cmd: xbindkeys, args: @["--nodaemon"])
+      let cmd: ref Command = (ref Command)(cmd: exe.xbindkeys, args: @["--nodaemon"])
       var spec: ref SubProcWorkerSpec =
         (ref SubProcWorkerSpec)(
           thread: default(Thread[ref Command]),
@@ -531,7 +470,7 @@ proc startSubProcWorkers(args: CommandLineArgs): void {.thread.} =
       threads.add(spec)
 
     block addWorker:
-      let cmd: ref Command = (ref Command)(cmd: wenzelsXlibKeysHack)
+      let cmd: ref Command = (ref Command)(cmd: exe.wenzelsXlibKeysHack)
       var spec: ref SubProcWorkerSpec =
         (ref SubProcWorkerSpec)(
           thread: default(Thread[ref Command]),
@@ -577,14 +516,14 @@ proc startSubProcWorkers(args: CommandLineArgs): void {.thread.} =
     template notifyWhenReady(cmd: string): void =
       block ready:
         DesktopNotification.notify(
-          wenzelsKeyboard,
+          exe.wenzelsKeyboard,
           strutils.escape(cmd) & " worker is started",
         )
         for thread in threads:
           if (not thread.isRunning) or options.isNone(thread.subProcPid):
             break ready
         DesktopNotification.notify(
-          wenzelsKeyboard,
+          exe.wenzelsKeyboard,
           "All " & $threads.len & " worker(s) started",
         )
 
@@ -682,10 +621,10 @@ proc terminationSignalWaiter(): void {.thread.} =
 # Basic keyboard behavior configurations
 proc basicSetup(args: CommandLineArgs): void =
   for command in [
-    Command(cmd: xset, args: @["r", "rate", $args.keyRepeatedDelay, $args.keyRepeatedInterval]),
-    Command(cmd: setxkbmap, args: @["-layout", args.xkbLayout, "-option", args.xkbOptions]),
-    Command(cmd: numlockx, args: @["off"]),
-    Command(cmd: numlockx, args: @["on"]),
+    Command(cmd: exe.xset, args: @["r", "rate", $args.keyRepeatedDelay, $args.keyRepeatedInterval]),
+    Command(cmd: exe.setxkbmap, args: @["-layout", args.xkbLayout, "-option", args.xkbOptions]),
+    Command(cmd: exe.numlockx, args: @["off"]),
+    Command(cmd: exe.numlockx, args: @["on"]),
   ]: SubProc.callCmd(command)
 
 withStderr:
@@ -694,18 +633,6 @@ withStderr:
     let x: string = envvars.getEnv(envVarName)
     if x == "": fail("Can’t read " & strutils.escape(envVarName))
     x
-
-  # Guard dependencies (this piece is parsed by Nix, the shape is important to match the regex)
-  needExe("env")
-  needExe("setsid")
-  needExe("pgrep")
-  needExe("xset")
-  needExe("setxkbmap")
-  needExe("numlockx")
-  needExe("notify-send")
-  needExe("xbindkeys")
-  needExe("wenzels-xlib-keys-hack")
-  allKnownExecutablesAreChecked()
 
   let commandLineArgs: CommandLineArgs = parseCommandLineArgs()
   log.debug("Parsed command-line arguments: " & $commandLineArgs)
@@ -721,7 +648,7 @@ withStderr:
 
   try:
     withLockFile(xdgRuntimeDir & "/wenzels-keyboard.lock"):
-      DesktopNotification.notify(wenzelsKeyboard, "Setting things up")
+      DesktopNotification.notify(exe.wenzelsKeyboard, "Setting things up")
 
       log.stage("Basic setup")
       basicSetup(commandLineArgs)
@@ -745,7 +672,7 @@ withStderr:
           log.stage("Received termination signal (terminating): " & $event.signal)
           receivedSignal = options.some(event.signal)
           DesktopNotification.notify(
-            wenzelsKeyboard & " exiting",
+            exe.wenzelsKeyboard & " exiting",
             "Received termination signal: " & $event.signal,
           )
           break mainEventLoop
@@ -755,14 +682,14 @@ withStderr:
             "(probably watched subprocess died, terminating)"
           )
           DesktopNotification.notify(
-            wenzelsKeyboard & " exiting",
+            exe.wenzelsKeyboard & " exiting",
             "Subprocess worker thread exited early",
             urgent = true,
           )
           break mainEventLoop
         of signalWaitFailed:
           DesktopNotification.notify(
-            wenzelsKeyboard & " exiting",
+            exe.wenzelsKeyboard & " exiting",
             "Termination signal waiting failed",
             urgent = true,
           )
