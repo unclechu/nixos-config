@@ -39,6 +39,7 @@ let
 
   extraSrcFiles = [
     ./nim.cfg
+    ./needexe.nim
     ../../utils/nim/cliargs.nim
     ../../utils/nim/log.nim
     ../../utils/nim/either.nim

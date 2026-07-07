@@ -5,10 +5,8 @@
 
 from std/locks import nil
 from std/options import nil
-from std/os import nil
 from std/osproc import nil
 from std/re import nil
-from std/sequtils import nil
 from std/sets import nil
 from std/streams import nil
 from std/strutils import nil
@@ -17,6 +15,9 @@ from std/tables import `[]=`, `[]`
 from cliargs import nil
 from either import Either, left, right
 from log as logging import fail, debug, skip, ok, warn
+from needexe import checkExecutableDependencies, xinput, notifySend
+
+checkExecutableDependencies()
 
 type
   # Subprocess command
@@ -49,35 +50,6 @@ let log: logging.DefaultLog = logging.Log(writeLine: writeStderr)
 
 # Fail the program with a message
 template fail(msg: string, exitCode: int = 1): void = (log.fail(msg); quit exitCode)
-
-# Executable name constants
-
-const xinput: string = "xinput"
-const notifySend: string = "notify-send"
-
-const knownExecutables: array[2, string] = [
-  xinput,
-  notifySend,
-]
-
-var uncheckedExecutables: seq[string] = @knownExecutables
-
-# Mark as {.used.} because runtime dependencies checking is removed for Nix derivation
-proc needExe(executableName: string): void {.used.} =
-  if not (executableName in knownExecutables):
-    fail(
-      "Unknown executable: " & strutils.escape(executableName) &
-      " (must be one of: " & $knownExecutables & ")"
-    )
-  elif os.findExe(executableName) == "":
-    fail("Missing executable dependency: " & strutils.escape(executableName))
-  else:
-    sequtils.keepItIf(uncheckedExecutables, it != executableName)
-
-# Mark as {.used.} because runtime dependencies checking is removed for Nix derivation
-template allKnownExecutablesAreChecked(): void {.used.} =
-  if uncheckedExecutables.len > 0:
-    fail("Some executables left unchecked: " & $uncheckedExecutables)
 
 # Redirect stderr of a subprocess to the main process stderr, line-by-line, clash-free.
 proc forwardStderr(p: osproc.Process): void {.thread.} =
@@ -214,11 +186,6 @@ const productIdPropName: string = "Device Product ID";
 # The main program
 
 withStderr:
-  # Guard dependencies (this piece is parsed by Nix, the shape is important to match the regex)
-  needExe("xinput")
-  needExe("notify-send")
-  allKnownExecutablesAreChecked()
-
   let args: cliargs.ParsedArgs = cliargs.parseArgs(
     argOptsSpec,
     usageDescription =
