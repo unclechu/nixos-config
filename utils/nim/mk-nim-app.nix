@@ -18,6 +18,8 @@ let sources = import ../../nix/sources.nix; in
 
 , executable-dependencies ? callPackage ../executable-dependencies.nix {}
 , __clunky-toml-json-converter ? callPackage ../../apps/clunky-toml-json-converter {}
+
+, nimlsp-issue-180-fix-wrapper ? callPackage ./nimlsp-issue-180-fix-wrapper {}
 }:
 
 let
@@ -355,7 +357,7 @@ let
 
         ++ (
           if isNull lspForShell then [] else
-          if lspForShell == "nimlsp" then [ nimlsp ] else
+          if lspForShell == "nimlsp" then [ nimlsp-issue-180-fix-wrapper ] else
           if lspForShell == "nimlangserver" then [ nimlangserver ] else
           throw "Unexpected lspForShell value: ${builtins.toJSON lspForShell}"
         )
