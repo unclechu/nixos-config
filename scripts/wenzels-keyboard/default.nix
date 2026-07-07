@@ -17,13 +17,11 @@ in
 , setxkbmap ? pkgs.setxkbmap
 , numlockx ? pkgs.numlockx
 , libnotify ? pkgs.libnotify
-, jq ? pkgs.jq
 
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
 , mk-nim-app ? callPackage ../../utils/nim/mk-nim-app.nix {}
 , __xbindkeys ? callPackage ../../apps/wenzels-xbindkeys.nix {}
 , __wenzels-xlib-keys-hack ? callPackage ../../apps/wenzels-xlib-keys-hack {}
-, __clunky-toml-json-converter ? callPackage ../../apps/clunky-toml-json-converter {}
 
 # nix-shell arguments
 , inNixShell ? false
@@ -71,8 +69,6 @@ let
       notify-send = libnotify;
       xbindkeys = __xbindkeys;
       wenzels-xlib-keys-hack = __wenzels-xlib-keys-hack;
-      jq = jq;
-      clunky-toml-json-converter = __clunky-toml-json-converter;
     };
   };
 in

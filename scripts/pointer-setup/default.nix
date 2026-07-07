@@ -8,8 +8,6 @@ let sources = import ../../nix/sources.nix; in
 , lib ? pkgs.lib
 , callPackage ? pkgs.callPackage
 
-, jq ? pkgs.jq
-
 , xinput ? pkgs.xinput
 , libnotify ? pkgs.libnotify
 
@@ -17,7 +15,6 @@ let sources = import ../../nix/sources.nix; in
 , mk-nim-app ? callPackage ../../utils/nim/mk-nim-app.nix {}
 , __xbindkeys ? callPackage ../../apps/wenzels-xbindkeys.nix {}
 , __wenzels-xlib-keys-hack ? callPackage ../../apps/wenzels-xlib-keys-hack {}
-, __clunky-toml-json-converter ? callPackage ../../apps/clunky-toml-json-converter {}
 
 # nix-shell arguments
 , inNixShell ? false
@@ -33,8 +30,6 @@ let
   e = executable-dependencies {
     xinput = xinput;
     notify-send = libnotify;
-    jq = jq;
-    clunky-toml-json-converter = __clunky-toml-json-converter;
   };
 
   extraSrcFiles = [

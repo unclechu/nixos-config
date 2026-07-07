@@ -1,3 +1,1 @@
-# Example configuration for direnv
-watch_file default.nix
-use nix
+../../utils/nim/.envrc.example
