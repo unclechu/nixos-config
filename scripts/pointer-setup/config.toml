@@ -1,9 +1,10 @@
 [nim]
 
+main-program = "pointer-setup"
+main-source = "./pointer_setup.nim"
+
 build-arguments = [
 	"--mm:atomicArc",
-	"-o:pointer-setup",
-	"./pointer_setup.nim",
 ]
 
 nix-build-extra-arguments = [

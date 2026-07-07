@@ -1,14 +1,10 @@
 #! /usr/bin/env bash
 set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
-SCRIPT_DIR=$(dirname -- "$0"); CDPATH='' cd -- "$SCRIPT_DIR/.." # Project root
+SCRIPT_DIR=$(dirname -- "$0"); CDPATH='' cd -- "$SCRIPT_DIR" # Project root
 
 # Guard dependencies
->/dev/null type nim
 >/dev/null type clunky-toml-json-converter
 >/dev/null type jq
-
-ARGS=$(<./config.toml clunky-toml-json-converter toml2json | jq -re '.nim."build-arguments" | .[]')
-readarray -t ARGS_LIST <<< "$ARGS"
 
 CONSTANTS_JSON=$(<../../constants.toml clunky-toml-json-converter toml2json)
 KEY_REPEAT_DELAY=$(<<<"$CONSTANTS_JSON" jq -er .keyRepeat.delay)
@@ -24,4 +20,4 @@ OPTIONS_ARGS=(
 )
 
 set -o xtrace
-exec nim compile --run "${ARGS_LIST[@]}" "${OPTIONS_ARGS[@]}" "$@"
+exec ./dev.sh run "${OPTIONS_ARGS[@]}" "$@"

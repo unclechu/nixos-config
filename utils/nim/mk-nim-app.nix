@@ -16,7 +16,10 @@ let sources = import ../../nix/sources.nix; in
 , nimlsp
 , nimlangserver
 
+, jq
+
 , executable-dependencies ? callPackage ../executable-dependencies.nix {}
+, __clunky-toml-json-converter ? callPackage ../../apps/clunky-toml-json-converter {}
 }:
 
 let
@@ -36,8 +39,8 @@ let
     , src # A path to the main module source file (e.g. `./app.nim`)
     , extraSrcFiles ? [] # A list of paths of files to add (e.g. `[ ./cliargs.nim ./log.nim ]`)
 
-    , nimLintArguments # Lint arguments must not include the source file
-    , nimBuildArguments # Must include the Nim app source file name (e.g. `./app.nim`)
+    , nimLintArguments # Lint arguments (for `nim check`)
+    , nimBuildArguments # Build arguments (for `nim compile`)
 
     # [string | {raw=string}]
     # {raw=string} for unescaped shell expression, just in case you ever need it.
@@ -121,8 +124,8 @@ let
     { pname
     , src # A path to the main module source file (e.g. `./app.nim`)
     , extraSrcFiles # A list of paths of files to add (e.g. `[ ./cliargs.nim ./log.nim ]`)
-    , nimLintArguments # Lint arguments must not include the source file
-    , nimBuildArguments # Must include the Nim app source file name (e.g. `./app.nim`)
+    , nimLintArguments
+    , nimBuildArguments
     , cutOffRuntimeDependenciesCheckPhase
     , e
     }:
@@ -184,8 +187,9 @@ let
         runHook preBuild
         (
           set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
-          # The source file must be a part of `nimBuildArguments`
-          nim compile ${lib.escapeShellArgs nimBuildArguments}
+          nim compile ${lib.escapeShellArgs (
+            nimBuildArguments ++ [ "-o:${meta.mainProgram}" ]
+          )} "$src"
         )
         runHook postBuild
       '';
@@ -294,6 +298,7 @@ let
           if lspForShell == "nimlangserver" then [ nimlangserver ] else
           throw "Unexpected lspForShell value: ${builtins.toJSON lspForShell}"
         )
+        ++ [ jq __clunky-toml-json-converter ] # For dev.sh
         ++ shellBuildInputs
         ;
     };

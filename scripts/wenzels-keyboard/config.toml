@@ -1,9 +1,10 @@
 [nim]
 
+main-program = "wenzels-keyboard"
+main-source = "./wenzels_keyboard.nim"
+
 build-arguments = [
 	"--mm:atomicArc",
-	"-o:wenzels-keyboard",
-	"./wenzels_keyboard.nim",
 ]
 
 nix-build-extra-arguments = [
