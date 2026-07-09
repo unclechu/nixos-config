@@ -33,7 +33,7 @@ let
   };
 
   extraSrcFiles = [
-    ./nim.cfg
+    ./config.nims
     ./needexe.nim
     ../../utils/nim/cliargs.nim
     ../../utils/nim/log.nim
