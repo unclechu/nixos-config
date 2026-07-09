@@ -53,22 +53,38 @@ let log = logging.Log[logging.defaultTimeFormat, CustomStderrWriter]()
 # Fail the program with a message
 template fail(msg: string, exitCode: int = 1): void = (log.fail(msg); quit exitCode)
 
-# Redirect stderr of a subprocess to the main process stderr, line-by-line, clash-free.
-proc forwardStderr(p: osproc.Process): void {.thread.} =
-  let source = osproc.errorStream(p)
-  var line: string
-  while streams.readLine(source, line): writeStderr(line)
-
 # Subprocess helpers
 
 type SubProc = object
+
+# Redirect a Stream (stdout/stderr) to the log, line-by-line, clash-free.
+proc redirectStreamToLog(input: tuple[stream: streams.Stream, prefix: string]): void {.thread.} =
+  var line: string
+
+  try:
+    while streams.readLine(input.stream, line):
+      log.debug(if input.prefix.len > 0: input.prefix & ": " & line else: line)
+
+  except IOError:
+    # Normal during shutdown if the Process/pipe was closed while this
+    # thread was blocked in readLine().
+    log.debug("redirectStreamToLog: Stream closed for " & strutils.escape(input.prefix))
+
+  except CatchableError as e:
+    quit(
+      "redirectStreamToLog: Unexpected exception for " &
+      strutils.escape(input.prefix) & ": " & e.msg
+    )
 
 # Open a new process with stdin and stdout streams
 proc startInOutInteraction(_: typedesc[SubProc], command: Command): InOutProc =
   log.debug("startInOutInteraction: " & $command)
   let p = osproc.startProcess(command.cmd, args = command.args, options = {osproc.poUsePath})
-  var stderrThread: Thread[osproc.Process]
-  createThread(stderrThread, forwardStderr, p)
+
+  # Redirecting stderr to the log
+  var stderrThread: Thread[tuple[stream: streams.Stream, prefix: string]]
+  createThread(stderrThread, redirectStreamToLog, (osproc.errorStream(p), $command & " " & "stderr"))
+
   let close = proc (){.raises: [IOError, OSError], gcsafe.} =
     joinThread(stderrThread)
     osproc.close(p)
@@ -96,10 +112,18 @@ template callCmd(_: typedesc[SubProc], command: Command): void =
     let p: osproc.Process = osproc.startProcess(
       command.cmd,
       args = command.args,
-      options = {osproc.poUsePath, osproc.poParentStreams}
+      options = {osproc.poUsePath}
     )
+    streams.close(osproc.inputStream(p))
+    var stderrThread: Thread[tuple[stream: streams.Stream, prefix: string]]
+    var stdoutThread: Thread[tuple[stream: streams.Stream, prefix: string]]
+    let pfx: string = $command & " "
+    createThread(stderrThread, redirectStreamToLog, (osproc.errorStream(p), pfx & "stderr"))
+    createThread(stdoutThread, redirectStreamToLog, (osproc.outputStream(p), pfx & "stdout"))
     doAssert (osproc.waitForExit(p) == 0)
     osproc.close(p)
+    stderrThread.joinThread
+    stdoutThread.joinThread
 
 # Desktop notifications
 
