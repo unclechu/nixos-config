@@ -70,18 +70,6 @@ let log = logging.Log[logging.defaultTimeFormat, CustomStderrWriter]()
 # Fail the program with a message
 template fail(msg: string, exitCode: int = 1): void = (log.fail(msg); quit exitCode)
 
-# Redirect stderr of a subprocess to the main process stderr, line-by-line, clash-free.
-proc forwardStderr(p: osproc.Process): void {.thread.} =
-  let source = osproc.errorStream(p)
-  var line: string
-  try: (while streams.readLine(source, line): writeStderr(line))
-  except IOError:
-    # Normal during shutdown if the Process/pipe was closed while this
-    # thread was blocked in readLine().
-    writeStderr("forwardStderr: Stream closed")
-  except CatchableError as e:
-    quit("forwardStderr: Unexpected exception: " & e.msg)
-
 # Polling helpers
 
 const pollTimeout: times.Duration = times.initDuration(seconds = 5)
@@ -113,13 +101,38 @@ proc withResetSignals(
   cmd: Command,
   signals: seq[string],
 ): Command {.inline.} =
-  for signal in signals:
-    if not (signal in knownSignals):
-      raiseAssert("Signal " & strutils.escape(signal) & " is not one of " & $knownSignals)
-  Command(
-    cmd: exe.setsid,
-    args: @["--", exe.env, "--default-signal=" & strutils.join(signals, ","), "--", cmd.cmd] & cmd.args
-  )
+  if signals.len <= 0:
+    cmd # No signals to reset, returning original command
+  else:
+    for signal in signals:
+      if not (signal in knownSignals):
+        raiseAssert("Signal " & strutils.escape(signal) & " is not one of " & $knownSignals)
+    Command(
+      cmd: exe.setsid,
+      args: @[
+        "--", exe.env, "--default-signal=" & strutils.join(signals, ","),
+        "--", cmd.cmd,
+      ] & cmd.args
+    )
+
+# Redirect a Stream (stdout/stderr) to the log, line-by-line, clash-free.
+proc redirectStreamToLog(input: tuple[stream: streams.Stream, prefix: string]): void {.thread.} =
+  var line: string
+
+  try:
+    while streams.readLine(input.stream, line):
+      log.debug(if input.prefix.len > 0: input.prefix & ": " & line else: line)
+
+  except IOError:
+    # Normal during shutdown if the Process/pipe was closed while this
+    # thread was blocked in readLine().
+    log.debug("redirectStreamToLog: Stream closed for " & strutils.escape(input.prefix))
+
+  except CatchableError as e:
+    quit(
+      "redirectStreamToLog: Unexpected exception for " &
+      strutils.escape(input.prefix) & ": " & e.msg
+    )
 
 # Open a new process with stdin and stdout streams
 proc startInOutInteraction(
@@ -127,11 +140,15 @@ proc startInOutInteraction(
   cmd: Command,
   resetSignals: seq[string] = @[],
 ): InOutProc =
-  let newCmd = if resetSignals.len > 0: SubProc.withResetSignals(cmd, resetSignals) else: cmd
+  let newCmd = SubProc.withResetSignals(cmd, resetSignals)
   log.debug("startInOutInteraction: " & $newCmd)
   let p = osproc.startProcess(newCmd.cmd, args = newCmd.args, options = {osproc.poUsePath})
-  var stderrThread: Thread[osproc.Process]
-  createThread(stderrThread, forwardStderr, p)
+
+  # Redirecting stderr to the log
+  var stderrThread: Thread[tuple[stream: streams.Stream, prefix: string]]
+  let pfx: string = $newCmd & " "
+  createThread(stderrThread, redirectStreamToLog, (osproc.errorStream(p), pfx & "stderr"))
+
   let close = proc (){.raises: [IOError, OSError], gcsafe.} =
     joinThread(stderrThread)
     osproc.close(p)
@@ -144,7 +161,7 @@ proc startInOutInteraction(
 
 # Spawn a sub-process in background inheriting stdin, stdout, and stderr.
 proc spawn(_: typedesc[SubProc], cmd: Command, resetSignals: seq[string] = @[]): void {.inline.} =
-  let newCmd = if resetSignals.len > 0: SubProc.withResetSignals(cmd, resetSignals) else: cmd
+  let newCmd = SubProc.withResetSignals(cmd, resetSignals)
   log.debug("spawn: " & $newCmd)
   discard osproc.startProcess(
     newCmd.cmd,
@@ -154,7 +171,7 @@ proc spawn(_: typedesc[SubProc], cmd: Command, resetSignals: seq[string] = @[]):
 
 # Start a sub-process in background inheriting stdin, stdout, and stderr and wait for success.
 proc callCmd(_: typedesc[SubProc], cmd: Command, resetSignals: seq[string] = @[]): void {.inline.} =
-  let newCmd = if resetSignals.len > 0: SubProc.withResetSignals(cmd, resetSignals) else: cmd
+  let newCmd = SubProc.withResetSignals(cmd, resetSignals)
   log.debug("callCmd: " & $newCmd)
   let p: osproc.Process = osproc.startProcess(
     newCmd.cmd,
@@ -169,14 +186,13 @@ proc startCmd(
   _: typedesc[SubProc],
   cmd: Command,
   resetSignals: seq[string] = @[],
+  createStreams: bool = false,
 ): osproc.Process {.inline.} =
-  let newCmd = if resetSignals.len > 0: SubProc.withResetSignals(cmd, resetSignals) else: cmd
+  let newCmd = SubProc.withResetSignals(cmd, resetSignals)
   log.debug("startCmd: " & $newCmd)
-  osproc.startProcess(
-    newCmd.cmd,
-    args = newCmd.args,
-    options = {osproc.poUsePath, osproc.poParentStreams}
-  )
+  var options: set[osproc.ProcessOption] = {osproc.poUsePath}
+  if not createStreams: options.incl(osproc.poParentStreams)
+  osproc.startProcess(newCmd.cmd, args = newCmd.args, options = options)
 
 # Desktop notifications
 
@@ -442,13 +458,33 @@ var subProcWorkerEvents: Channel[ref SubProcWorkerEvent]
 proc startSubProcWorker(cmd: ref Command): void {.thread gcsafe.} =
   var p: osproc.Process = nil
   try:
-    p = SubProc.startCmd(Command(cmd: cmd.cmd, args: cmd.args), resetSignals = @["TERM"])
+    p = SubProc.startCmd(
+      Command(cmd: cmd.cmd, args: cmd.args),
+      resetSignals = @["TERM"],
+      createStreams = true,
+    )
+
     let pid: uint = osproc.processID(p).uint
     subProcWorkerEvents.send((ref SubProcWorkerEvent)(kind: started, startedCmd: cmd, pid: pid))
+
+    streams.close(osproc.inputStream(p))
+
+    var stderrThread: Thread[tuple[stream: streams.Stream, prefix: string]]
+    var stdoutThread: Thread[tuple[stream: streams.Stream, prefix: string]]
+    let pfx: string = $strutils.escape(cmd.cmd) & " "
+    createThread(stderrThread, redirectStreamToLog, (osproc.errorStream(p), pfx & "stderr"))
+    createThread(stdoutThread, redirectStreamToLog, (osproc.outputStream(p), pfx & "stdout"))
+
     let exitCode: int = osproc.waitForExit(p)
+
+    # Wait for the stream consumer threads to finish before reporting exit
+    stderrThread.joinThread
+    stdoutThread.joinThread
+
     subProcWorkerEvents.send(
       (ref SubProcWorkerEvent)(kind: exited, exitedCmd: cmd, exitCode: exitCode)
     )
+
   # Prevent exceptions from propagating to the main thread causing the app to ungracefully fail
   except CatchableError as error:
     subProcWorkerEvents.send(
