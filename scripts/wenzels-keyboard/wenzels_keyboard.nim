@@ -74,7 +74,13 @@ template fail(msg: string, exitCode: int = 1): void = (log.fail(msg); quit exitC
 proc forwardStderr(p: osproc.Process): void {.thread.} =
   let source = osproc.errorStream(p)
   var line: string
-  while streams.readLine(source, line): writeStderr(line)
+  try: (while streams.readLine(source, line): writeStderr(line))
+  except IOError:
+    # Normal during shutdown if the Process/pipe was closed while this
+    # thread was blocked in readLine().
+    writeStderr("forwardStderr: Stream closed")
+  except CatchableError as e:
+    quit("forwardStderr: Unexpected exception: " & e.msg)
 
 # Polling helpers
 
