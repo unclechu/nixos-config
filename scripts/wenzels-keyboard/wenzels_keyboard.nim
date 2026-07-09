@@ -146,8 +146,7 @@ proc startInOutInteraction(
 
   # Redirecting stderr to the log
   var stderrThread: Thread[tuple[stream: streams.Stream, prefix: string]]
-  let pfx: string = $newCmd & " "
-  createThread(stderrThread, redirectStreamToLog, (osproc.errorStream(p), pfx & "stderr"))
+  createThread(stderrThread, redirectStreamToLog, (osproc.errorStream(p), $newCmd & " " & "stderr"))
 
   let close = proc (){.raises: [IOError, OSError], gcsafe.} =
     joinThread(stderrThread)
@@ -176,10 +175,18 @@ proc callCmd(_: typedesc[SubProc], cmd: Command, resetSignals: seq[string] = @[]
   let p: osproc.Process = osproc.startProcess(
     newCmd.cmd,
     args = newCmd.args,
-    options = {osproc.poUsePath, osproc.poParentStreams}
+    options = {osproc.poUsePath}
   )
+  streams.close(osproc.inputStream(p))
+  var stderrThread: Thread[tuple[stream: streams.Stream, prefix: string]]
+  var stdoutThread: Thread[tuple[stream: streams.Stream, prefix: string]]
+  let pfx: string = $newCmd & " "
+  createThread(stderrThread, redirectStreamToLog, (osproc.errorStream(p), pfx & "stderr"))
+  createThread(stdoutThread, redirectStreamToLog, (osproc.outputStream(p), pfx & "stdout"))
   doAssert (osproc.waitForExit(p) == 0)
   osproc.close(p)
+  stderrThread.joinThread
+  stdoutThread.joinThread
 
 # Start a sub-process and just return the handle.
 proc startCmd(
