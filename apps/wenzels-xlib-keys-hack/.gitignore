@@ -1,0 +1,5 @@
+# Nim build artifacts
+wenzels-xlib-keys-hack
+
+# direnv configuration file
+.envrc

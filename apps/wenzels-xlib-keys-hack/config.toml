@@ -1,0 +1,3 @@
+[nim]
+main-program = "wenzels-xlib-keys-hack"
+main-source = "./wenzels_xlib_keys_hack.nim"
