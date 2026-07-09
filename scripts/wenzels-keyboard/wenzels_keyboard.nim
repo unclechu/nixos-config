@@ -701,6 +701,9 @@ withStderr:
         )
         fail("Signal waiter failed with error code: " & $event.errorCode)
 
+  except CatchableError as error:
+    log.error("Main program unexpected exception: " & error.msg)
+
   finally:
     log.stage("Cleaning up")
 
