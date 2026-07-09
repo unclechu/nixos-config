@@ -667,6 +667,7 @@ withStderr:
       log.stage("Starting subprocesses workers thread")
       createThread(workersThread, startSubProcWorkers, commandLineArgs)
 
+      # FIXME!
       block mainEventLoop:
         let event = mainEvents.recv()
         case event.kind

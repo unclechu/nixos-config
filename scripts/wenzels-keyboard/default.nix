@@ -47,7 +47,7 @@ let
     name = "wenzels-keyboard";
     src = __srcFile;
     extraSrcFiles = [
-      ./nim.cfg
+      ./config.nims
       ./needexe.nim
       ../../utils/nim/cliargs.nim
       ../../utils/nim/log.nim
