@@ -667,36 +667,33 @@ withStderr:
       log.stage("Starting subprocesses workers thread")
       createThread(workersThread, startSubProcWorkers, commandLineArgs)
 
-      # FIXME!
-      block mainEventLoop:
-        let event = mainEvents.recv()
-        case event.kind
-        of signalReceived:
-          log.stage("Received termination signal (terminating): " & $event.signal)
-          receivedSignal = options.some(event.signal)
-          DesktopNotification.notify(
-            exe.wenzelsKeyboard & " exiting",
-            "Received termination signal: " & $event.signal,
-          )
-          break mainEventLoop
-        of workersFinished:
-          log.warn(
-            "Subprocesses workers thread reported finishing " &
-            "(probably watched subprocess died, terminating)"
-          )
-          DesktopNotification.notify(
-            exe.wenzelsKeyboard & " exiting",
-            "Subprocess worker thread exited early",
-            urgent = true,
-          )
-          break mainEventLoop
-        of signalWaitFailed:
-          DesktopNotification.notify(
-            exe.wenzelsKeyboard & " exiting",
-            "Termination signal waiting failed",
-            urgent = true,
-          )
-          fail("Signal waiter failed with error code: " & $event.errorCode)
+      log.stage("Waiting for a main event to terminate")
+      let event = mainEvents.recv()
+      case event.kind
+      of signalReceived:
+        log.stage("Received termination signal (terminating): " & $event.signal)
+        receivedSignal = options.some(event.signal)
+        DesktopNotification.notify(
+          exe.wenzelsKeyboard & " exiting",
+          "Received termination signal: " & $event.signal,
+        )
+      of workersFinished:
+        log.warn(
+          "Subprocesses workers thread reported finishing " &
+          "(probably watched subprocess died, terminating)"
+        )
+        DesktopNotification.notify(
+          exe.wenzelsKeyboard & " exiting",
+          "Subprocess worker thread exited early",
+          urgent = true,
+        )
+      of signalWaitFailed:
+        DesktopNotification.notify(
+          exe.wenzelsKeyboard & " exiting",
+          "Termination signal waiting failed",
+          urgent = true,
+        )
+        fail("Signal waiter failed with error code: " & $event.errorCode)
 
   finally:
     log.stage("Cleaning up")
