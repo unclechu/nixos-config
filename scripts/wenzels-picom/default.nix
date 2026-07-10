@@ -91,7 +91,7 @@ let
       # backend.
       hostName == wenzel-silver-laptop.networking.hostName
     ) [
-      "--set" "PICOM_PREFERRED_BACKEND" "xrender"
+      "--set-default" "PICOM_PREFERRED_BACKEND" "xrender"
     ];
 
     checkPhase = ''
