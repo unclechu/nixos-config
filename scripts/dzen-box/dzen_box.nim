@@ -86,12 +86,12 @@ const
   wndHeight: uint = 120
 
   wndX: int = static(block:
-    var value: int = 100
+    var value: int = -100
     if value < 0: value - wndWidth.int else: value
   )
 
   wndY: int = static(block:
-    var value: int = -100
+    var value: int = 100
     if value < 0: value - wndHeight.int else: value
   )
 
