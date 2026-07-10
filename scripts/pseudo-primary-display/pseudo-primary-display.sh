@@ -34,6 +34,7 @@ set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
 >/dev/null type cp
 >/dev/null type systemctl
 >/dev/null type make-i3-runtime-bar-config
+>/dev/null type dzen-box
 
 DISPLAY_NUM_FILE=$HOME/.pseudo-primary-display
 
@@ -97,3 +98,6 @@ if pidof i3 >/dev/null; then
 	>&2 echo 'Updating i3…'
 	(set -o xtrace; make-i3-runtime-bar-config)
 fi
+
+# Show dzen-box on the new pseudo-primary display
+dzen-box "$DISPLAY_NUM"

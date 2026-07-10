@@ -18,6 +18,7 @@ let sources = import ../../nix/sources.nix; in
 , mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
 
 , make-i3-runtime-bar-config ? callPackage ../../gui/i3/make-i3-runtime-bar-config.nix {}
+, dzen-box ? callPackage ../dzen-box {}
 }:
 
 let
@@ -31,6 +32,7 @@ let
     systemctl = systemd;
     dash = dash;
     make-i3-runtime-bar-config = make-i3-runtime-bar-config;
+    dzen-box = dzen-box;
   };
 
   scriptSrc = ./pseudo-primary-display.sh;
