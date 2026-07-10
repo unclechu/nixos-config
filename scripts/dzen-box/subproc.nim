@@ -105,39 +105,3 @@ template startCmd*[TimeFormat: static string, Writer](
           if forwardStdout: stdoutThread.joinThread
           if forwardStderr: stderrThread.joinThread
     )
-
-# Start a sub-process in background inheriting stdin, stdout, and stderr and wait for success.
-template callCmd*[TimeFormat: static string, Writer](
-  logger: lent Log[TimeFormat, Writer],
-  command: Command,
-  resetSignals: seq[string] = @[],
-): void =
-  block:
-    let newCmd: Command = withResetSignals(command, resetSignals)
-    logger.debug("callCmd: " & $newCmd)
-    let p: Process = osproc.startProcess(newCmd.cmd, args = newCmd.args, options = {osproc.poUsePath})
-    p.inputStream.close
-    var stderrThread: Thread[tuple[log: Log[TimeFormat, Writer], stream: Stream, prefix: string]]
-    var stdoutThread: Thread[tuple[log: Log[TimeFormat, Writer], stream: Stream, prefix: string]]
-    let pfx: string = $newCmd & " "
-    createThread(stderrThread, redirectStreamToLog, (logger, p.errorStream, pfx & "stderr"))
-    createThread(stdoutThread, redirectStreamToLog, (logger, p.outputStream, pfx & "stdout"))
-    doAssert (osproc.waitForExit(p) == 0)
-    p.close
-    stderrThread.joinThread
-    stdoutThread.joinThread
-
-# Spawn a sub-process in background inheriting stdin, stdout, and stderr.
-template spawn*[TimeFormat: static string, Writer](
-  logger: lent Log[TimeFormat, Writer],
-  command: Command,
-  resetSignals: seq[string] = @[],
-): void =
-  block:
-    let newCmd: Command = withResetSignals(command, resetSignals)
-    logger.debug("spawn: " & $newCmd)
-    discard osproc.startProcess(
-      newCmd.cmd,
-      args = newCmd.args,
-      options = {osproc.poUsePath, osproc.poDaemon, osproc.poParentStreams}
-    )
