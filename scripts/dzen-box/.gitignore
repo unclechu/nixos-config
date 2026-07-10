@@ -1,0 +1,5 @@
+# Nim build artifacts
+dzen-box
+
+# direnv configuration file
+.envrc
