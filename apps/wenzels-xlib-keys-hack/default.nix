@@ -39,13 +39,13 @@ let
       ./config.nims
       ./needexe.nim
       ./stderr.nim
-      ./signals.nim
       ./subproc.nim
       ./poll.nim
       ./desktopnotifications.nim
       ../../utils/nim/cliargs.nim
       ../../utils/nim/log.nim
       ../../utils/nim/either.nim
+      ../../utils/nim/signals.nim
     ];
     lspForShell = __nimLsp;
     e = executable-dependencies {
