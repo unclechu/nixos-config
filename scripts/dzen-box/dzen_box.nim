@@ -60,14 +60,13 @@ let
       if x == "": fail("Can’t read " & envVarName.escape)
       x
 
-  displayArgs: seq[string] =
-    withStderr:
-      let displayNumFile: string = xdgRuntimeDir & "/pseudo-primary-display"
-      if displayNumFile.fileExists:
-        let displayNum: uint = displayNumFile.readFile.strip.parseUInt
-        @["-xs", $displayNum]
-      else:
-        @[]
+  displayArgs: seq[string] = block:
+    let displayNumFile: string = xdgRuntimeDir & "/pseudo-primary-display"
+    if displayNumFile.fileExists:
+      let displayNum: uint = displayNumFile.readFile.strip.parseUInt
+      @["-xs", $displayNum]
+    else:
+      @[]
 
   ipcSocketFile: string = xdgRuntimeDir & "/dzen-box.ipc.sock"
   lockFile: string = xdgRuntimeDir & "/dzen-box.lock"
