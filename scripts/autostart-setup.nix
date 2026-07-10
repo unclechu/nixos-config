@@ -10,6 +10,10 @@ let sources = import ../nix/sources.nix; in
 , networkmanagerapplet
 , gpaste
 , xsetroot
+, systemd
+, bluez
+, blueman
+, gnugrep
 
 # Overridable dependencies
 , __input-setup ? callPackage ./input-setup.nix {}
@@ -40,6 +44,10 @@ let
     gpaste-client = gpaste;
     nm-applet = networkmanagerapplet;
     xsetroot = xsetroot;
+    systemctl = systemd;
+    bluetoothctl = bluez;
+    blueman-applet = blueman;
+    grep = gnugrep;
     input-setup = __input-setup;
     autolock = __autolock;
     run-picom = __wenzels-picom;
@@ -93,7 +101,15 @@ let
 
     ${e.s.input-setup}
     ${e.s.gpaste-client} & disown # starting local gpaste daemon
+
+    # systray applets
     ${e.s.nm-applet} & disown # starting system tray network manager applet
+    if ${e.s.systemctl} is-active --quiet bluetooth.service \
+    && ${e.s.bluetoothctl} show 2>/dev/null | ${e.s.grep} -qF 'Powered: yes'
+    then
+      # bluetooth applet (only if bluetooth is enabled)
+      ${e.s.blueman-applet} & disown
+    fi
 
     ${e.s.xsetroot} -cursor_name left_ptr # default cursor on an empty workspace
 
