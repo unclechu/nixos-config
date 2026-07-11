@@ -17,14 +17,15 @@
 #   dzen-box 50% blue
 #   dzen-box 100% yellow
 
-from std/os import commandLineParams, raiseOSError, OSErrorCode, sleep, fileExists, removeFile
+from std/os import commandLineParams, raiseOSError, OSErrorCode, fileExists, removeFile
 from std/options import Option, none, some, isNone, isSome, get
-from std/posix import Pid, kill, errno, getpid, SIGUSR1, ESRCH
+from std/posix import Pid, kill, errno, getpid, SIGUSR1, ESRCH, SIGKILL
 from std/strutils import escape, strip, parseUInt
 from std/osproc import Process, inputStream, waitForExit
 from std/streams import Stream, writeLine, flush, close
 from std/envvars import getEnv
 from std/net import Socket, newSocket, bindUnix, listen, accept, close, connectUnix, send, recvLine
+from std/atomics import Atomic, load, store
 
 from log as logging import Log, defaultTimeFormat, fail, debug, skip, ok, warn, info, stage, error
 from needexe import checkExecutableDependencies
@@ -74,6 +75,9 @@ let
 const
   # For how long the dzen2 window stays visible
   wndShowingSeconds: uint = 1
+
+  # Self-SIGKILLing timer for a client trying to re-use existing dzen-box instance
+  clientSuicideTimerSeconds: uint = 5
 
   wndTitle: string = "dzen-box"
   bgColor: string = "black"
@@ -368,6 +372,20 @@ proc timerWaiter(timer: TimerFd): void {.thread.} =
     log.error("timerWaiter: Exception: " & error.msg)
     mainEvenChannel.send (ref MainEvent)(kind: timerFailed, timerFailureMsg: error.msg)
 
+var noSuicide: Atomic[bool]
+noSuicide.store false
+
+# When client socket is stuck make sure the app does not survive the timeout
+# and doesn’t leave hanging zombies.
+proc suicideTimerWaiter(timer: TimerFd): void {.thread.} =
+  log.debug "suicideTimerWaiter: Thread starting (waiting for the timer)"
+  timer.wait
+  if noSuicide.load:
+    log.info "suicideTimerWaiter: Program finished normally, no need for a suicide"
+  else:
+    log.error "suicideTimerWaiter: Committing suicide (program seems to be stuck)"
+    if kill(pid, SIGKILL) != 0: raiseOSError(OSErrorCode(errno))
+
 withStderr:
   log.stage "Parsing command-line arguments"
   let (text, fgColor) = parseArgs
@@ -392,6 +410,10 @@ withStderr:
     timerWaiterThread: Thread[TimerFd]
     timerWaiterThreadStarted: bool = false
 
+    suicideTimer: TimerFd = newTimerFd()
+    suicideTimerThread: Thread[TimerFd]
+    suicideTimerThreadStarted: bool = false
+
     lock: Option[FileLock] = FileLock.none
 
     mainExitCode: int = 0
@@ -407,7 +429,20 @@ withStderr:
   template tryExistingInstance(): bool =
     block:
       log.stage "Trying to send dzen2 line to an existing dzen-box instance"
-      var result: bool = tryToSendToExistingDzen2(ipcSocketFile, dzen2Line)
+
+      log.debug "Starting suicide timer waiter thread"
+      createThread(suicideTimerThread, suicideTimerWaiter, suicideTimer)
+      suicideTimerThreadStarted = true
+
+      log.debug("Arming the suicide timer to " & $clientSuicideTimerSeconds & " second(s)")
+      suicideTimer.arm(clientSuicideTimerSeconds * 1000)
+
+      log.debug "Trying to connect to existing dzen-box instance"
+      let result: bool = tryToSendToExistingDzen2(ipcSocketFile, dzen2Line)
+
+      log.debug "Disarming the suicide timer since got a response from the client IPC call"
+      suicideTimer.disarm
+
       if result: log.ok("Successfully re-used existing dzen-box instance")
       result
 
@@ -587,6 +622,12 @@ withStderr:
       timer.arm 1
       threadCleanup(thread = timerWaiterThread, threadName = "Timer waiter")
 
+    if suicideTimerThreadStarted:
+      log.debug "Marking no-suicide and arming the timer to 1 ms to let the suicide thread finish"
+      noSuicide.store true
+      suicideTimer.arm 1
+      threadCleanup(thread = suicideTimerThread, threadName = "Suicide timer")
+
     if ipcServer.isSome:
       log.debug("Closing IPC server: " & ipcSocketFile.escape)
       ipcServer.get.close
@@ -598,6 +639,9 @@ withStderr:
 
     log.debug "Closing the timer"
     timer.close
+
+    log.debug "Closing the suicide timer"
+    suicideTimer.close
 
     log.debug "Closing cross-thread communication channels"
     dzen2EventChannel.close
