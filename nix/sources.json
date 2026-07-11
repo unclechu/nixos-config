@@ -137,10 +137,10 @@
         "homepage": "",
         "owner": "unclechu",
         "repo": "xlib-keys-hack",
-        "rev": "16ab00b3edadd4ea4c56688a70a62d8dc1850692",
-        "sha256": "13hs1n2vww1a025hil96hfzyfc85rs4ad2j0xjlhxcy81yyga006",
+        "rev": "c8f5a169fe6e6212b82ad3f90c26219bfc0f57df",
+        "sha256": "01847a6jy6ds8i426i0q5zypp9rmlqw8vfcqkb4jym3vvi5c0n72",
         "type": "tarball",
-        "url": "https://github.com/unclechu/xlib-keys-hack/archive/16ab00b3edadd4ea4c56688a70a62d8dc1850692.tar.gz",
+        "url": "https://github.com/unclechu/xlib-keys-hack/archive/c8f5a169fe6e6212b82ad3f90c26219bfc0f57df.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
