@@ -34,7 +34,7 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 
 # `fr` for full range signal to main speakers.
 # `band` for sending only signal above sub cut-off frequency.
-: "${MAINS_CONFIGURATION:=fr}"
+: "${MAINS_CONFIGURATION:=band}"
 
 # Command-line arguments parsing
 
