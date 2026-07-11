@@ -130,8 +130,8 @@ re="^.*[
 if [[ $sinks =~ $re ]]; then
 	re='^.* ([0-9]+)% .* ([0-9]+)% .*$'
 	if [[ ${BASH_REMATCH[4]} == yes ]]; then
-		dzen-box MUTE lightblue
+		dzen-box MUTE lightblue & disown
 	elif [[ ${BASH_REMATCH[2]} =~ $re ]]; then
-		dzen-box $(( (BASH_REMATCH[1] + BASH_REMATCH[2]) / 2 ))% lightblue
+		dzen-box $(( (BASH_REMATCH[1] + BASH_REMATCH[2]) / 2 ))% lightblue & disown
 	fi
 fi

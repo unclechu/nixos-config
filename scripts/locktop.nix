@@ -28,7 +28,7 @@ let
 
   src = writeText "${name}-source" ''
     #! /usr/bin/env dash
-    ${e.s.dzen-box} LOCK orangered
+    ${e.s.dzen-box} LOCK orangered 0</dev/null 1>/dev/null 2>/dev/null &
     ${e.s.wenzels-keyboard} --no-xlib-hack
     ${e.s.jack_control} stop
     if [ -x ~/.screenlayout/only-laptop.sh ]; then ~/.screenlayout/only-laptop.sh; fi

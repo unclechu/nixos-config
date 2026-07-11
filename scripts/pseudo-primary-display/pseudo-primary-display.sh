@@ -100,4 +100,4 @@ if pidof i3 >/dev/null; then
 fi
 
 # Show dzen-box on the new pseudo-primary display
-dzen-box "$DISPLAY_NUM"
+dzen-box "$DISPLAY_NUM" & disown

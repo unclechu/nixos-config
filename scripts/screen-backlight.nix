@@ -55,7 +55,7 @@ let
     if (( val < 0 )); then val=0
     elif (( val > MAX )); then val=$MAX; fi
 
-    ${e.s.dzen-box} $(( val * 100 / MAX ))% yellow
+    ${e.s.dzen-box} $(( val * 100 / MAX ))% yellow & disown
     laptop-backlight set "$val"
   '';
 in
