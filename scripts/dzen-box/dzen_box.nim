@@ -403,6 +403,68 @@ withStderr:
   mainEvenChannel.open
   dzen2EventChannel.open
 
+  # `bool` indicates success (`false` means a retry)
+  template tryExistingInstance(): bool =
+    block:
+      log.stage "Trying to send dzen2 line to an existing dzen-box instance"
+      var result: bool = tryToSendToExistingDzen2(ipcSocketFile, dzen2Line)
+      if result: log.ok("Successfully re-used existing dzen-box instance")
+      result
+
+  # `bool` indicates success (`false` means a retry)
+  template tryNewInstance(): bool =
+    block:
+      log.stage "Starting own dzen2 instance"
+
+      log.debug("Trying to acquire file lock " & lockFile.escape)
+      lock = lockFile.acquireFileLock
+      if lock.isNone:
+        lock = FileLock.none
+        log.info(
+          "Couldn’t acquire lock " & lockFile.escape & ", it seems there " &
+          " is another dzen-box instance holding it (retrying)"
+        )
+        false
+      else:
+        log.info("Successfully acquired file lock: " & lockFile.escape)
+
+        log.stage "Starting IPC server (creating socket)"
+        let server: Socket = ipcSocketFile.createSocketServer
+        ipcServer = server.some
+
+        log.stage "Starting termination signal waiter thread"
+        createThread(terminationSignalWaiterThread, terminationSignalWaiter)
+        terminationSignalWaiterThreadStarted = true
+
+        log.stage "Starting IPC server thread"
+        createThread(ipcServerThread, runIpcServer, server)
+        ipcServerThreadStarted = true
+
+        log.stage "Starting dzen2 process"
+        let dzen2Process: StartCmdReturnType =
+          startDzen2(Command(cmd: needexe.dzen2, args: mkDzenArgs(fgColor, mkFontStr())))
+
+        log.stage "Starting dzen2 thread"
+        createThread(dzen2Thread, dzen2Writer, dzen2Process)
+        dzen2ThreadStarted = true
+
+        log.stage "Starting dzen2 termination guard thread"
+        createThread(dzen2TerminationGuardThread, dzen2TerminationGuard, dzen2Process)
+        dzen2TerminationGuardThreadStarted = true
+
+        log.debug("Sending dzen2 line to dzen2 events channel: " & dzen2Line.escape)
+        dzen2EventChannel.send dzen2Line.some
+
+        log.debug "Starting the timer waiter thread"
+        createThread(timerWaiterThread, timerWaiter, timer)
+        timerWaiterThreadStarted = true
+
+        log.debug("Arming the timer to " & $wndShowingSeconds & " second(s)")
+        timer.arm(wndShowingSeconds * 1000)
+
+        log.ok("New dzen-box instance started successfully")
+        true
+
   template runMainEventLoop(): void =
     block mainEventLoop:
       while true:
@@ -454,64 +516,13 @@ withStderr:
           break mainEventLoop
 
   try:
-    block retryLoop:
-      while true:
-        log.stage "Trying to send dzen2 line to an existing dzen-box instance"
-        if tryToSendToExistingDzen2(ipcSocketFile, dzen2Line):
-          break retryLoop
-
-        else:
-          log.stage "Starting own dzen2 instance"
-
-          log.debug("Trying to acquire file lock " & lockFile.escape)
-          lock = lockFile.acquireFileLock
-          if lock.isNone:
-            lock = FileLock.none
-            log.info(
-              "Couldn’t acquire lock " & lockFile.escape & ", it seems there " &
-              " is another dzen-box instance holding it (retrying)"
-            )
-            continue
-          else:
-            log.info("Successfully acquired file lock: " & lockFile.escape)
-
-          log.stage "Starting IPC server (creating socket)"
-          let server: Socket = ipcSocketFile.createSocketServer
-          ipcServer = server.some
-
-          log.stage "Starting termination signal waiter thread"
-          createThread(terminationSignalWaiterThread, terminationSignalWaiter)
-          terminationSignalWaiterThreadStarted = true
-
-          log.stage "Starting IPC server thread"
-          createThread(ipcServerThread, runIpcServer, server)
-          ipcServerThreadStarted = true
-
-          log.stage "Starting dzen2 process"
-          let dzen2Process: StartCmdReturnType =
-            startDzen2(Command(cmd: needexe.dzen2, args: mkDzenArgs(fgColor, mkFontStr())))
-
-          log.stage "Starting dzen2 thread"
-          createThread(dzen2Thread, dzen2Writer, dzen2Process)
-          dzen2ThreadStarted = true
-
-          log.stage "Starting dzen2 termination guard thread"
-          createThread(dzen2TerminationGuardThread, dzen2TerminationGuard, dzen2Process)
-          dzen2TerminationGuardThreadStarted = true
-
-          log.debug("Sending dzen2 line to dzen2 events channel: " & dzen2Line.escape)
-          dzen2EventChannel.send dzen2Line.some
-
-          log.debug "Starting the timer waiter thread"
-          createThread(timerWaiterThread, timerWaiter, timer)
-          timerWaiterThreadStarted = true
-
-          log.debug("Arming the timer to " & $wndShowingSeconds & " second(s)")
-          timer.arm(wndShowingSeconds * 1000)
-
-          log.stage "Running main events loop"
-          runMainEventLoop
-          break retryLoop
+    # Retry loop
+    while true:
+      if tryExistingInstance(): break
+      elif tryNewInstance():
+        log.stage "Running main events loop"
+        runMainEventLoop
+        break
 
   except CatchableError as error:
     log.error("Main event loop exception: " & error.msg)
