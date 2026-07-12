@@ -19,13 +19,12 @@
 
 from std/os import commandLineParams, raiseOSError, OSErrorCode, fileExists, removeFile
 from std/options import Option, none, some, isNone, isSome, get
-from std/posix import Pid, kill, errno, getpid, SIGUSR1, ESRCH, SIGKILL
+from std/posix import Pid, kill, errno, getpid, SIGUSR1, ESRCH
 from std/strutils import escape, strip, parseUInt
 from std/osproc import Process, inputStream, waitForExit
 from std/streams import Stream, writeLine, flush, close
 from std/envvars import getEnv
 from std/net import Socket, newSocket, bindUnix, listen, accept, close, connectUnix, send, recvLine
-from std/atomics import Atomic, load, store
 
 from log as logging import Log, defaultTimeFormat, fail, debug, skip, ok, warn, info, stage, error
 from needexe import checkExecutableDependencies
@@ -75,9 +74,6 @@ let
 const
   # For how long the dzen2 window stays visible
   wndShowingSeconds: uint = 1
-
-  # Self-SIGKILLing timer for a client trying to re-use existing dzen-box instance
-  clientSuicideTimerSeconds: uint = 5
 
   wndTitle: string = "dzen-box"
   bgColor: string = "black"
@@ -152,6 +148,9 @@ type
     timerExpired
     timerFailed
 
+    # Shutdown events
+    shutdown
+
   MainEvent {.requiresInit.} = object
     case kind: MainEventKind
 
@@ -162,7 +161,7 @@ type
     # IPC server thread
     of ipcDzen2LineWrite:
       dzen2Line: string
-      reply: ptr Channel[tuple[]]
+      reply: ptr Channel[string]
 
     # dzen2 thread
     of dzen2Exited: dzen2ExitCode: int
@@ -172,7 +171,10 @@ type
     of timerExpired: discard
     of timerFailed: timerFailureMsg: string
 
-var mainEvenChannel: Channel[ref MainEvent]
+    # Shutdown events
+    of shutdown: discard
+
+var mainEventChannel: Channel[ref MainEvent]
 
 # Send `none` to terminate dzen2 and finish the thread
 var dzen2EventChannel: Channel[Option[string]]
@@ -215,15 +217,16 @@ proc dzen2TerminationGuard(process: StartCmdReturnType): void {.thread.} =
   try:
     let exitCode: int = process.p.waitForExit
     log.debug("dzen2TerminationGuard: dzen2 exited with exit code: " & $exitCode)
-    mainEvenChannel.send((ref MainEvent)(kind: dzen2Exited, dzen2ExitCode: exitCode))
+    mainEventChannel.send((ref MainEvent)(kind: dzen2Exited, dzen2ExitCode: exitCode))
   except CatchableError as e:
     log.error("dzen2TerminationGuard: Thread failed with: " & e.msg)
-    mainEvenChannel.send((ref MainEvent)(kind: dzen2Failed, dzen2FailureMsg: e.msg))
+    mainEventChannel.send((ref MainEvent)(kind: dzen2Failed, dzen2FailureMsg: e.msg))
 
 const
   IPC_SERVER_OK_MESSAGE: string = "OK"
   IPC_SERVER_SHUTDOWN_MESSAGE = "SHUTDOWN"
   IPC_SERVER_SHUTDOWN_OK_MESSAGE: string = "OK, SHUTTING DOWN"
+  IPC_SERVER_SHUTDOWN_REJECTED_MESSAGE: string = "REJECTED, SHUTTING DOWN"
 
 proc tryToSendToExistingDzen2(socketPath: string, dzenLine: string): bool =
   var client: Socket = newSocket(net.AF_UNIX, net.SOCK_STREAM, net.IPPROTO_IP)
@@ -243,7 +246,7 @@ proc tryToSendToExistingDzen2(socketPath: string, dzenLine: string): bool =
         "tryToSendToExistingDzen2: Successfully sent dzen2 line to the existing dzen-box instance"
       )
     else:
-      fail(
+      log.warn(
         "tryToSendToExistingDzen2: Response was not " & IPC_SERVER_OK_MESSAGE.escape &
         " from the existing dzen-box instance through socket, got instead: " &
         response.escape
@@ -314,6 +317,8 @@ proc runIpcServer(server: Socket): void {.thread.} =
       server.accept client
       let line: string = client.recvLine
 
+      # Note that in order to avoid race conditions this message should only be
+      # sent by `terminateIpcServer` and nothing else!
       if line == IPC_SERVER_SHUTDOWN_MESSAGE:
         log.info(
           "runIpcServer: Received " & IPC_SERVER_SHUTDOWN_MESSAGE.escape &
@@ -328,21 +333,23 @@ proc runIpcServer(server: Socket): void {.thread.} =
         " (reporting the update to the main thread)"
       )
 
-      var reply: Channel[tuple[]]
+      var reply: Channel[string]
       reply.open 1
       defer: reply.close
 
-      mainEvenChannel.send (ref MainEvent)(
+      mainEventChannel.send (ref MainEvent)(
         kind: ipcDzen2LineWrite,
         dzen2Line: line,
         reply: reply.addr,
       )
 
       log.debug("runIpcServer: Waiting for reply from the main thread")
-      discard reply.recv
+      let replyMessage: string = reply.recv
 
-      log.debug("runIpcServer: Responding to the client with " & IPC_SERVER_OK_MESSAGE.escape)
-      client.send(IPC_SERVER_OK_MESSAGE & "\n")
+      log.debug(
+        "runIpcServer: Responding to the client with received reply: " & replyMessage.escape
+      )
+      client.send(replyMessage & "\n")
 
     except CatchableError as error:
       # Not stopping here, if client broke just wait for another one
@@ -357,34 +364,44 @@ proc terminationSignalWaiter(): void {.thread.} =
   let signal: Either[string, cint] = waitForTerminationSignal(log)
   if signal.isRight:
     log.debug("terminationSignalWaiter: Received signal: " & $signal.right)
-    mainEvenChannel.send((ref MainEvent)(kind: terminationRequest, signal: signal.right))
+    mainEventChannel.send((ref MainEvent)(kind: terminationRequest, signal: signal.right))
   else:
     log.error("terminationSignalWaiter: Thread failed: " & signal.left)
-    mainEvenChannel.send((ref MainEvent)(kind: terminationThreadFailed, errMsg: signal.left))
+    mainEventChannel.send((ref MainEvent)(kind: terminationThreadFailed, errMsg: signal.left))
 
 proc timerWaiter(timer: TimerFd): void {.thread.} =
   log.debug "timerWaiter: Thread starting"
   try:
     timer.wait
     log.error("timerWaiter: Timer expired (reporting)")
-    mainEvenChannel.send (ref MainEvent)(kind: timerExpired)
+    mainEventChannel.send (ref MainEvent)(kind: timerExpired)
   except CatchableError as error:
     log.error("timerWaiter: Exception: " & error.msg)
-    mainEvenChannel.send (ref MainEvent)(kind: timerFailed, timerFailureMsg: error.msg)
+    mainEventChannel.send (ref MainEvent)(kind: timerFailed, timerFailureMsg: error.msg)
 
-var noSuicide: Atomic[bool]
-noSuicide.store false
+# Some threads are expecting replies from the main event channel.
+# They need to be responded in order to avoid threads getting stuck
+# on waiting for a reply.
+proc cleanupReplyWaiters(): void {.thread.} =
+  log.stage "cleanupReplyWaiters: Running mainEventChannel reply waiters cleanup thread"
+  block eventCleanupLoop:
+    while true:
+      let event = mainEventChannel.recv
 
-# When client socket is stuck make sure the app does not survive the timeout
-# and doesn’t leave hanging zombies.
-proc suicideTimerWaiter(timer: TimerFd): void {.thread.} =
-  log.debug "suicideTimerWaiter: Thread starting (waiting for the timer)"
-  timer.wait
-  if noSuicide.load:
-    log.info "suicideTimerWaiter: Program finished normally, no need for a suicide"
-  else:
-    log.error "suicideTimerWaiter: Committing suicide (program seems to be stuck)"
-    if kill(pid, SIGKILL) != 0: raiseOSError(OSErrorCode(errno))
+      case event.kind
+      of ipcDzen2LineWrite:
+        log.debug(
+          "cleanupReplyWaiters: Replying to ipcDzen2LineWrite event with " &
+          IPC_SERVER_SHUTDOWN_REJECTED_MESSAGE.escape & ": " & $event[]
+        )
+        event.reply[].send IPC_SERVER_SHUTDOWN_REJECTED_MESSAGE
+
+      of shutdown:
+        log.debug "cleanupReplyWaiters: Received shutdown request (shutting down)"
+        break eventCleanupLoop
+
+      else:
+        log.skip("cleanupReplyWaiters: Ignoring mainEventChannel event: " & $event[])
 
 withStderr:
   log.stage "Parsing command-line arguments"
@@ -410,10 +427,6 @@ withStderr:
     timerWaiterThread: Thread[TimerFd]
     timerWaiterThreadStarted: bool = false
 
-    suicideTimer: TimerFd = newTimerFd()
-    suicideTimerThread: Thread[TimerFd]
-    suicideTimerThreadStarted: bool = false
-
     lock: Option[FileLock] = FileLock.none
 
     mainExitCode: int = 0
@@ -422,27 +435,14 @@ withStderr:
   blockTerminationSignals()
 
   log.debug "Opening cross-thread communication channels"
-  mainEvenChannel.open
+  mainEventChannel.open
   dzen2EventChannel.open
 
   # `bool` indicates success (`false` means a retry)
   template tryExistingInstance(): bool =
     block:
       log.stage "Trying to send dzen2 line to an existing dzen-box instance"
-
-      log.debug "Starting suicide timer waiter thread"
-      createThread(suicideTimerThread, suicideTimerWaiter, suicideTimer)
-      suicideTimerThreadStarted = true
-
-      log.debug("Arming the suicide timer to " & $clientSuicideTimerSeconds & " second(s)")
-      suicideTimer.arm(clientSuicideTimerSeconds * 1000)
-
-      log.debug "Trying to connect to existing dzen-box instance"
       let result: bool = tryToSendToExistingDzen2(ipcSocketFile, dzen2Line)
-
-      log.debug "Disarming the suicide timer since got a response from the client IPC call"
-      suicideTimer.disarm
-
       if result: log.ok("Successfully re-used existing dzen-box instance")
       result
 
@@ -503,7 +503,7 @@ withStderr:
   template runMainEventLoop(): void =
     block mainEventLoop:
       while true:
-        let event = mainEvenChannel.recv()
+        let event = mainEventChannel.recv()
         case event.kind
 
         of terminationRequest:
@@ -523,10 +523,12 @@ withStderr:
           log.debug "Disarming the timer"
           timer.disarm
 
-          log.debug "Forwarding dzen2 line from IPC server to dzen2 events channel"
-          dzen2EventChannel.send event.dzen2Line.some
-          log.debug("Replying to the IPC server with: " & IPC_SERVER_OK_MESSAGE.escape)
-          event.reply[].send () # Reporting successful handling
+          block:
+            log.debug "Forwarding dzen2 line from IPC server to dzen2 events channel"
+            dzen2EventChannel.send event.dzen2Line.some
+            const msg: string = IPC_SERVER_OK_MESSAGE
+            log.debug("Replying to the IPC server with: " & msg.escape)
+            event.reply[].send msg # Reporting successful handling
 
           log.debug("Re-arming the timer to " & $wndShowingSeconds & " second(s)")
           timer.arm(wndShowingSeconds * 1000)
@@ -548,6 +550,10 @@ withStderr:
         of timerFailed:
           log.error("Timer waiter thread failed with: " & event.timerFailureMsg)
           mainExitCode = 1
+          break mainEventLoop
+
+        of shutdown:
+          log.debug "Received shutdown request (shutting down)"
           break mainEventLoop
 
   try:
@@ -606,14 +612,22 @@ withStderr:
       log.debug("Waiting for the dzen2 termination guard thread to finish")
       threadCleanup(thread = dzen2TerminationGuardThread, threadName = "dzen2 termination guard")
 
+    log.debug "Starting cleanup reply waiters thread"
+    var cleanupReplyWaitersThread: Thread[void]
+    createThread(cleanupReplyWaitersThread, cleanupReplyWaiters)
+
     if ipcServerThreadStarted:
       if ipcServerThread.running:
-        log.debug("Terminating IPC server thread")
+        log.debug "Terminating IPC server thread"
         terminateIpcServer ipcSocketFile
         threadCleanup(thread = ipcServerThread, threadName = "IPC server")
       else:
-        log.debug("IPC server thread is not running (only joining the thread)")
+        log.debug "IPC server thread is not running (only joining the thread)"
         ipcServerThread.joinThread
+
+    log.debug "Terminating cleanup reply waiters thread by sending a shutdown request"
+    mainEventChannel.send((ref MainEvent)(kind: shutdown))
+    threadCleanup(thread = cleanupReplyWaitersThread, threadName = "cleanup reply waiters")
 
     if timerWaiterThreadStarted:
       log.debug(
@@ -621,12 +635,6 @@ withStderr:
       )
       timer.arm 1
       threadCleanup(thread = timerWaiterThread, threadName = "Timer waiter")
-
-    if suicideTimerThreadStarted:
-      log.debug "Marking no-suicide and arming the timer to 1 ms to let the suicide thread finish"
-      noSuicide.store true
-      suicideTimer.arm 1
-      threadCleanup(thread = suicideTimerThread, threadName = "Suicide timer")
 
     if ipcServer.isSome:
       log.debug("Closing IPC server: " & ipcSocketFile.escape)
@@ -640,12 +648,9 @@ withStderr:
     log.debug "Closing the timer"
     timer.close
 
-    log.debug "Closing the suicide timer"
-    suicideTimer.close
-
     log.debug "Closing cross-thread communication channels"
     dzen2EventChannel.close
-    mainEvenChannel.close
+    mainEventChannel.close
 
   log.stage("Final exit (exit code: " & $mainExitCode & ")")
   quit mainExitCode
