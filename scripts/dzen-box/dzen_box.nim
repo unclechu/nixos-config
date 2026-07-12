@@ -36,6 +36,20 @@ from signals import blockTerminationSignals, terminationSignals, waitForTerminat
 from either import Either
 from timerfd import TimerFd, newTimerFd, arm, disarm, wait, close
 
+when not defined(gcAtomicArc):
+  {.
+    fatal:
+      "dzen-box must be compiled with --mm:atomicArc " &
+      "(because `ref`s are passed between threads via `Channel`s)"
+  .}
+
+when (NimMajor, NimMinor, NimPatch) < (2, 2, 10):
+  {.
+    fatal:
+      "dzen-box requires Nim >= 2.2.10 because older Nim versions " &
+      "crash with Channel[ref T] + --mm:atomicArc"
+  .}
+
 let pid: Pid = getpid()
 
 checkExecutableDependencies()
@@ -356,8 +370,9 @@ proc runIpcServer(server: Socket): void {.thread.} =
       log.error("runIpcServer: Exception: " & error.msg)
 
     finally:
-      log.debug("runIpcServer: Closing the client")
-      client.close
+      if client != nil:
+        log.debug("runIpcServer: Closing the client")
+        client.close
 
 proc terminationSignalWaiter(): void {.thread.} =
   log.debug "terminationSignalWaiter: Thread starting"

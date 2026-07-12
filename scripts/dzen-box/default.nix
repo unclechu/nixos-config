@@ -1,9 +1,12 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-let sources = import ../../nix/sources.nix; in
+let
+  sources = import ../../nix/sources.nix;
+  masterPkgs = import sources.nixpkgs-master {};
+in
 
-{ pkgs ? import sources.nixpkgs-master {}
+{ pkgs ? masterPkgs
 
 , callPackage ? pkgs.callPackage
 
@@ -12,7 +15,11 @@ let sources = import ../../nix/sources.nix; in
 , util-linux ? pkgs.util-linux
 
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
-, mk-nim-app ? callPackage ../../utils/nim/mk-nim-app.nix {}
+, mk-nim-app ?
+    callPackage ../../utils/nim/mk-nim-app.nix {
+      # Always pick newer Nim stuff as it’s required to build the program.
+      inherit (masterPkgs) nim nimlsp nimlangserver;
+    }
 
 # nix-shell arguments
 , inNixShell ? false
