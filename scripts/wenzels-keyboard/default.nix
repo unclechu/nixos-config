@@ -3,10 +3,10 @@
 
 let
   constants = import ../../constants.nix;
-  sources = import ../../nix/sources.nix;
+  pkgs-unstable = import <nixos-unstable> {};
 in
 
-{ pkgs ? import sources.nixpkgs-master {}
+{ pkgs ? pkgs-unstable
 
 , callPackage ? pkgs.callPackage
 
@@ -19,7 +19,10 @@ in
 , libnotify ? pkgs.libnotify
 
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
-, mk-nim-app ? callPackage ../../utils/nim/mk-nim-app.nix {}
+, mk-nim-app ?
+    callPackage ../../utils/nim/mk-nim-app.nix {
+      inherit (pkgs-unstable) nim nimlsp nimlangserver;
+    }
 , __xbindkeys ? callPackage ../../apps/wenzels-xbindkeys.nix {}
 , __wenzels-xlib-keys-hack ? callPackage ../../apps/wenzels-xlib-keys-hack {}
 

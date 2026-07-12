@@ -1,9 +1,12 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-let sources = import ../../nix/sources.nix; in
+let
+  sources = import ../../nix/sources.nix;
+  pkgs-unstable = import <nixos-unstable> {};
+in
 
-{ pkgs ? import sources.nixpkgs-master {}
+{ pkgs ? pkgs-unstable
 
 , lib ? pkgs.lib
 , callPackage ? pkgs.callPackage
@@ -18,7 +21,10 @@ let sources = import ../../nix/sources.nix; in
 , nim-dbus-src ? sources.nim-dbus
 
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
-, mk-nim-app ? callPackage ../../utils/nim/mk-nim-app.nix {}
+, mk-nim-app ?
+    callPackage ../../utils/nim/mk-nim-app.nix {
+      inherit (pkgs-unstable) nim nimlsp nimlangserver;
+    }
 
 # nix-shell arguments
 , inNixShell ? false
