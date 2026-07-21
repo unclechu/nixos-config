@@ -1,7 +1,7 @@
 <?xml version="1.1" encoding="utf-8"?>
 <rack><plugin type="eq12" instance-name="eq" input-index="1" output-index="1">
 <preset bank="0" program="0" plugin="eq12" name="">
-  <param name="bypass" value="0" />
+  <param name="bypass" value="1" />
   <param name="level_in" value="1" />
   <param name="level_out" value="1" />
   <param name="hp_active" value="0" />
@@ -62,9 +62,9 @@
 <preset bank="0" program="0" plugin="stereo" name="">
   <param name="bypass" value="0" />
   <param name="level_in" value="1" />
-  <param name="level_out" value="1" />
+  <param name="level_out" value="0.450001" />
   <param name="balance_in" value="0" />
-  <param name="balance_out" value="0.18" />
+  <param name="balance_out" value="0" />
   <param name="softclip" value="0" />
   <param name="mutel" value="0" />
   <param name="muter" value="0" />
@@ -86,7 +86,7 @@
 <preset bank="0" program="0" plugin="stereo" name="">
   <param name="bypass" value="0" />
   <param name="level_in" value="1" />
-  <param name="level_out" value="0.630957" />
+  <param name="level_out" value="1" />
   <param name="balance_in" value="0" />
   <param name="balance_out" value="0" />
   <param name="softclip" value="0" />

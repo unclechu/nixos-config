@@ -32,7 +32,7 @@ let
     # Main full-range speakers
     mains = {
       inDb = 0.0;
-      outDb = -4.0;
+      outDb = 0.0;
       balanceIn = 0.0; # -1 .. +1
       balanceOut = 0.0; # -1 .. +1
     };
@@ -40,10 +40,9 @@ let
     # Subwoofers
     sub = {
       inDb = 0.0;
-      outDb = 0.0;
+      outDb = -7.0;
       balanceIn = 0.0; # -1 .. +1
-      # My current subs are different, so there is sensitivity mismatch
-      balanceOut = 0.18; # -1 .. +1
+      balanceOut = 0.0; # -1 .. +1
 
       xOver = {
         freqHz = 85.0;
