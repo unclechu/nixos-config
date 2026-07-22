@@ -130,14 +130,10 @@ in
     pulseaudio = {
       enable = true;
       support32Bit = true; # Support 32-bit applications just in case
-      # Usually I’m permanently running JACK daemon forwarding PulseAudio into it
-      package = pkgs.pulseaudio.override { jackaudioSupport = true; };
+      package = pkgs.pulseaudioFull; # JACK support, bluetooth codecs, etc.
     };
-    # It’s supposed to be `false` by default but somehow it’s not?
-    #
-    # I was getting this error if this is not set here to `false`:
-    # > Using PipeWire as the sound server conflicts with PulseAudio.
-    # > This option requires `hardware.pulseaudio.enable` to be set to false
+
+    # Disabling it explicitly to avoid conflicts with `pulseaudio`
     pipewire.enable = false;
 
     # See also https://nixos.wiki/wiki/JACK
