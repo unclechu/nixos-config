@@ -187,11 +187,11 @@ jack_connect "$CALFJACKHOST_CLIENT:eq Out #2" "$JALV_LSP_XOVER_CLIENT:in_r"
 # Sub-woofer
 jack_connect "$JALV_LSP_XOVER_CLIENT:band0l" "$CALFJACKHOST_CLIENT:sub-stereo In #1"
 jack_connect "$JALV_LSP_XOVER_CLIENT:band0r" "$CALFJACKHOST_CLIENT:sub-stereo In #2"
-jack_connect "$CALFJACKHOST_CLIENT:sub-stereo Out #1" 'system:playback_5'
-# jack_connect "$CALFJACKHOST_CLIENT:sub-stereo Out #2" 'system:playback_5' # mono
-jack_connect "$CALFJACKHOST_CLIENT:sub-stereo Out #2" 'system:playback_6' # stereo
+jack_connect "$CALFJACKHOST_CLIENT:sub-stereo Out #1" 'system:playback_3'
+# jack_connect "$CALFJACKHOST_CLIENT:sub-stereo Out #2" 'system:playback_3' # mono
+jack_connect "$CALFJACKHOST_CLIENT:sub-stereo Out #2" 'system:playback_4' # stereo
 
 # Highs (mids + highs)
 set-mains-configuration "$MAINS_CONFIGURATION"
-jack_connect "$CALFJACKHOST_CLIENT:mains-stereo Out #1" 'system:playback_3'
-jack_connect "$CALFJACKHOST_CLIENT:mains-stereo Out #2" 'system:playback_4'
+jack_connect "$CALFJACKHOST_CLIENT:mains-stereo Out #1" 'system:playback_5'
+jack_connect "$CALFJACKHOST_CLIENT:mains-stereo Out #2" 'system:playback_6'
