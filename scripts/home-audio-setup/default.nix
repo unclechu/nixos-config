@@ -45,8 +45,8 @@ let
       balanceOut = 0.0; # -1 .. +1
 
       xOver = {
-        freqHz = 85.0;
-        slope = xOverSlopes.lr4_24db;
+        freqHz = 100;
+        slope = xOverSlopes.lr16_96db;
       };
     };
   };
