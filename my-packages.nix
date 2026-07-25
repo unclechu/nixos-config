@@ -369,7 +369,8 @@ in
       (pkgs.callPackage scripts/rt-audio {})
       (pkgs.callPackage scripts/screen-saver {})
       (pkgs.callPackage scripts/render-kicad-schematic-pdf-to-png {})
-      home-audio-setup.home-audio-lh-xover
+      home-audio-setup.home-audio-xover-lh
+      home-audio-setup.home-audio-xover-lmh
       home-audio-setup.home-audio-setup
       home-audio-setup.home-audio-mic
       (pkgs.callPackage scripts/pseudo-primary-display {})

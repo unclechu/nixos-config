@@ -106,4 +106,28 @@
   <param name="stereo_phase" value="0" />
 </preset>
 </plugin>
+<plugin type="stereo" instance-name="hi-stereo" input-index="13" output-index="13">
+<preset bank="0" program="0" plugin="stereo" name="">
+  <param name="bypass" value="0" />
+  <param name="level_in" value="1" />
+  <param name="level_out" value="0.887119" />
+  <param name="balance_in" value="0" />
+  <param name="balance_out" value="0" />
+  <param name="softclip" value="0" />
+  <param name="mutel" value="0" />
+  <param name="muter" value="0" />
+  <param name="phasel" value="0" />
+  <param name="phaser" value="0" />
+  <param name="mode" value="0" />
+  <param name="slev" value="1" />
+  <param name="sbal" value="0" />
+  <param name="mlev" value="1" />
+  <param name="mpan" value="0" />
+  <param name="stereo_base" value="0" />
+  <param name="delay" value="0" />
+  <param name="meter_phase" value="0" />
+  <param name="sc_level" value="1" />
+  <param name="stereo_phase" value="0" />
+</preset>
+</plugin>
 </rack>

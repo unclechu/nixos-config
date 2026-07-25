@@ -16,8 +16,12 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 
 # Command-line arguments parsing
 
-if (( $# != 0 )); then
-	>&2 echo 'This script does not take any arguments!'
+if (( $# == 0 )); then
+	SETUP_TARGET=lmh
+elif (( $# == 1 )) && [[ $1 == lh || $1 == lmh ]]; then
+	SETUP_TARGET=$1
+	shift
+else
 	>&2 printf 'Unexpected argument: “%s”\n' "$@"
 	exit 1
 fi
@@ -31,7 +35,14 @@ jack_control start
 sleep 1s
 
 # Start the cross-over setup and connect everything
-./home-audio-lh-xover.sh
+if [[ $SETUP_TARGET == lh ]]; then
+	./home-audio-xover.sh lh
+elif [[ $SETUP_TARGET == lmh ]]; then
+	./home-audio-xover.sh lmh
+else
+	>&2 printf 'Unexpected SETUP_TARGET value: “%s”\n' "$SETUP_TARGET"
+	exit 1
+fi
 
 # Make sure that the JACK PulseAudio input is not attenuated
 pactl set-source-volume 'jack_in' 100%

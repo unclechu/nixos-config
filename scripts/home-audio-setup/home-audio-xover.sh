@@ -6,12 +6,18 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 
 # My home audio mains+subwoofers x-over setup.
 #
-# Usage example:
-#   ./home-audio-lh-xover.sh
+# Usage examples:
+#   ./home-audio-xover.sh lh
+#   ./home-audio-xover.sh lmh
 #
 # Only reconfigure “mains” for already running setup:
-#   ./home-audio-lh-xover.sh mains fr
-#   ./home-audio-lh-xover.sh mains band
+#   ./home-audio-xover.sh lh mains fr
+#   ./home-audio-xover.sh lh mains band
+#
+# TODO: Support sub mono/stereo switching via an environment variable
+# TODO: Parallel calls for `jack_connect` & `jack_disconnect`
+# TODO: Disconnect PulseAudio from all `playback_*` ports first (no matter how many there are)
+# TODO: Output hardware ports defined via environment variables with default values
 
 # Guard dependencies
 >/dev/null type jalv.gtk3
@@ -26,8 +32,8 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 # Or 'PulseAudio JACK Sink-01'
 : "${PA_SINK_CLIENT:=PulseAudio JACK Sink}"
 
-: "${JALV_LSP_XOVER_PRESET:=presets/lsp-lh-xover-jalv}"
-: "${JALV_LSP_XOVER_CLIENT:=home-audio-lsp-lh-xover-jalv}"
+: "${JALV_LSP_XOVER_PRESET:=presets/lsp-xover-jalv}"
+: "${JALV_LSP_XOVER_CLIENT:=home-audio-lsp-xover-jalv}"
 
 : "${CALFJACKHOST_PRESET:=presets/calfjackhost.xml}"
 : "${CALFJACKHOST_CLIENT:=home-audio-calf}"
@@ -35,6 +41,23 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 # `fr` for full range signal to main speakers.
 # `band` for sending only signal above sub cut-off frequency.
 : "${MAINS_CONFIGURATION:=band}"
+
+: "${SUB_STEREO_NAME:=sub-stereo}"
+: "${MAINS_STEREO_NAME:=mains-stereo}"
+: "${HI_STEREO_NAME:=hi-stereo}"
+
+SETUP_TARGET_VALUE_USAGE='(must be either “lh” or “lmh”)'
+
+if (( $# < 1 )); then
+	>&2 printf 'Missing setup target argument %s\n' "$SETUP_TARGET_VALUE_USAGE"
+	exit 1
+elif [[ $1 != "lh" && $1 != "lmh" ]]; then
+	>&2 printf 'Unexpected setup target value %s: “%s”\n' "$SETUP_TARGET_VALUE_USAGE" "$1"
+	exit 1
+else
+	SETUP_TARGET=$1
+	shift
+fi
 
 # Command-line arguments parsing
 
@@ -75,6 +98,22 @@ if [[ $MODE == default ]]; then
 	)
 fi
 
+if [[ $SETUP_TARGET == lh ]]; then
+	HI_BAND_PORTS=()
+elif [[ $SETUP_TARGET == lmh ]]; then
+	HI_BAND_PORTS=(
+		"$JALV_LSP_XOVER_CLIENT:band2l"
+		"$JALV_LSP_XOVER_CLIENT:band2r"
+		"$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #1"
+		"$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #2"
+		"$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #1"
+		"$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #2"
+	)
+else
+	>&2 printf 'Unexpected SETUP_TARGET value: “%s”\n' "$SETUP_TARGET"
+	exit 1
+fi
+
 PORTS=(
 	"$JALV_LSP_XOVER_CLIENT:in_l"
 	"$JALV_LSP_XOVER_CLIENT:in_r"
@@ -82,21 +121,19 @@ PORTS=(
 	"$JALV_LSP_XOVER_CLIENT:band0r"
 	"$JALV_LSP_XOVER_CLIENT:band1l"
 	"$JALV_LSP_XOVER_CLIENT:band1r"
-	# Don’t really care about these
-	# "$JALV_LSP_XOVER_CLIENT:band2l"
-	# "$JALV_LSP_XOVER_CLIENT:band2r"
 	"$CALFJACKHOST_CLIENT:eq In #1"
 	"$CALFJACKHOST_CLIENT:eq In #2"
 	"$CALFJACKHOST_CLIENT:eq Out #1"
 	"$CALFJACKHOST_CLIENT:eq Out #2"
-	"$CALFJACKHOST_CLIENT:sub-stereo In #1"
-	"$CALFJACKHOST_CLIENT:sub-stereo In #2"
-	"$CALFJACKHOST_CLIENT:sub-stereo Out #1"
-	"$CALFJACKHOST_CLIENT:sub-stereo Out #2"
-	"$CALFJACKHOST_CLIENT:mains-stereo In #1"
-	"$CALFJACKHOST_CLIENT:mains-stereo In #2"
-	"$CALFJACKHOST_CLIENT:mains-stereo Out #1"
-	"$CALFJACKHOST_CLIENT:mains-stereo Out #2"
+	"$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME In #1"
+	"$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME In #2"
+	"$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #1"
+	"$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #2"
+	"$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1"
+	"$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2"
+	"$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #1"
+	"$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #2"
+	"${HI_BAND_PORTS[@]}"
 )
 
 if [[ $MODE != mains ]]; then
@@ -139,17 +176,22 @@ set-mains-configuration() (
 
 	# Full range into main speakers
 	if [[ $1 == fr ]]; then
-		jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:mains-stereo In #1" || true
-		jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:mains-stereo In #2" || true
-		jack_connect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:mains-stereo In #1"
-		jack_connect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:mains-stereo In #2"
+		if [[ $SETUP_TARGET != lh ]]; then
+			>&2 printf 'Full range setup does not make sense for this setup target: “%s”\n' "$SETUP_TARGET"
+			exit 1
+		fi
+
+		jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1" || true
+		jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2" || true
+		jack_connect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1"
+		jack_connect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2"
 
 	# Bass cut into main speakers
 	elif [[ $1 == band ]]; then
-		jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:mains-stereo In #1" || true
-		jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:mains-stereo In #2" || true
-		jack_connect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:mains-stereo In #1"
-		jack_connect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:mains-stereo In #2"
+		jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1" || true
+		jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2" || true
+		jack_connect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1"
+		jack_connect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2"
 
 	else
 		>&2 printf 'Unexpected mains configuration: “%s”\n' "$1"
@@ -185,13 +227,20 @@ jack_connect "$CALFJACKHOST_CLIENT:eq Out #1" "$JALV_LSP_XOVER_CLIENT:in_l"
 jack_connect "$CALFJACKHOST_CLIENT:eq Out #2" "$JALV_LSP_XOVER_CLIENT:in_r"
 
 # Sub-woofer
-jack_connect "$JALV_LSP_XOVER_CLIENT:band0l" "$CALFJACKHOST_CLIENT:sub-stereo In #1"
-jack_connect "$JALV_LSP_XOVER_CLIENT:band0r" "$CALFJACKHOST_CLIENT:sub-stereo In #2"
-jack_connect "$CALFJACKHOST_CLIENT:sub-stereo Out #1" 'system:playback_3'
-# jack_connect "$CALFJACKHOST_CLIENT:sub-stereo Out #2" 'system:playback_3' # mono
-jack_connect "$CALFJACKHOST_CLIENT:sub-stereo Out #2" 'system:playback_4' # stereo
+jack_connect "$JALV_LSP_XOVER_CLIENT:band0l" "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME In #1"
+jack_connect "$JALV_LSP_XOVER_CLIENT:band0r" "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME In #2"
+jack_connect "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #1" 'system:playback_3'
+# jack_connect "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #2" 'system:playback_3' # mono
+jack_connect "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #2" 'system:playback_4' # stereo
 
-# Highs (mids + highs)
+# MIDS + HIGHS for `SETUP_TARGET=lh` and MIDS for `SETUP_TARGET=lmh`
 set-mains-configuration "$MAINS_CONFIGURATION"
-jack_connect "$CALFJACKHOST_CLIENT:mains-stereo Out #1" 'system:playback_5'
-jack_connect "$CALFJACKHOST_CLIENT:mains-stereo Out #2" 'system:playback_6'
+jack_connect "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #1" 'system:playback_5'
+jack_connect "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #2" 'system:playback_6'
+
+if [[ $SETUP_TARGET == lmh ]]; then
+	jack_connect "$JALV_LSP_XOVER_CLIENT:band2l" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #1"
+	jack_connect "$JALV_LSP_XOVER_CLIENT:band2r" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #2"
+	jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #1" 'system:playback_7'
+	jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #2" 'system:playback_8'
+fi
