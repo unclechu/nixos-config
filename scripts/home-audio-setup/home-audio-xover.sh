@@ -13,9 +13,6 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 # Only reconfigure “mains” for already running setup:
 #   ./home-audio-xover.sh lh mains fr
 #   ./home-audio-xover.sh lh mains band
-#
-# TODO: Parallel calls for `jack_connect` & `jack_disconnect`
-# TODO: Disconnect PulseAudio from all `playback_*` ports first (no matter how many there are)
 
 # Guard dependencies
 >/dev/null type jalv.gtk3
@@ -186,9 +183,10 @@ if [[ $MODE != mains ]]; then
 fi
 
 set-mains-configuration() (
+	set +o xtrace
 	if ! (( $# == 1 )); then (set -o xtrace; (( $# == 1 ))) fi
 
-	set -o xtrace
+	pids=()
 
 	# Full range into main speakers
 	if [[ $1 == fr ]]; then
@@ -197,22 +195,25 @@ set-mains-configuration() (
 			exit 1
 		fi
 
-		jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1" || true
-		jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2" || true
-		jack_connect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1"
-		jack_connect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2"
+		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1" || :) & pids+=("$!")
+		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2" || :) & pids+=("$!")
+		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1") & pids+=("$!")
+		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2") & pids+=("$!")
 
 	# Bass cut into main speakers
 	elif [[ $1 == band ]]; then
-		jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1" || true
-		jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2" || true
-		jack_connect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1"
-		jack_connect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2"
+		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1" || :) & pids+=("$!")
+		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2" || :) & pids+=("$!")
+		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1") & pids+=("$!")
+		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2") & pids+=("$!")
 
 	else
 		>&2 printf 'Unexpected mains configuration: “%s”\n' "$1"
 		return 1
 	fi
+
+	>&2 printf 'Waiting for set-mains-configuration JACK port (dis)connection PIDs: %s\n' "${pids[*]}"
+	wait -- "${pids[@]}"
 )
 
 # Only reconfigure mains
@@ -221,41 +222,47 @@ if [[ $MODE == mains ]]; then
 	exit 0
 fi
 
-set -o xtrace
+hardware_playback_ports=()
+for port in "${present_ports_arr[@]}"; do
+	if [[ $port =~ ^system:playback_[0-9]+$ ]]; then
+		hardware_playback_ports+=("$port")
+	fi
+done
 
-sleep 1s
+(set -o xtrace; sleep 1s)
 
-jack_disconnect "$PA_SINK_CLIENT:front-left" 'system:playback_1' || true
-jack_disconnect "$PA_SINK_CLIENT:front-right" 'system:playback_2' || true
-jack_disconnect "$PA_SINK_CLIENT:front-left" 'system:playback_3' || true
-jack_disconnect "$PA_SINK_CLIENT:front-right" 'system:playback_4' || true
-jack_disconnect "$PA_SINK_CLIENT:front-left" 'system:playback_5' || true
-jack_disconnect "$PA_SINK_CLIENT:front-right" 'system:playback_6' || true
-jack_disconnect "$PA_SINK_CLIENT:front-left" 'system:playback_7' || true
-jack_disconnect "$PA_SINK_CLIENT:front-right" 'system:playback_8' || true
+pids=()
+
+for playback_port in "${hardware_playback_ports[@]}"; do
+	(set -o xtrace; jack_disconnect "$PA_SINK_CLIENT:front-left" "$playback_port" || :) & pids+=("$!")
+	(set -o xtrace; jack_disconnect "$PA_SINK_CLIENT:front-right" "$playback_port" || :) & pids+=("$!")
+done
 
 # Pre EQ inputs
-jack_connect "$PA_SINK_CLIENT:front-left" "$CALFJACKHOST_CLIENT:eq In #1"
-jack_connect "$PA_SINK_CLIENT:front-right" "$CALFJACKHOST_CLIENT:eq In #2"
+(set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-left" "$CALFJACKHOST_CLIENT:eq In #1") & pids+=("$!")
+(set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-right" "$CALFJACKHOST_CLIENT:eq In #2") & pids+=("$!")
 
 # Inputs
-jack_connect "$CALFJACKHOST_CLIENT:eq Out #1" "$JALV_LSP_XOVER_CLIENT:in_l"
-jack_connect "$CALFJACKHOST_CLIENT:eq Out #2" "$JALV_LSP_XOVER_CLIENT:in_r"
+(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:eq Out #1" "$JALV_LSP_XOVER_CLIENT:in_l") & pids+=("$!")
+(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:eq Out #2" "$JALV_LSP_XOVER_CLIENT:in_r") & pids+=("$!")
 
 # Sub-woofer
-jack_connect "$JALV_LSP_XOVER_CLIENT:band0l" "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME In #1"
-jack_connect "$JALV_LSP_XOVER_CLIENT:band0r" "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME In #2"
-jack_connect "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #1" "$HARDWARE_OUT_SUB_L"
-jack_connect "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #2" "$HARDWARE_OUT_SUB_R"
+(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band0l" "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME In #1") & pids+=("$!")
+(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band0r" "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME In #2") & pids+=("$!")
+(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #1" "$HARDWARE_OUT_SUB_L") & pids+=("$!")
+(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #2" "$HARDWARE_OUT_SUB_R") & pids+=("$!")
 
 # MIDS + HIGHS for `SETUP_TARGET=lh` and MIDS for `SETUP_TARGET=lmh`
-set-mains-configuration "$MAINS_CONFIGURATION"
-jack_connect "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #1" "$HARDWARE_OUT_MAINS_L"
-jack_connect "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #2" "$HARDWARE_OUT_MAINS_R"
+(set -o xtrace; set-mains-configuration "$MAINS_CONFIGURATION") & pids+=("$!")
+(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #1" "$HARDWARE_OUT_MAINS_L") & pids+=("$!")
+(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #2" "$HARDWARE_OUT_MAINS_R") & pids+=("$!")
 
 if [[ $SETUP_TARGET == lmh ]]; then
-	jack_connect "$JALV_LSP_XOVER_CLIENT:band2l" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #1"
-	jack_connect "$JALV_LSP_XOVER_CLIENT:band2r" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #2"
-	jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #1" "$HARDWARE_OUT_HI_L"
-	jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #2" "$HARDWARE_OUT_HI_R"
+	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band2l" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #1") & pids+=("$!")
+	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band2r" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #2") & pids+=("$!")
+	(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #1" "$HARDWARE_OUT_HI_L") & pids+=("$!")
+	(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #2" "$HARDWARE_OUT_HI_R") & pids+=("$!")
 fi
+
+>&2 printf 'Waiting for the main JACK ports connectivity PIDs: %s\n' "${pids[*]}"
+wait -- "${pids[@]}"
