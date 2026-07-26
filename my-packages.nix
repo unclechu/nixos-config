@@ -128,7 +128,6 @@ in
       pkgs.dbus pkgs.upower
       pkgs.parted pkgs.gparted
       pkgs.pciutils
-      pkgs.wally-cli
       pkgs.sshfs
       pkgs.curlftpfs
       pkgs.jmtpfs
