@@ -273,18 +273,15 @@ var (keyboardsMap, xlibKeysHackArgs) = static(block:
       isRegular: false,
       canBePlacedOnTopOfLaptopKeyboard: true,
       disables: @[
-        # Glow
-        "ZSA Technology Labs Inc ErgoDox EZ Glow",
-        "ZSA Technology Labs Inc ErgoDox EZ Glow Keyboard",
-        # Shine
-        "ZSA Technology Labs Inc ErgoDox EZ Shine",
-        "ZSA Technology Labs Inc ErgoDox EZ Shine Keyboard",
+        # The name is the same for both “Shine" and “Glow”
+        "ZSA Technology Labs Ergodox EZ",
+        "ZSA Technology Labs Ergodox EZ Keyboard",
       ],
       devices: @[
         # Glow
-        "/dev/input/by-id/usb-ZSA_Technology_Labs_Inc_ErgoDox_EZ_Glow-event-kbd",
+        "/dev/input/by-id/usb-ZSA_Technology_Labs_Ergodox_EZ_zLMoj_KrdqbA-event-kbd",
         # Shine
-        "/dev/input/by-id/usb-ZSA_Technology_Labs_Inc_ErgoDox_EZ_Shine-event-kbd",
+        "/dev/input/by-id/usb-ZSA_Technology_Labs_Ergodox_EZ_zLMoj_x9E3Np-event-kbd",
       ],
     ),
 
@@ -292,11 +289,11 @@ var (keyboardsMap, xlibKeysHackArgs) = static(block:
       isRegular: false,
       canBePlacedOnTopOfLaptopKeyboard: true,
       disables: @[
-        "ZSA Moonlander Mark I",
-        "ZSA Moonlander Mark I Keyboard",
+        "ZSA Technology Labs Moonlander Mark I",
+        "ZSA Technology Labs Moonlander Mark I Keyboard",
       ],
       devices: @[
-        "/dev/input/by-id/usb-ZSA_Moonlander_Mark_I-event-kbd",
+        "/dev/input/by-id/usb-ZSA_Technology_Labs_Moonlander_Mark_I_Rqea5_OadzVJ-event-kbd",
       ],
     ),
 
@@ -313,7 +310,7 @@ var (keyboardsMap, xlibKeysHackArgs) = static(block:
         "ZSA Technology Labs Planck EZ Glow Keyboard",
       ],
       devices: @[
-        "/dev/input/by-id/usb-ZSA_Technology_Labs_Planck_EZ_Glow-event-kbd",
+        "/dev/input/by-id/usb-ZSA_Technology_Labs_Planck_EZ_Glow_rPWmw_9DYX6x-event-kbd",
       ],
     ),
   })
