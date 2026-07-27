@@ -61,7 +61,7 @@ let
       #
       mid = defaultParams // {
         # Everything above goes to the tweeters
-        xOver = { freqHz = 2000; slope = xOverSlopes.lr8_48db; };
+        xOver = { freqHz = 2000; slope = xOverSlopes.lr4_24db; };
       };
 
       # Tweeters
@@ -69,7 +69,7 @@ let
       # - Drivers: Visaton G 25 FFL 8Ω
       # - Waveguide: Visaton Waveguide WG 220x150
       #
-      hi = defaultParams // { outDb = -0.7; };
+      hi = defaultParams // { outDb = -3.6; };
     };
   });
 
