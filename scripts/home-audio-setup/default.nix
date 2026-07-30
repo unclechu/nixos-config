@@ -69,7 +69,7 @@ let
       # - Drivers: Visaton G 25 FFL 8Ω
       # - Waveguide: Visaton Waveguide WG 220x150
       #
-      hi = defaultParams // { outDb = -3.6; };
+      hi = defaultParams // { outDb = -4.5; };
     };
   });
 

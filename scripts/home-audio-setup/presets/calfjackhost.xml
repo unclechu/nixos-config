@@ -17,8 +17,8 @@
   <param name="ls_freq" value="45.7305" />
   <param name="ls_q" value="1.27473" />
   <param name="hs_active" value="0" />
-  <param name="hs_level" value="0.920188" />
-  <param name="hs_freq" value="10061.5" />
+  <param name="hs_level" value="1.08673" />
+  <param name="hs_freq" value="3648.6" />
   <param name="hs_q" value="0.707" />
   <param name="p1_active" value="0" />
   <param name="p1_level" value="0.888615" />
@@ -45,12 +45,12 @@
   <param name="p6_freq" value="2242.02" />
   <param name="p6_q" value="42.2669" />
   <param name="p7_active" value="1" />
-  <param name="p7_level" value="0.473029" />
+  <param name="p7_level" value="0.659754" />
   <param name="p7_freq" value="2269.14" />
-  <param name="p7_q" value="2.52348" />
-  <param name="p8_active" value="0" />
-  <param name="p8_level" value="1" />
-  <param name="p8_freq" value="8000" />
+  <param name="p7_q" value="2.0893" />
+  <param name="p8_active" value="1" />
+  <param name="p8_level" value="0.585229" />
+  <param name="p8_freq" value="3374.3" />
   <param name="p8_q" value="1" />
   <param name="individuals" value="1" />
   <param name="zoom" value="0.0625" />
@@ -110,7 +110,7 @@
 <preset bank="0" program="0" plugin="stereo" name="">
   <param name="bypass" value="0" />
   <param name="level_in" value="1" />
-  <param name="level_out" value="0.659754" />
+  <param name="level_out" value="0.597082" />
   <param name="balance_in" value="0" />
   <param name="balance_out" value="0" />
   <param name="softclip" value="0" />
