@@ -47,9 +47,7 @@ DISPLAY_NUM_FILE=$HOME/.pseudo-primary-display
 # See for `copyToRuntimeScript` helper in `default.nix`.
 DISPLAY_NUM_RUNTIME_FILE=$XDG_RUNTIME_DIR/pseudo-primary-display
 
-DISPLAYS_COUNT=$(
-	xrandr --listmonitors | awk '$2 ~ /^\+/ { count++ } END { print count }'
-)
+DISPLAYS_COUNT=$(xrandr --listactivemonitors | awk 'NR == 1 { print $2; exit }')
 
 if ! [[ $DISPLAYS_COUNT =~ ^[1-9]$ ]]; then
 	>&2 printf 'Incorrect displays count number: “%s”' "$DISPLAYS_COUNT"
