@@ -44,9 +44,9 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 : "${MAINS_STEREO_NAME:=mains-stereo}"
 : "${HI_STEREO_NAME:=hi-stereo}"
 
-: "${HARDWARE_OUT_SUB_L:=system:playback_3}"
+: "${HARDWARE_OUT_SUB_L:=system:playback_13}"
 if [[ $SUB_CONFIGURATION == stereo ]]; then
-	: "${HARDWARE_OUT_SUB_R:=system:playback_4}"
+	: "${HARDWARE_OUT_SUB_R:=system:playback_14}"
 elif [[ $SUB_CONFIGURATION == mono ]]; then
 	: "${HARDWARE_OUT_SUB_R:=$HARDWARE_OUT_SUB_L}"
 else
@@ -54,10 +54,10 @@ else
 	exit 1
 fi
 # N.B. MAINS can also be considered MIDS for more than 2-way (`lh`) configuration.
-: "${HARDWARE_OUT_MAINS_L:=system:playback_5}"
-: "${HARDWARE_OUT_MAINS_R:=system:playback_6}"
-: "${HARDWARE_OUT_HI_L:=system:playback_7}"
-: "${HARDWARE_OUT_HI_R:=system:playback_8}"
+: "${HARDWARE_OUT_MAINS_L:=system:playback_15}"
+: "${HARDWARE_OUT_MAINS_R:=system:playback_16}"
+: "${HARDWARE_OUT_HI_L:=system:playback_17}"
+: "${HARDWARE_OUT_HI_R:=system:playback_18}"
 
 SETUP_TARGET_VALUE_USAGE='(must be either “lh” or “lmh”)'
 

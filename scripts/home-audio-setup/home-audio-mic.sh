@@ -23,6 +23,8 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 # Or 'PulseAudio JACK Source-01'
 : "${PA_SOURCE_CLIENT:=PulseAudio JACK Source}"
 
+: "${HARDWARE_MIC_PORT:=system:capture_11}"
+
 : "${CALFJACKHOST_PRESET:=presets/calfjackhost-mic.xml}"
 : "${CALFJACKHOST_CLIENT:=home-audio-mic}"
 
@@ -103,8 +105,8 @@ set -o xtrace
 sleep 1s
 
 # Route the hardware microphone to calfjackhost
-jack_connect system:capture_1 "$CALFJACKHOST_CLIENT:Mic Limiter 1 In #1"
-jack_connect system:capture_1 "$CALFJACKHOST_CLIENT:Mic Limiter 1 In #2"
+jack_connect "$HARDWARE_MIC_PORT" "$CALFJACKHOST_CLIENT:Mic Limiter 1 In #1"
+jack_connect "$HARDWARE_MIC_PORT" "$CALFJACKHOST_CLIENT:Mic Limiter 1 In #2"
 jack_connect "$CALFJACKHOST_CLIENT:Mic Limiter 1 Out #1" "$CALFJACKHOST_CLIENT:Mic Limiter 2 In #1"
 jack_connect "$CALFJACKHOST_CLIENT:Mic Limiter 1 Out #2" "$CALFJACKHOST_CLIENT:Mic Limiter 2 In #2"
 

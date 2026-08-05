@@ -34,6 +34,9 @@ set -o xtrace
 jack_control start
 sleep 1s
 
+# Make sure it’s not accidentally too loud when starting
+pactl set-sink-volume 'jack_out' 25%
+
 # Start the cross-over setup and connect everything
 if [[ $SETUP_TARGET == lh ]]; then
 	./home-audio-xover.sh lh
