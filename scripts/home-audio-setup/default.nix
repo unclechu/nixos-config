@@ -6,72 +6,121 @@
 # Currently there is a pair main full-range bookshelf speakers
 # and a pair of subwoofer boxes (stereo configuration).
 
-let sources = import ../../nix/sources.nix; in
+{ pkgs ? import <nixpkgs> {}
 
-{ lib
-, callPackage
-, runCommand
-, coreutils
-, gnused
-, bc
-, pulseaudio
-, jack2
-, jack-example-tools
-, jalv
-, calf
-, lsp-plugins # TODO: Add to LV_PATH
-, xmlstarlet
+, lib ? pkgs.lib
+, callPackage ? pkgs.callPackage
+, runCommand ? pkgs.runCommand
+, coreutils ? pkgs.coreutils
+, gnused ? pkgs.gnused
+, bc ? pkgs.bc
+, pulseaudio ? pkgs.pulseaudio
+, jack2 ? pkgs.jack2
+, jack-example-tools ? pkgs.jack-example-tools
+, jalv ? pkgs.jalv
+, calf ? pkgs.calf
+, lsp-plugins ? pkgs.lsp-plugins # TODO: Add to LV_PATH
+, xmlstarlet ? pkgs.xmlstarlet
 
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
 , mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
 }:
 
 let
+  pkgs = null;
+
   # These parameters are overridden from in the preset file(s).
-  params = lib.fix (self: {
-    # LH for Low-High (subs + mains DSP crossover)
+  setups = lib.fix (self: {
+    # LH for Low-High (subs + mains DSP crossover).
+    # Typically used for bookshelves + subs.
     lh = {
-      # Main full-range speakers
-      mains = {
-        inDb = 0.0;
-        outDb = 0.0;
-        balanceIn = 0.0; # -1 .. +1
-        balanceOut = 0.0; # -1 .. +1
-      };
+      eqDisableParametricBands = true;
 
       # Subwoofers
       sub = defaultParams // {
         xOver = { freqHz = 100; slope = xOverSlopes.lr16_96db; };
       };
+
+      # Main full-range speakers
+      mid = defaultParams;
+
+      hi-mid = null;
+      hi = null;
     };
 
-    # LMH for Low-Mid-High (subs + mid-range + tweeter DSP crossover)
+    # LH but for Rockville 64B/4Ω 6.5" bookshelves (pretty low sensitivity).
+    lh-rv = self.lh // {
+      sub = self.lh.sub // { outDb = -9.0; };
+    };
+
+    # LMH for Low-Mid-High (subs + mid-range + tweeter DSP crossover).
     lmh = {
       # Subwoofers
       #
-      # - Drivers: B&C 18TBX100 4Ω
+      # - Drivers: B&C 18TBX100 4Ω (97dB) 18"
       # - Enclosure: the box PA 18 ECO MKII
+      # - Amplifier: 2x Fosi Audio V3 Mono
       #
       inherit (self.lh) sub;
 
       # Mid-range speakers
       #
-      # - Drivers: Visaton W 200 S 8Ω
+      # - Drivers: Visaton W 200 S 8Ω (88dB 1W/1m) 8"
       # - Enclosure: Four Connect 4-AI8S 8"
+      # - Amplifier: 2x Fosi Audio V3 Mono
       #
       mid = defaultParams // {
         # Everything above goes to the tweeters
         xOver = { freqHz = 2000; slope = xOverSlopes.lr4_24db; };
       };
 
+      hi-mid = null;
+
       # Tweeters
       #
-      # - Drivers: Visaton G 25 FFL 8Ω
+      # - Drivers: Visaton G 25 FFL 8Ω (90dB 1W/1m)
       # - Waveguide: Visaton Waveguide WG 220x150
+      # - Amplifier: Nobsound NS-04G PRO
       #
-      hi = defaultParams // { outDb = -4.5; };
+      hi = defaultParams;
+    };
+
+    # LMMH for Low-Mid-HiMid-High
+    # (subs + mid-range + hi-mid-range + tweeter DSP crossover).
+    lmmh = self.lmh // {
+      eqDisableParametricBands = true;
+
+      sub = self.lmh.sub // {
+        outDb = -6.0;
+      };
+
+      hi = self.lmh.hi // {
+        # “hi-mid” and “hi” use the same amplifier with the same gain setting.
+        # And the tweeter is 4dB more efficient. Compensating for that here.
+        inDb = -4.0;
+      };
+
+      mid = self.lmh.mid // {
+        outDb = -9.0;
+
+        # Above frequencies go to split between hi-mid drivers and tweeters
+        xOver = { freqHz = 800; slope = xOverSlopes.lr12_72db; };
+      };
+
+      # Hi-Mid-range speakers
+      #
+      # - Drivers: Visaton W 100 S 8Ω (86dB 1W/1m) 4"
+      # - Enclosure: Some cheap small wooden boxes with sealed port hole
+      # - Amplifier: Nobsound NS-04G PRO
+      #
+      hi-mid = defaultParams // {
+        # Everything above goes to the tweeters
+        xOver = { freqHz = 5000; slope = xOverSlopes.lr12_72db; };
+      };
     };
   });
+
+  orderedRanges = ["sub" "mid" "hi-mid" "hi"];
 
   defaultParams = {
     inDb = 0.0;
@@ -88,37 +137,44 @@ let
     lr16_96db = 5;
   };
 
-  mkPluginPath = name: "/rack/plugin[@instance-name='${name}']";
-  mkPluginPresetPath = name: plugin: "${mkPluginPath name}/preset[@plugin='${plugin}']";
-
-  # Note that values from `params` are not always written to the associated paths as-is.
+  # For range channels volume and balance control.
+  #
+  # Note that values from `setups` are not always written to the associated paths as-is.
   # For example decibels are converted to gain coefficients.
-  paramsPaths = lib.fix (self: {
-    lh = {
-      mains = defaultParamsPaths "mains-stereo" "stereo";
-      sub = defaultParamsPaths "sub-stereo" "stereo" // {
-        xOver = { freqHz = "sf_1"; slope = "frs_1"; };
-      };
+  getCalfStereoPresetPaths = rangeName:
+    let
+      pluginName = "${rangeName}-stereo";
+      pluginPath = "/rack/plugin[@instance-name='${pluginName}']";
+      pluginPresetPath = "${pluginPath}/preset[@plugin='stereo']";
+    in {
+      inherit pluginPath;
+      inDb = "${pluginPresetPath}/param[@name='level_in']/@value";
+      outDb = "${pluginPresetPath}/param[@name='level_out']/@value";
+      balanceIn = "${pluginPresetPath}/param[@name='balance_in']/@value"; # -1 .. +1
+      balanceOut = "${pluginPresetPath}/param[@name='balance_out']/@value"; # -1 .. +1
     };
 
-    lmh = {
-      inherit (self.lh) sub;
-      mid = self.lh.mains // {
-        renamePluginTo = "mid-stereo";
-        xOver = { freqHz = "sf_2"; slope = "frs_2"; };
-      };
-      hi = defaultParamsPaths "hi-stereo" "stereo";
+  getCalfEqPresetPaths =
+    let
+      pluginName = "eq";
+      pluginPath = "/rack/plugin[@instance-name='${pluginName}']";
+      pluginPresetPath = "${pluginPath}/preset[@plugin='eq12']";
+    in {
+      parametricBands = lib.pipe (lib.range 1 8) [
+        (map (n: {
+          name = "band${toString n}";
+          value = {
+            active = "${pluginPresetPath}/param[@name='p${toString n}_active']/@value"; # 0 or 1
+          };
+        }))
+        builtins.listToAttrs
+      ];
     };
-  });
 
-  defaultParamsPaths = pluginName: presetPlugin:
-    let presetPath = mkPluginPresetPath pluginName presetPlugin; in {
-      pluginPath = mkPluginPath pluginName;
-      inDb = "${presetPath}/param[@name='level_in']/@value";
-      outDb = "${presetPath}/param[@name='level_out']/@value";
-      balanceIn = "${presetPath}/param[@name='balance_in']/@value"; # -1 .. +1
-      balanceOut = "${presetPath}/param[@name='balance_out']/@value"; # -1 .. +1
-    };
+  # For cross-over frequencies and slopes control
+  getLspPresetXOverPaths = rangeNum:
+    assert builtins.isInt rangeNum && rangeNum >= 1 && rangeNum <= 7;
+    { freqHz = "sf_${toString rangeNum}"; slope = "frs_${toString rangeNum}"; };
 
   executablesMap = {
     sleep = coreutils;
@@ -149,7 +205,7 @@ let
   )'';
 
   mk-lsp-xover-preset = setupTarget:
-    assert builtins.elem setupTarget ["lh" "lmh"];
+    assert builtins.elem setupTarget (builtins.attrNames setups);
     let
       replaceValue = symbol: value:
         assert builtins.isFloat value || builtins.isInt value;
@@ -162,18 +218,33 @@ let
           '
         )'';
 
-      params' = let x = params.${setupTarget}; in assert builtins.isAttrs x; x;
-      paramsPaths' = let x = paramsPaths.${setupTarget}; in assert builtins.isAttrs x; x;
+      setup = let x = setups.${setupTarget}; in assert builtins.isAttrs x; x;
 
-      defaultReplaces = lib.pipe params' [
-        builtins.attrNames
-        (builtins.filter (name: builtins.hasAttr "xOver" params'.${name}))
-        (names: assert builtins.length names > 0; names)
-        (map (name: [
-          (let f = x: x.${name}.xOver.freqHz; in replaceValue (f paramsPaths') (f params'))
-          (let f = x: x.${name}.xOver.slope; in replaceValue (f paramsPaths') (f params'))
-        ]))
+      # Type ∷ string
+      initialReset = lib.pipe (lib.range 1 7) [
+        (map (rangeNum:
+          let paths = getLspPresetXOverPaths rangeNum; in
+          [ (replaceValue paths.freqHz 10.0) (replaceValue paths.slope 0.0) ]
+        ))
         lib.flatten
+        (builtins.concatStringsSep " | ")
+      ];
+
+      # Type ∷ string
+      replaces = lib.pipe orderedRanges [
+        (builtins.foldl' (acc: rangeName:
+          let rangeSetup = setup.${rangeName}; in
+          if isNull rangeSetup || !(builtins.hasAttr "xOver" rangeSetup) then acc else {
+            nextN = acc.nextN + 1;
+            replaces =
+              let paths = getLspPresetXOverPaths acc.nextN; in
+              acc.replaces ++ [
+                (replaceValue paths.freqHz rangeSetup.xOver.freqHz)
+                (replaceValue paths.slope rangeSetup.xOver.slope)
+              ];
+          }
+        ) { nextN = 1; replaces = []; })
+        (x: x.replaces)
         (builtins.concatStringsSep " | ")
       ];
     in
@@ -182,11 +253,18 @@ let
       mkdir -- "$out"
       cp -- ${lib.escapeShellArg "${presets/lsp-xover-jalv/manifest.ttl}"} "$out/manifest.ttl"
       STATE_PRESET=$(<${lib.escapeShellArg "${presets/lsp-xover-jalv/state.ttl}"})
-      ${'' printf '%s\n' "$STATE_PRESET" ''} | ${defaultReplaces} > "$out/state.ttl"
+      ${lib.pipe [
+        '' printf '%s\n' "$STATE_PRESET" ''
+        initialReset
+        replaces
+      ] [
+        (builtins.filter (x: x != ""))
+        (builtins.concatStringsSep " | ")
+      ]} > "$out/state.ttl"
     '';
 
   mk-calfjackhost-preset = setupTarget:
-    assert builtins.elem setupTarget ["lh" "lmh"];
+    assert builtins.elem setupTarget (builtins.attrNames setups);
     let
       checkPathExistence = path: ''(
         [[ -v INPUT ]] # Must be defined
@@ -220,20 +298,6 @@ let
         <<<"$INPUT" "''${UPDATE_CMD[@]}"
       )'';
 
-      renamePlugin = pluginPath: newPluginName: ''(
-        INPUT=$(</dev/stdin)
-        ${checkPathExistence pluginPath}
-
-        UPDATE_CMD=(
-          ${e.s.xmlstarlet} ed
-          -u ${lib.escapeShellArg "${pluginPath}/@instance-name"}
-          -v ${lib.escapeShellArg newPluginName}
-        )
-
-        # set -o xtrace
-        <<<"$INPUT" "''${UPDATE_CMD[@]}"
-      )'';
-
       removePlugin = pluginPath: ''(
         INPUT=$(</dev/stdin)
         ${checkPathExistence pluginPath}
@@ -242,27 +306,32 @@ let
         <<<"$INPUT" ${e.s.xmlstarlet} ed -d ${lib.escapeShellArg pluginPath}
       )'';
 
-      noOp = ''(X=$(</dev/stdin); printf '%s\n' "$X")'';
+      setup = let x = setups.${setupTarget}; in assert builtins.isAttrs x; x;
 
-      params' = let x = params.${setupTarget}; in assert builtins.isAttrs x; x;
-      paramsPaths' = let x = paramsPaths.${setupTarget}; in assert builtins.isAttrs x; x;
-
-      mainsName =
-        if setupTarget == "lh" then "mains"
-        else if setupTarget == "lmh" then "mid"
-        else throw "Unexpected `setupTarget` value: `${setupTarget}`"
-      ;
-
-      defaultReplaces = bandName: lib.pipe [
-        (let f = x: x.${bandName}.inDb; in replaceValue (f paramsPaths') (dbToCoeff (f params')))
-        (let f = x: x.${bandName}.outDb; in replaceValue (f paramsPaths') (dbToCoeff (f params')))
-        (let f = x: x.${bandName}.balanceIn; in replaceValue (f paramsPaths') (f params'))
-        (let f = x: x.${bandName}.balanceOut; in replaceValue (f paramsPaths') (f params'))
-        (
-          let x = paramsPaths'.${bandName}.renamePluginTo or null; in
-          if isNull x then noOp else renamePlugin paramsPaths'.${bandName}.pluginPath x
-        )
-      ] [
+      # Type ∷ string
+      replaces = lib.pipe orderedRanges [
+        (map (rangeName:
+          let
+            rangeSetup = setup.${rangeName};
+            stereoPaths = getCalfStereoPresetPaths rangeName;
+          in
+          if isNull rangeSetup then [
+            (removePlugin (getCalfStereoPresetPaths rangeName).pluginPath)
+          ] else [
+            (let f = x: x.inDb; in replaceValue (f stereoPaths) (dbToCoeff (f rangeSetup)))
+            (let f = x: x.outDb; in replaceValue (f stereoPaths) (dbToCoeff (f rangeSetup)))
+            (let f = x: x.balanceIn; in replaceValue (f stereoPaths) (f rangeSetup))
+            (let f = x: x.balanceOut; in replaceValue (f stereoPaths) (f rangeSetup))
+          ]
+        ))
+        lib.flatten
+        (x: x ++ (if setup.eqDisableParametricBands or false then (
+          let paths = getCalfEqPresetPaths; in
+          lib.pipe paths.parametricBands [
+            builtins.attrValues
+            (map (x: replaceValue x.active 0))
+          ]
+        ) else []))
         (builtins.concatStringsSep " | ")
       ];
     in
@@ -276,35 +345,27 @@ let
         } ${e.s.sed} 's/xml version="1.1"/xml version="1.0"/'
       )
 
-      ${'' printf %s "$PRESET" ''
-        } | ${defaultReplaces "sub"
-        } | ${defaultReplaces mainsName
-        } | ${
-          if setupTarget == "lh" then removePlugin paramsPaths.lmh.hi.pluginPath
-          else if setupTarget == "lmh" then defaultReplaces "hi"
-          else throw "Unexpected `setupTarget` value: `${setupTarget}`"
-        } > "$out"
+      ${lib.pipe [
+        '' printf %s "$PRESET" ''
+        replaces
+      ] [
+        (builtins.filter (x: x != ""))
+        (builtins.concatStringsSep " | ")
+      ]} > "$out"
     '';
 
-  lsp-xover-preset-lh = mk-lsp-xover-preset "lh";
-  lsp-xover-preset-lmh = mk-lsp-xover-preset "lmh";
-
-  calfjackhost-preset-lh = mk-calfjackhost-preset "lh";
-  calfjackhost-preset-lmh = mk-calfjackhost-preset "lmh";
-
-  presetMapBySetupTarget = {
-    lh = {
-      lsp-xover = lsp-xover-preset-lh;
-      calfjackhost = calfjackhost-preset-lh;
-    };
-    lmh = {
-      lsp-xover = lsp-xover-preset-lmh;
-      calfjackhost = calfjackhost-preset-lmh;
-    };
-  };
+  presetMapBySetupTarget =
+    builtins.foldl' (acc: setupTarget:
+      acc // {
+        ${setupTarget} = {
+          lsp-xover = mk-lsp-xover-preset setupTarget;
+          calfjackhost = mk-calfjackhost-preset setupTarget;
+        };
+      }
+    ) {} (builtins.attrNames setups);
 
   mk-home-audio-xover-script = setupTarget:
-    assert builtins.elem setupTarget ["lh" "lmh"];
+    assert builtins.elem setupTarget (builtins.attrNames setups);
     mk-generic-script {
       name = "home-audio-xover-${setupTarget}";
       src = ./home-audio-xover.sh;
@@ -313,18 +374,15 @@ let
         "--add-flag" (lib.escapeShellArg setupTarget)
         "--set" "JALV_LSP_XOVER_PRESET" presetMapBySetupTarget.${setupTarget}.lsp-xover
         "--set" "CALFJACKHOST_PRESET" presetMapBySetupTarget.${setupTarget}.calfjackhost
-      ] ++ lib.optionals (setupTarget == "lmh") [
-        "--set" "MAINS_STEREO_NAME" (paramsPaths.${setupTarget}.mid.renamePluginTo)
       ];
     };
 
-  home-audio-xover-lh = mk-home-audio-xover-script "lh";
-  home-audio-xover-lmh = mk-home-audio-xover-script "lmh";
+  home-audio-xover-mapBySetupTarget =
+    builtins.foldl' (acc: setupTarget:
+      acc // { "home-audio-xover-${setupTarget}" = mk-home-audio-xover-script setupTarget; }
+    ) {} (builtins.attrNames setups);
 
-  eFinal = executable-dependencies (executablesMap // {
-    home-audio-xover-lh = home-audio-xover-lh;
-    home-audio-xover-lmh = home-audio-xover-lmh;
-  });
+  eFinal = executable-dependencies (executablesMap // home-audio-xover-mapBySetupTarget);
 
   home-audio-setup = mk-generic-script {
     name = "home-audio-setup";
@@ -336,6 +394,7 @@ let
         substituteInPlace "$src"
         --replace-fail './home-audio-xover.sh lh' ${eFinal.s.home-audio-xover-lh}
         --replace-fail './home-audio-xover.sh lmh' ${eFinal.s.home-audio-xover-lmh}
+        --replace-fail './home-audio-xover.sh lmmh' ${eFinal.s.home-audio-xover-lmmh}
       )
       "''${CMD[@]}"
     '';
@@ -351,18 +410,16 @@ in
 
 {
   inherit
-    params
-
-    lsp-xover-preset-lh
-    lsp-xover-preset-lmh
-
-    calfjackhost-preset-lh
-    calfjackhost-preset-lmh
-
-    home-audio-xover-lh
-    home-audio-xover-lmh
-
+    setups
     home-audio-setup
     home-audio-mic
     ;
-}
+} // home-audio-xover-mapBySetupTarget // (
+  builtins.foldl' (acc: setupTarget:
+    let presets = presetMapBySetupTarget.${setupTarget}; in
+    acc // {
+      "lsp-xover-preset-${setupTarget}" = presets.lsp-xover;
+      "calfjackhost-preset-${setupTarget}" = presets.calfjackhost;
+    }
+  ) {} (builtins.attrNames setups)
+)

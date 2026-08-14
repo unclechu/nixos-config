@@ -17,7 +17,7 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 # Command-line arguments parsing
 
 if (( $# == 0 )); then
-	SETUP_TARGET=lmh
+	SETUP_TARGET=lmmh
 elif (( $# == 1 )) && [[ $1 == lh || $1 == lmh ]]; then
 	SETUP_TARGET=$1
 	shift
@@ -42,6 +42,8 @@ if [[ $SETUP_TARGET == lh ]]; then
 	./home-audio-xover.sh lh
 elif [[ $SETUP_TARGET == lmh ]]; then
 	./home-audio-xover.sh lmh
+elif [[ $SETUP_TARGET == lmmh ]]; then
+	./home-audio-xover.sh lmmh
 else
 	>&2 printf 'Unexpected SETUP_TARGET value: “%s”\n' "$SETUP_TARGET"
 	exit 1

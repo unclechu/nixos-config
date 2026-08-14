@@ -9,6 +9,7 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 # Usage examples:
 #   ./home-audio-xover.sh lh
 #   ./home-audio-xover.sh lmh
+#   ./home-audio-xover.sh lmmh
 #
 # Only reconfigure “mains” for already running setup:
 #   ./home-audio-xover.sh lh mains fr
@@ -41,7 +42,8 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 : "${SUB_CONFIGURATION:=stereo}"
 
 : "${SUB_STEREO_NAME:=sub-stereo}"
-: "${MAINS_STEREO_NAME:=mains-stereo}"
+: "${MID_STEREO_NAME:=mid-stereo}"
+: "${HIMID_STEREO_NAME:=hi-mid-stereo}"
 : "${HI_STEREO_NAME:=hi-stereo}"
 
 : "${HARDWARE_OUT_SUB_L:=system:playback_13}"
@@ -53,18 +55,19 @@ else
 	>&2 printf 'Unexpected SUB_CONFIGURATION value: “%s”\n' "$SUB_CONFIGURATION"
 	exit 1
 fi
-# N.B. MAINS can also be considered MIDS for more than 2-way (`lh`) configuration.
-: "${HARDWARE_OUT_MAINS_L:=system:playback_15}"
-: "${HARDWARE_OUT_MAINS_R:=system:playback_16}"
-: "${HARDWARE_OUT_HI_L:=system:playback_17}"
-: "${HARDWARE_OUT_HI_R:=system:playback_18}"
+: "${HARDWARE_OUT_MID_L:=system:playback_15}"
+: "${HARDWARE_OUT_MID_R:=system:playback_16}"
+: "${HARDWARE_OUT_HIMID_L:=system:playback_17}"
+: "${HARDWARE_OUT_HIMID_R:=system:playback_18}"
+: "${HARDWARE_OUT_HI_L:=system:playback_19}"
+: "${HARDWARE_OUT_HI_R:=system:playback_20}"
 
-SETUP_TARGET_VALUE_USAGE='(must be either “lh” or “lmh”)'
+SETUP_TARGET_VALUE_USAGE='(must be “lh”, “lmh”, or “lmmh”)'
 
 if (( $# < 1 )); then
 	>&2 printf 'Missing setup target argument %s\n' "$SETUP_TARGET_VALUE_USAGE"
 	exit 1
-elif [[ $1 != "lh" && $1 != "lmh" ]]; then
+elif [[ $1 != "lh" && $1 != "lmh" && $1 != "lmmh" ]]; then
 	>&2 printf 'Unexpected setup target value %s: “%s”\n' "$SETUP_TARGET_VALUE_USAGE" "$1"
 	exit 1
 else
@@ -112,15 +115,28 @@ if [[ $MODE == default ]]; then
 fi
 
 if [[ $SETUP_TARGET == lh ]]; then
-	HI_BAND_PORTS=()
-elif [[ $SETUP_TARGET == lmh ]]; then
-	HI_BAND_PORTS=(
+	EXTRA_BAND_PORTS=()
+elif [[ $SETUP_TARGET == lmh || $SETUP_TARGET == lmmh ]]; then
+	if [[ $SETUP_TARGET == lmmh ]]; then
+		HIMID_PORTS=(
+			"$JALV_LSP_XOVER_CLIENT:band3l"
+			"$JALV_LSP_XOVER_CLIENT:band3r"
+			"$CALFJACKHOST_CLIENT:$HIMID_STEREO_NAME In #1"
+			"$CALFJACKHOST_CLIENT:$HIMID_STEREO_NAME In #2"
+			"$CALFJACKHOST_CLIENT:$HIMID_STEREO_NAME Out #1"
+			"$CALFJACKHOST_CLIENT:$HIMID_STEREO_NAME Out #2"
+		)
+	else
+		HIMID_PORTS=()
+	fi
+	EXTRA_BAND_PORTS=(
 		"$JALV_LSP_XOVER_CLIENT:band2l"
 		"$JALV_LSP_XOVER_CLIENT:band2r"
 		"$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #1"
 		"$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #2"
 		"$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #1"
 		"$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #2"
+		"${HIMID_PORTS[@]}"
 	)
 else
 	>&2 printf 'Unexpected SETUP_TARGET value: “%s”\n' "$SETUP_TARGET"
@@ -142,11 +158,11 @@ PORTS=(
 	"$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME In #2"
 	"$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #1"
 	"$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #2"
-	"$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1"
-	"$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2"
-	"$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #1"
-	"$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #2"
-	"${HI_BAND_PORTS[@]}"
+	"$CALFJACKHOST_CLIENT:$MID_STEREO_NAME In #1"
+	"$CALFJACKHOST_CLIENT:$MID_STEREO_NAME In #2"
+	"$CALFJACKHOST_CLIENT:$MID_STEREO_NAME Out #1"
+	"$CALFJACKHOST_CLIENT:$MID_STEREO_NAME Out #2"
+	"${EXTRA_BAND_PORTS[@]}"
 )
 
 if [[ $MODE != mains ]]; then
@@ -195,17 +211,17 @@ set-mains-configuration() (
 			exit 1
 		fi
 
-		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1" || :) & pids+=("$!")
-		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2" || :) & pids+=("$!")
-		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1") & pids+=("$!")
-		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2") & pids+=("$!")
+		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME In #1" || :) & pids+=("$!")
+		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME In #2" || :) & pids+=("$!")
+		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME In #1") & pids+=("$!")
+		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME In #2") & pids+=("$!")
 
 	# Bass cut into main speakers
 	elif [[ $1 == band ]]; then
-		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1" || :) & pids+=("$!")
-		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2" || :) & pids+=("$!")
-		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #1") & pids+=("$!")
-		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME In #2") & pids+=("$!")
+		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_l" "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME In #1" || :) & pids+=("$!")
+		(set -o xtrace; jack_disconnect "$JALV_LSP_XOVER_CLIENT:out_r" "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME In #2" || :) & pids+=("$!")
+		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band1l" "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME In #1") & pids+=("$!")
+		(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band1r" "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME In #2") & pids+=("$!")
 
 	else
 		>&2 printf 'Unexpected mains configuration: “%s”\n' "$1"
@@ -252,14 +268,23 @@ done
 (set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #1" "$HARDWARE_OUT_SUB_L") & pids+=("$!")
 (set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME Out #2" "$HARDWARE_OUT_SUB_R") & pids+=("$!")
 
-# MIDS + HIGHS for `SETUP_TARGET=lh` and MIDS for `SETUP_TARGET=lmh`
+# Mids (everything above subs for `SETUP_TARGET=lh` and MIDS/LOW-MIDS for `SETUP_TARGET=lmh` and `SETUP_TARGET=lmmh`
 (set -o xtrace; set-mains-configuration "$MAINS_CONFIGURATION") & pids+=("$!")
-(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #1" "$HARDWARE_OUT_MAINS_L") & pids+=("$!")
-(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$MAINS_STEREO_NAME Out #2" "$HARDWARE_OUT_MAINS_R") & pids+=("$!")
+(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME Out #1" "$HARDWARE_OUT_MID_L") & pids+=("$!")
+(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME Out #2" "$HARDWARE_OUT_MID_R") & pids+=("$!")
 
 if [[ $SETUP_TARGET == lmh ]]; then
 	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band2l" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #1") & pids+=("$!")
 	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band2r" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #2") & pids+=("$!")
+	(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #1" "$HARDWARE_OUT_HI_L") & pids+=("$!")
+	(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #2" "$HARDWARE_OUT_HI_R") & pids+=("$!")
+elif [[ $SETUP_TARGET == lmmh ]]; then
+	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band2l" "$CALFJACKHOST_CLIENT:$HIMID_STEREO_NAME In #1") & pids+=("$!")
+	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band2r" "$CALFJACKHOST_CLIENT:$HIMID_STEREO_NAME In #2") & pids+=("$!")
+	(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$HIMID_STEREO_NAME Out #1" "$HARDWARE_OUT_HIMID_L") & pids+=("$!")
+	(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$HIMID_STEREO_NAME Out #2" "$HARDWARE_OUT_HIMID_R") & pids+=("$!")
+	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band3l" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #1") & pids+=("$!")
+	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band3r" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #2") & pids+=("$!")
 	(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #1" "$HARDWARE_OUT_HI_L") & pids+=("$!")
 	(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #2" "$HARDWARE_OUT_HI_R") & pids+=("$!")
 fi
