@@ -34,7 +34,7 @@ let
     # LH for Low-High (subs + mains DSP crossover).
     # Typically used for bookshelves + subs.
     lh = {
-      eqDisableParametricBands = true;
+      eq.parametricBands = [];
 
       # Subwoofers
       sub = defaultParams // {
@@ -55,6 +55,11 @@ let
 
     # LMH for Low-Mid-High (subs + mid-range + tweeter DSP crossover).
     lmh = {
+      eq.parametricBands = [
+        { f = 2269.14; l = -3.6; q = 2.089; }
+        { f = 3374.3; l = -4.7; q = 1.0; }
+      ];
+
       # Subwoofers
       #
       # - Drivers: B&C 18TBX100 4Ω (97dB) 18"
@@ -88,20 +93,17 @@ let
     # LMMH for Low-Mid-HiMid-High
     # (subs + mid-range + hi-mid-range + tweeter DSP crossover).
     lmmh = self.lmh // {
-      eqDisableParametricBands = true;
+      eq.parametricBands = [
+        { f = 6459.33; l = -2.0; q = 4.966; }
+        { f = 7248.51; l = -1.0; q = 8.181; }
+      ];
 
       sub = self.lmh.sub // {
         outDb = -6.0;
       };
 
-      hi = self.lmh.hi // {
-        # “hi-mid” and “hi” use the same amplifier with the same gain setting.
-        # And the tweeter is 4dB more efficient. Compensating for that here.
-        inDb = -4.0;
-      };
-
       mid = self.lmh.mid // {
-        outDb = -9.0;
+        outDb = -8.7;
 
         # Above frequencies go to split between hi-mid drivers and tweeters
         xOver = { freqHz = 800; slope = xOverSlopes.lr12_72db; };
@@ -116,6 +118,14 @@ let
       hi-mid = defaultParams // {
         # Everything above goes to the tweeters
         xOver = { freqHz = 5000; slope = xOverSlopes.lr12_72db; };
+      };
+
+      hi = self.lmh.hi // {
+        # “hi-mid” and “hi” use the same amplifier with the same gain setting.
+        # And the tweeter is 4dB more efficient. Compensating for that here.
+        inDb = -4.0;
+
+        outDb = -0.7;
       };
     };
   });
@@ -154,7 +164,7 @@ let
       balanceOut = "${pluginPresetPath}/param[@name='balance_out']/@value"; # -1 .. +1
     };
 
-  getCalfEqPresetPaths =
+  calfEqPresetPaths =
     let
       pluginName = "eq";
       pluginPath = "/rack/plugin[@instance-name='${pluginName}']";
@@ -163,9 +173,16 @@ let
       parametricBands = lib.pipe (lib.range 1 8) [
         (map (n: {
           name = "band${toString n}";
-          value = {
-            active = "${pluginPresetPath}/param[@name='p${toString n}_active']/@value"; # 0 or 1
-          };
+          value =
+            let
+              paramPath = name: "${pluginPresetPath}/param[@name='p${toString n}_${name}']/@value";
+            in
+              {
+                active = paramPath "active"; # 0 or 1 integer
+                freq = paramPath "freq"; # Hz
+                level = paramPath "level"; # Gain coefficient (needs conversion from decibels)
+                q = paramPath "q"; # Floating point number
+              };
         }))
         builtins.listToAttrs
       ];
@@ -310,6 +327,7 @@ let
 
       # Type ∷ string
       replaces = lib.pipe orderedRanges [
+        # Calf Stereo levels and balances
         (map (rangeName:
           let
             rangeSetup = setup.${rangeName};
@@ -324,14 +342,33 @@ let
             (let f = x: x.balanceOut; in replaceValue (f stereoPaths) (f rangeSetup))
           ]
         ))
+
         lib.flatten
-        (x: x ++ (if setup.eqDisableParametricBands or false then (
-          let paths = getCalfEqPresetPaths; in
-          lib.pipe paths.parametricBands [
+
+        # Reset (disable) all EQ parametric bands first
+        (x: x ++ (
+          lib.pipe calfEqPresetPaths.parametricBands [
             builtins.attrValues
-            (map (x: replaceValue x.active 0))
+            (map (paths: replaceValue paths.active 0))
           ]
-        ) else []))
+        ))
+
+        # Configure EQ parametric bands according to the setup EQ configuration
+        (x: x ++ lib.pipe setup.eq.parametricBands [
+          (builtins.foldl' (acc: band: {
+            nextBandN = acc.nextBandN + 1;
+            replaces =
+              let paths = calfEqPresetPaths.parametricBands."band${toString acc.nextBandN}"; in
+              acc.replaces ++ [
+                (replaceValue paths.active 1)
+                (replaceValue paths.freq band.f)
+                (replaceValue paths.level (dbToCoeff band.l))
+                (replaceValue paths.q band.q)
+              ];
+          }) { nextBandN = 1; replaces = []; })
+          (x: x.replaces)
+        ])
+
         (builtins.concatStringsSep " | ")
       ];
     in
