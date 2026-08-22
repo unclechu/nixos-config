@@ -34,7 +34,11 @@ let
     # LH for Low-High (subs + mains DSP crossover).
     # Typically used for bookshelves + subs.
     lh = {
-      eq.parametricBands = [];
+      eq = {
+        cuts = { low = null; high = null; };
+        shelves = subWooferPushEq.shelves;
+        parametricBands = subWooferPushEq.parametricBands;
+      };
 
       # Subwoofers
       sub = defaultParams // {
@@ -49,16 +53,20 @@ let
     };
 
     # LH but for Rockville 64B/4Ω 6.5" bookshelves (pretty low sensitivity).
-    lh-rv = self.lh // {
-      sub = self.lh.sub // { outDb = -9.0; };
+    lh-rv = let parent = self.lh; in parent // {
+      sub = parent.sub // { outDb = -9.0; };
     };
 
     # LMH for Low-Mid-High (subs + mid-range + tweeter DSP crossover).
     lmh = {
-      eq.parametricBands = [
-        { f = 2269.14; l = -3.6; q = 2.089; }
-        { f = 3374.3; l = -4.7; q = 1.0; }
-      ];
+      eq = {
+        cuts = { low = null; high = null; };
+        shelves = subWooferPushEq.shelves;
+        parametricBands = subWooferPushEq.parametricBands ++ [
+          { f = 2269.14; l = -3.6; q = 2.089; }
+          { f = 3374.3; l = -4.7; q = 1.0; }
+        ];
+      };
 
       # Subwoofers
       #
@@ -92,17 +100,19 @@ let
 
     # LMMH for Low-Mid-HiMid-High
     # (subs + mid-range + hi-mid-range + tweeter DSP crossover).
-    lmmh = self.lmh // {
-      eq.parametricBands = [
-        { f = 6459.33; l = -2.0; q = 4.966; }
-        { f = 7248.51; l = -1.0; q = 8.181; }
-      ];
+    lmmh = let parent = self.lmh; in parent // {
+      eq = parent.eq // {
+        parametricBands = subWooferPushEq.parametricBands ++ [
+          { f = 6459.33; l = -2.0; q = 4.966; }
+          { f = 7248.51; l = -1.0; q = 8.181; }
+        ];
+      };
 
-      sub = self.lmh.sub // {
+      sub = parent.sub // {
         outDb = -6.0;
       };
 
-      mid = self.lmh.mid // {
+      mid = parent.mid // {
         outDb = -8.7;
 
         # Above frequencies go to split between hi-mid drivers and tweeters
@@ -120,7 +130,7 @@ let
         xOver = { freqHz = 5000; slope = xOverSlopes.lr12_72db; };
       };
 
-      hi = self.lmh.hi // {
+      hi = parent.hi // {
         # “hi-mid” and “hi” use the same amplifier with the same gain setting.
         # And the tweeter is 4dB more efficient. Compensating for that here.
         inDb = -4.0;
@@ -147,6 +157,22 @@ let
     lr16_96db = 5;
   };
 
+  calfEqSlopes = {
+    _12dB = 0;
+    _24dB = 1;
+    _36dB = 2;
+  };
+
+  subWooferPushEq = {
+    shelves = {
+      low = { f = 45.0; l = 6.0; q = 1.275; };
+      high = null;
+    };
+    parametricBands = [
+      { f = 30.0; l = 6.0; q = 0.8; } # q=1.355
+    ];
+  };
+
   # For range channels volume and balance control.
   #
   # Note that values from `setups` are not always written to the associated paths as-is.
@@ -169,20 +195,36 @@ let
       pluginName = "eq";
       pluginPath = "/rack/plugin[@instance-name='${pluginName}']";
       pluginPresetPath = "${pluginPath}/preset[@plugin='eq12']";
+      paramFieldValue = fieldName: "${pluginPresetPath}/param[@name='${fieldName}']/@value";
+      mkActiveFreqLevelQPaths = getParamPath: {
+        # 0 or 1 integer (off or on).
+        # Technically there are more options but I don’t need them.
+        active = getParamPath "active";
+        freq = getParamPath "freq"; # Hz
+        level = getParamPath "level"; # Gain coefficient (needs conversion from decibels)
+        q = getParamPath "q"; # Floating point number
+      };
+      mkActiveFreqQModePaths = getParamPath: {
+        # 0 or 1 integer (off or on).
+        # Technically there are more options but I don’t need them.
+        active = getParamPath "active";
+        freq = getParamPath "freq"; # Hz
+        q = getParamPath "q"; # Floating point number
+        mode = getParamPath "mode"; # Filter slope (see `calfEqSlopes` for available values)
+      };
     in {
+      cuts = {
+        low = mkActiveFreqQModePaths (name: paramFieldValue "hp_${name}");
+        high = mkActiveFreqQModePaths (name: paramFieldValue "lp_${name}");
+      };
+      shelves = {
+        low = mkActiveFreqLevelQPaths (name: paramFieldValue "ls_${name}");
+        high = mkActiveFreqLevelQPaths (name: paramFieldValue "hs_${name}");
+      };
       parametricBands = lib.pipe (lib.range 1 8) [
         (map (n: {
           name = "band${toString n}";
-          value =
-            let
-              paramPath = name: "${pluginPresetPath}/param[@name='p${toString n}_${name}']/@value";
-            in
-              {
-                active = paramPath "active"; # 0 or 1 integer
-                freq = paramPath "freq"; # Hz
-                level = paramPath "level"; # Gain coefficient (needs conversion from decibels)
-                q = paramPath "q"; # Floating point number
-              };
+          value = mkActiveFreqLevelQPaths (name: paramFieldValue "p${toString n}_${name}");
         }))
         builtins.listToAttrs
       ];
@@ -345,13 +387,77 @@ let
 
         lib.flatten
 
-        # Reset (disable) all EQ parametric bands first
+        # Reset and disable all cutting filters first (low-pass/hi-pass)
+        (x: x ++ (
+          lib.pipe calfEqPresetPaths.cuts [
+            builtins.attrValues
+            (map (paths: [
+              (replaceValue paths.active 0)
+              (replaceValue paths.freq 10.0)
+              (replaceValue paths.q 0.707)
+              (replaceValue paths.mode calfEqSlopes._12dB)
+            ]))
+            lib.flatten
+          ]
+        ))
+
+        # Reset and disable all shelf filters first
+        (x: x ++ (
+          lib.pipe calfEqPresetPaths.shelves [
+            builtins.attrValues
+            (map (paths: [
+              (replaceValue paths.active 0)
+              (replaceValue paths.freq 10.0)
+              (replaceValue paths.level (dbToCoeff 0.0))
+              (replaceValue paths.q 0.707)
+            ]))
+            lib.flatten
+          ]
+        ))
+
+        # Reset and disable all EQ parametric bands first
         (x: x ++ (
           lib.pipe calfEqPresetPaths.parametricBands [
             builtins.attrValues
-            (map (paths: replaceValue paths.active 0))
+            (map (paths: [
+              (replaceValue paths.active 0)
+              (replaceValue paths.freq 10.0)
+              (replaceValue paths.level (dbToCoeff 0.0))
+              (replaceValue paths.q 1.0)
+            ]))
+            lib.flatten
           ]
         ))
+
+        # Configure EQ hi-/low-pass filters according to the setup EQ configuration
+        (x: x ++ lib.pipe setup.eq.cuts [
+          lib.attrsToList
+          (builtins.foldl' (acc: x:
+            if isNull x.value then acc else
+            let paths = calfEqPresetPaths.cuts.${x.name}; in
+            acc ++ [
+              (replaceValue paths.active 1)
+              (replaceValue paths.freq x.value.f)
+              (replaceValue paths.q x.value.q)
+              (replaceValue paths.mode x.value.mode)
+            ]
+          ) [])
+        ])
+
+        # Configure EQ shelf filters according to the setup EQ configuration
+        (x: x ++ lib.pipe setup.eq.shelves [
+          lib.attrsToList
+          (builtins.foldl' (acc: x:
+            if isNull x.value then acc else
+            let paths = calfEqPresetPaths.shelves.${x.name}; in
+            acc ++ [
+              (replaceValue paths.active 1)
+              (replaceValue paths.freq x.value.f)
+              (replaceValue paths.level (dbToCoeff x.value.l))
+              (replaceValue paths.q x.value.q)
+            ]
+          ) [])
+        ])
 
         # Configure EQ parametric bands according to the setup EQ configuration
         (x: x ++ lib.pipe setup.eq.parametricBands [
