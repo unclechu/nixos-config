@@ -59,14 +59,20 @@ let
     };
 
     # LMH for Low-Mid-High (subs + mid-range + tweeter DSP crossover).
+    #
+    # Note that this setup is only suitable for the old Visaton G 25 FFL
+    # tweeters! New Visaton MHT 12 do not operate that low (2kHz, they are only
+    # effective from 4kHz and upwards). And Visaton W 200 S are not going to
+    # operate that high if MHT 12 is in their proper range. So there is no good
+    # overlap, there is a need for hi-mid section with MHT 12.
     lmh = {
       eq = {
         cuts = { low = null; high = null; };
         shelves = subWooferPushEq.shelves;
         parametricBands = subWooferPushEq.parametricBands ++ [
           # For “Visaton G 25 FFL”:
-          # { f = 2269.14; l = -3.6; q = 2.089; }
-          # { f = 3374.3; l = -4.7; q = 1.0; }
+          { f = 2269.14; l = -3.6; q = 2.089; }
+          { f = 3374.3; l = -4.7; q = 1.0; }
         ];
       };
 
@@ -143,6 +149,7 @@ let
         # # “hi-mid” and “hi” use the same amplifier with the same gain setting.
         # # And the tweeter is 4dB more efficient. Compensating for that here.
         # inDb = -4.0;
+        # # By-ear compensation (probaby waveguides affect perceivable volume)
         # outDb = -0.7;
 
         # For “Visaton MHT 12 8Ω” (5dB more efficient)
