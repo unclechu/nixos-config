@@ -54,6 +54,7 @@ let
 
     # LH but for Rockville 64B/4Ω 6.5" bookshelves (pretty low sensitivity).
     lh-rv = let parent = self.lh; in parent // {
+      xover-script-arg = "lh";
       sub = parent.sub // { outDb = -9.0; };
     };
 
@@ -63,8 +64,9 @@ let
         cuts = { low = null; high = null; };
         shelves = subWooferPushEq.shelves;
         parametricBands = subWooferPushEq.parametricBands ++ [
-          { f = 2269.14; l = -3.6; q = 2.089; }
-          { f = 3374.3; l = -4.7; q = 1.0; }
+          # For “Visaton G 25 FFL”:
+          # { f = 2269.14; l = -3.6; q = 2.089; }
+          # { f = 3374.3; l = -4.7; q = 1.0; }
         ];
       };
 
@@ -91,9 +93,14 @@ let
 
       # Tweeters
       #
+      # - Amplifier: Nobsound NS-04G PRO
+      #
+      # Current:
+      # - Drivers: Visaton MHT 12 8Ω  (91dB 1W/1m)
+      #
+      # Previous:
       # - Drivers: Visaton G 25 FFL 8Ω (90dB 1W/1m)
       # - Waveguide: Visaton Waveguide WG 220x150
-      # - Amplifier: Nobsound NS-04G PRO
       #
       hi = defaultParams;
     };
@@ -103,8 +110,9 @@ let
     lmmh = let parent = self.lmh; in parent // {
       eq = parent.eq // {
         parametricBands = subWooferPushEq.parametricBands ++ [
-          { f = 6459.33; l = -2.0; q = 4.966; }
-          { f = 7248.51; l = -1.0; q = 8.181; }
+          # For “Visaton G 25 FFL”:
+          # { f = 6459.33; l = -2.0; q = 4.966; }
+          # { f = 7248.51; l = -1.0; q = 8.181; }
         ];
       };
 
@@ -131,11 +139,14 @@ let
       };
 
       hi = parent.hi // {
-        # “hi-mid” and “hi” use the same amplifier with the same gain setting.
-        # And the tweeter is 4dB more efficient. Compensating for that here.
-        inDb = -4.0;
+        # For “Visaton G 25 FFL”:
+        # # “hi-mid” and “hi” use the same amplifier with the same gain setting.
+        # # And the tweeter is 4dB more efficient. Compensating for that here.
+        # inDb = -4.0;
+        # outDb = -0.7;
 
-        outDb = -0.7;
+        # For “Visaton MHT 12 8Ω” (5dB more efficient)
+        inDb = -5.0;
       };
     };
   });
@@ -507,14 +518,14 @@ let
       }
     ) {} (builtins.attrNames setups);
 
-  mk-home-audio-xover-script = setupTarget:
+  mk-home-audio-xover-script = setupTarget: xOverScriptArg:
     assert builtins.elem setupTarget (builtins.attrNames setups);
     mk-generic-script {
       name = "home-audio-xover-${setupTarget}";
       src = ./home-audio-xover.sh;
       inherit e;
       wrapProgramArgs = [
-        "--add-flag" (lib.escapeShellArg setupTarget)
+        "--add-flag" (lib.escapeShellArg xOverScriptArg)
         "--set" "JALV_LSP_XOVER_PRESET" presetMapBySetupTarget.${setupTarget}.lsp-xover
         "--set" "CALFJACKHOST_PRESET" presetMapBySetupTarget.${setupTarget}.calfjackhost
       ];
@@ -522,7 +533,11 @@ let
 
   home-audio-xover-mapBySetupTarget =
     builtins.foldl' (acc: setupTarget:
-      acc // { "home-audio-xover-${setupTarget}" = mk-home-audio-xover-script setupTarget; }
+      acc // {
+        "home-audio-xover-${setupTarget}" =
+          mk-home-audio-xover-script setupTarget
+            (setups.${setupTarget}.xover-script-arg or setupTarget);
+      }
     ) {} (builtins.attrNames setups);
 
   eFinal = executable-dependencies (executablesMap // home-audio-xover-mapBySetupTarget);
