@@ -130,7 +130,7 @@ let
         outDb = -8.7;
 
         # Above frequencies go to split between hi-mid drivers and tweeters
-        xOver = { freqHz = 800; slope = xOverSlopes.lr12_72db; };
+        xOver = { freqHz = 800; slope = xOverSlopes.lr16_96db; };
       };
 
       # Hi-Mid-range speakers
@@ -141,7 +141,7 @@ let
       #
       hi-mid = defaultParams // {
         # Everything above goes to the tweeters
-        xOver = { freqHz = 5000; slope = xOverSlopes.lr12_72db; };
+        xOver = { freqHz = 5000; slope = xOverSlopes.lr16_96db; };
       };
 
       hi = parent.hi // {
