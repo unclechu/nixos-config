@@ -122,8 +122,20 @@ let
         ];
       };
 
+      env = {
+        # TODO: Temporary using only one of the subs as a mono sub.
+        HARDWARE_OUT_SUB_L = "system:playback_14";
+        SUB_CONFIGURATION = "mono";
+      };
+
       sub = parent.sub // {
-        outDb = -6.0;
+        # outDb = -6.0;
+
+        # TODO: Currently I’m sealing ports of my subwoofers.
+        # One sub is sealed already while the other is pending,
+        # so I’m using only one at the moment as a mono sub temporarily.
+        # The output volume to be adjusted when both subs are ready.
+        outDb = -3.0;
       };
 
       mid = parent.mid // {
@@ -527,6 +539,7 @@ let
 
   mk-home-audio-xover-script = setupTarget: xOverScriptArg:
     assert builtins.elem setupTarget (builtins.attrNames setups);
+    let setup = setups.${setupTarget}; in
     mk-generic-script {
       name = "home-audio-xover-${setupTarget}";
       src = ./home-audio-xover.sh;
@@ -535,7 +548,13 @@ let
         "--add-flag" (lib.escapeShellArg xOverScriptArg)
         "--set" "JALV_LSP_XOVER_PRESET" presetMapBySetupTarget.${setupTarget}.lsp-xover
         "--set" "CALFJACKHOST_PRESET" presetMapBySetupTarget.${setupTarget}.calfjackhost
-      ];
+      ] ++ (
+        lib.pipe (setup.env or {}) [
+          lib.attrsToList
+          (map (x: [ "--set" x.name x.value ]))
+          lib.flatten
+        ]
+      );
     };
 
   home-audio-xover-mapBySetupTarget =
