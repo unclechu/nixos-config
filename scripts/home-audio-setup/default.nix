@@ -115,6 +115,7 @@ let
     # (subs + mid-range + hi-mid-range + tweeter DSP crossover).
     lmmh = let parent = self.lmh; in parent // {
       eq = parent.eq // {
+        on = false;
         parametricBands = subWooferPushEq.parametricBands ++ [
           # For “Visaton G 25 FFL”:
           # { f = 6459.33; l = -2.0; q = 4.966; }
@@ -122,20 +123,8 @@ let
         ];
       };
 
-      env = {
-        # TODO: Temporary using only one of the subs as a mono sub.
-        HARDWARE_OUT_SUB_L = "system:playback_14";
-        SUB_CONFIGURATION = "mono";
-      };
-
       sub = parent.sub // {
-        # outDb = -6.0;
-
-        # TODO: Currently I’m sealing ports of my subwoofers.
-        # One sub is sealed already while the other is pending,
-        # so I’m using only one at the moment as a mono sub temporarily.
-        # The output volume to be adjusted when both subs are ready.
-        outDb = -3.0;
+        outDb = -6.0;
       };
 
       mid = parent.mid // {
@@ -199,7 +188,7 @@ let
       high = null;
     };
     parametricBands = [
-      { f = 30.0; l = 6.0; q = 0.8; } # q=1.355
+      { on = false; f = 25.0; l = 3.0; q = 0.8; } # q=1.355
     ];
   };
 
@@ -243,6 +232,7 @@ let
         mode = getParamPath "mode"; # Filter slope (see `calfEqSlopes` for available values)
       };
     in {
+      bypass = paramFieldValue "bypass";
       cuts = {
         low = mkActiveFreqQModePaths (name: paramFieldValue "hp_${name}");
         high = mkActiveFreqQModePaths (name: paramFieldValue "lp_${name}");
@@ -462,14 +452,14 @@ let
         # Configure EQ hi-/low-pass filters according to the setup EQ configuration
         (x: x ++ lib.pipe setup.eq.cuts [
           lib.attrsToList
-          (builtins.foldl' (acc: x:
-            if isNull x.value then acc else
-            let paths = calfEqPresetPaths.cuts.${x.name}; in
+          (builtins.foldl' (acc: { name, value }:
+            if isNull value then acc else
+            let paths = calfEqPresetPaths.cuts.${name}; in
             acc ++ [
-              (replaceValue paths.active 1)
-              (replaceValue paths.freq x.value.f)
-              (replaceValue paths.q x.value.q)
-              (replaceValue paths.mode x.value.mode)
+              (replaceValue paths.active (if value.on or true then 1 else 0))
+              (replaceValue paths.freq value.f)
+              (replaceValue paths.q value.q)
+              (replaceValue paths.mode value.mode)
             ]
           ) [])
         ])
@@ -477,14 +467,14 @@ let
         # Configure EQ shelf filters according to the setup EQ configuration
         (x: x ++ lib.pipe setup.eq.shelves [
           lib.attrsToList
-          (builtins.foldl' (acc: x:
-            if isNull x.value then acc else
-            let paths = calfEqPresetPaths.shelves.${x.name}; in
+          (builtins.foldl' (acc: { name, value }:
+            if isNull value then acc else
+            let paths = calfEqPresetPaths.shelves.${name}; in
             acc ++ [
-              (replaceValue paths.active 1)
-              (replaceValue paths.freq x.value.f)
-              (replaceValue paths.level (dbToCoeff x.value.l))
-              (replaceValue paths.q x.value.q)
+              (replaceValue paths.active (if value.on or true then 1 else 0))
+              (replaceValue paths.freq value.f)
+              (replaceValue paths.level (dbToCoeff value.l))
+              (replaceValue paths.q value.q)
             ]
           ) [])
         ])
@@ -496,7 +486,7 @@ let
             replaces =
               let paths = calfEqPresetPaths.parametricBands."band${toString acc.nextBandN}"; in
               acc.replaces ++ [
-                (replaceValue paths.active 1)
+                (replaceValue paths.active (if band.on or true then 1 else 0))
                 (replaceValue paths.freq band.f)
                 (replaceValue paths.level (dbToCoeff band.l))
                 (replaceValue paths.q band.q)
@@ -504,6 +494,9 @@ let
           }) { nextBandN = 1; replaces = []; })
           (x: x.replaces)
         ])
+
+        # EQ bypass
+        (x: x ++ [ (replaceValue calfEqPresetPaths.bypass (if setup.eq.on or true then 0 else 1)) ])
 
         (builtins.concatStringsSep " | ")
       ];
