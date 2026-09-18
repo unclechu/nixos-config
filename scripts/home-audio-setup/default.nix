@@ -115,7 +115,6 @@ let
     # (subs + mid-range + hi-mid-range + tweeter DSP crossover).
     lmmh = let parent = self.lmh; in parent // {
       eq = parent.eq // {
-        on = false;
         parametricBands = subWooferPushEq.parametricBands ++ [
           # For “Visaton G 25 FFL”:
           # { f = 6459.33; l = -2.0; q = 4.966; }
@@ -184,11 +183,11 @@ let
 
   subWooferPushEq = {
     shelves = {
-      low = { f = 45.0; l = 6.0; q = 1.275; };
+      low = { f = 45.0; l = 20.0; q = 0.950; };
       high = null;
     };
     parametricBands = [
-      { on = false; f = 25.0; l = 3.0; q = 0.8; } # q=1.355
+      { f = 20.0; l = 2.0; q = 0.22; }
     ];
   };
 
