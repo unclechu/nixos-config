@@ -123,7 +123,7 @@ let
       };
 
       sub = parent.sub // {
-        outDb = -6.0;
+        outDb = -10.0;
       };
 
       mid = parent.mid // {
