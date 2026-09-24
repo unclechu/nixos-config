@@ -72,11 +72,6 @@ in
         # See also https://github.com/apenwarr/git-subtrac
         protocol.file.allow = "always";
       };
-
-      signing = {
-        signByDefault = true;
-        key = null;
-      };
     };
 
     dconf.settings = {
