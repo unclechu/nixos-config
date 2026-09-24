@@ -188,6 +188,7 @@ let
     };
     parametricBands = [
       { f = 20.0; l = 2.0; q = 0.22; }
+      { on = false; f = 54.5; l = 8.0; q = 3.7; }
     ];
   };
 
