@@ -113,7 +113,23 @@ let
 
     # LMMH for Low-Mid-HiMid-High
     # (subs + mid-range + hi-mid-range + tweeter DSP crossover).
-    lmmh = let parent = self.lmh; in parent // {
+    lmmh = let
+      parent = self.lmh;
+
+      # `inDb` is just for pure sensitivity matching.
+      # `outDb` for by-ear adjustments.
+      # All amplified by 4 identical TDA7294-based Class AB DIY amplifier boards.
+      # With 18k||3k9 input voltage divider to attenuate the hot input from the
+      # audio inteface, to lower the noise floor and preserve more resolution
+      # from the DAC at normal listening levels.
+      spl = rec {
+        least-sensitive = hi-mid;
+        sub = 97.0; # 18TBX100
+        mid = 88.0; # W 200 S
+        hi-mid = 86.0; # W 100 S
+        hi = 91.0; # MHT 12
+      };
+    in parent // {
       eq = parent.eq // {
         parametricBands = subWooferPushEq.parametricBands ++ [
           # For “Visaton G 25 FFL”:
@@ -123,11 +139,13 @@ let
       };
 
       sub = parent.sub // {
-        outDb = -10.0;
+        inDb = spl.least-sensitive - spl.sub;
+        outDb = 3.0;
       };
 
       mid = parent.mid // {
-        outDb = -8.7;
+        inDb = spl.least-sensitive - spl.mid;
+        outDb = -3.0;
 
         # Above frequencies go to split between hi-mid drivers and tweeters
         xOver = { freqHz = 800; slope = xOverSlopes.lr16_96db; };
@@ -142,6 +160,9 @@ let
       hi-mid = defaultParams // {
         # Everything above goes to the tweeters
         xOver = { freqHz = 5000; slope = xOverSlopes.lr16_96db; };
+
+        # Reference point for the least sensitive
+        inDb = spl.least-sensitive - spl.hi-mid;
       };
 
       hi = parent.hi // {
@@ -153,7 +174,7 @@ let
         # outDb = -0.7;
 
         # For “Visaton MHT 12 8Ω” (5dB more efficient)
-        inDb = -5.0;
+        inDb = spl.least-sensitive - spl.hi;
       };
     };
   });
