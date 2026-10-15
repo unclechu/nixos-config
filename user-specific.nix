@@ -42,6 +42,10 @@ in
         "vboxusers"
         jackaudioGroupName
         audioGroupName
+
+        # Read/write from/to serial devices
+        # (e.g. Raspberry Pico USB serial TTY interface)
+        "dialout"
       ];
     };
 
