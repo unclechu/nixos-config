@@ -380,6 +380,7 @@ in
       home-audio-setup.home-audio-xover-lmmh
       home-audio-setup.home-audio-setup
       home-audio-setup.home-audio-mic
+      home-audio-setup.home-audio-headphones
       amp-power-controller.amp-power-switch
       amp-power-controller.amp-power-controller-jack-watch
     ] ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);

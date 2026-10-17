@@ -29,6 +29,7 @@
 , niv-sources ? import ../../nix/sources.nix
 , amp-power-controller ? callPackage niv-sources.amp-power-controller {}
 , amp-power-controller-jack-watch ? amp-power-controller.amp-power-controller-jack-watch
+, amp-power-switch ? amp-power-controller.amp-power-switch
 , terminal-emulators ? callPackage ../../terminal-emulators.nix {}
 , wmConfig ? builtins.fromTOML (builtins.readFile ../../gui/wm-config.toml)
 }:
@@ -314,6 +315,8 @@ let
     "jalv.gtk3" = jalv;
     calfjackhost = calf;
     xmlstarlet = xmlstarlet;
+
+    amp-power-switch = amp-power-switch;
   };
 
   e = executable-dependencies executablesMap;
@@ -627,6 +630,12 @@ let
     e = eFinal;
     wrapProgramArgs = [ "--set" "CALFJACKHOST_PRESET" presets/calfjackhost-mic.xml ];
   };
+
+  home-audio-headphones = mk-generic-script {
+    name = "home-audio-headphones";
+    src = ./home-audio-headphones.sh;
+    inherit e;
+  };
 in
 
 {
@@ -634,6 +643,7 @@ in
     setups
     home-audio-setup
     home-audio-mic
+    home-audio-headphones
     start-amp-power-controller-jack-watch
     ;
 } // home-audio-xover-mapBySetupTarget // (
