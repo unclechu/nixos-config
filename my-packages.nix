@@ -45,7 +45,10 @@ let
   pointers-setup = pkgs.callPackage scripts/pointers-setup.nix {};
   input-setup = pkgs.callPackage scripts/input-setup.nix {};
   pointers = pkgs.callPackage scripts/pointers.nix {};
+
+  # Home Audio Setup
   home-audio-setup = pkgs.callPackage scripts/home-audio-setup {};
+  amp-power-controller = pkgs.callPackage sources.amp-power-controller {};
 
   # *** misc scripts ***
 
@@ -368,13 +371,17 @@ in
       (pkgs.callPackage scripts/rt-audio {})
       (pkgs.callPackage scripts/screen-saver {})
       (pkgs.callPackage scripts/render-kicad-schematic-pdf-to-png {})
+      (pkgs.callPackage scripts/pseudo-primary-display {})
+
+      # Home Audio Setup scripts
       home-audio-setup.home-audio-xover-lh
       home-audio-setup.home-audio-xover-lh-rv
       home-audio-setup.home-audio-xover-lmh
       home-audio-setup.home-audio-xover-lmmh
       home-audio-setup.home-audio-setup
       home-audio-setup.home-audio-mic
-      (pkgs.callPackage scripts/pseudo-primary-display {})
+      amp-power-controller.amp-power-switch
+      amp-power-controller.amp-power-controller-jack-watch
     ] ++ builtins.filter lib.isDerivation (builtins.attrValues pointers);
   };
 }

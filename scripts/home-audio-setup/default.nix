@@ -11,6 +11,7 @@
 , lib ? pkgs.lib
 , callPackage ? pkgs.callPackage
 , runCommand ? pkgs.runCommand
+, writeShellScript ? pkgs.writeShellScript
 , coreutils ? pkgs.coreutils
 , gnused ? pkgs.gnused
 , bc ? pkgs.bc
@@ -24,10 +25,31 @@
 
 , executable-dependencies ? callPackage ../../utils/executable-dependencies.nix {}
 , mk-generic-script ? callPackage ../../utils/mk-generic-script.nix {}
+
+, niv-sources ? import ../../nix/sources.nix
+, amp-power-controller ? callPackage niv-sources.amp-power-controller {}
+, amp-power-controller-jack-watch ? amp-power-controller.amp-power-controller-jack-watch
+, terminal-emulators ? callPackage ../../terminal-emulators.nix {}
+, wmConfig ? builtins.fromTOML (builtins.readFile ../../gui/wm-config.toml)
 }:
 
 let
   pkgs = null;
+
+  tmuxed-alacritty-new-name =
+    wmConfig.terminal-configuration.${wmConfig.terminal}.shell-commands.new;
+  tmuxed-alacritty-new =
+    terminal-emulators.allTerminalEmulators.${tmuxed-alacritty-new-name};
+
+  start-amp-power-controller-jack-watch =
+    writeShellScript "start-amp-power-controller-jack-watch" ''
+      set -o errexit || exit; set -o errtrace; set -o nounset; set -o pipefail
+      exec \
+        ${lib.escapeShellArg (lib.getExe tmuxed-alacritty-new)} \
+        amp-jack-watch \
+        ${lib.escapeShellArg (lib.getExe amp-power-controller-jack-watch)} \
+        "$@"
+    '';
 
   # These parameters are overridden from in the preset file(s).
   setups = lib.fix (self: {
@@ -562,6 +584,7 @@ let
         "--add-flag" (lib.escapeShellArg xOverScriptArg)
         "--set" "JALV_LSP_XOVER_PRESET" presetMapBySetupTarget.${setupTarget}.lsp-xover
         "--set" "CALFJACKHOST_PRESET" presetMapBySetupTarget.${setupTarget}.calfjackhost
+        "--set" "START_AMP_POWER_CONTROLLER_JACK_WATCH_CMD" start-amp-power-controller-jack-watch
       ] ++ (
         lib.pipe (setup.env or {}) [
           lib.attrsToList
@@ -611,6 +634,7 @@ in
     setups
     home-audio-setup
     home-audio-mic
+    start-amp-power-controller-jack-watch
     ;
 } // home-audio-xover-mapBySetupTarget // (
   builtins.foldl' (acc: setupTarget:

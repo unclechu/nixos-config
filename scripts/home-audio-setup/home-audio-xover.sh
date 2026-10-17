@@ -34,6 +34,9 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 : "${CALFJACKHOST_PRESET:=presets/calfjackhost.xml}"
 : "${CALFJACKHOST_CLIENT:=home-audio-calf}"
 
+: "${START_AMP_POWER_CONTROLLER_JACK_WATCH_CMD:=tmuxed-alacritty-dark-new amp-jack-watch amp-power-controller-jack-watch}"
+: "${AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT:=amp_power_controller_watch:in}"
+
 # `fr` for full range signal to main speakers.
 # `band` for sending only signal above sub cut-off frequency.
 : "${MAINS_CONFIGURATION:=band}"
@@ -90,6 +93,7 @@ fi
 # Setting it up
 
 if [[ $MODE == default ]]; then
+	# LSP XOVER
 	(
 		CMD=(
 			jalv.gtk3
@@ -103,6 +107,7 @@ if [[ $MODE == default ]]; then
 		"${CMD[@]}" & disown
 	)
 
+	# Calf plugins
 	(
 		CMD=(
 			calfjackhost
@@ -111,6 +116,13 @@ if [[ $MODE == default ]]; then
 		)
 		set -o xtrace
 		"${CMD[@]}" & disown
+	)
+
+	# Amp power controller JACK watcher
+	(
+		set -o xtrace
+		# Must be substituted with arguments splitting preserved
+		$START_AMP_POWER_CONTROLLER_JACK_WATCH_CMD & disown
 	)
 fi
 
@@ -162,6 +174,7 @@ PORTS=(
 	"$CALFJACKHOST_CLIENT:$MID_STEREO_NAME In #2"
 	"$CALFJACKHOST_CLIENT:$MID_STEREO_NAME Out #1"
 	"$CALFJACKHOST_CLIENT:$MID_STEREO_NAME Out #2"
+	"$AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT"
 	"${EXTRA_BAND_PORTS[@]}"
 )
 
@@ -257,6 +270,9 @@ done
 # Pre EQ inputs
 (set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-left" "$CALFJACKHOST_CLIENT:eq In #1") & pids+=("$!")
 (set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-right" "$CALFJACKHOST_CLIENT:eq In #2") & pids+=("$!")
+# Everything that goes to pre-EQ should go to the amp power controller trigger port too
+(set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-left" "$AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT") & pids+=("$!")
+(set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-right" "$AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT") & pids+=("$!")
 
 # Inputs
 (set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:eq Out #1" "$JALV_LSP_XOVER_CLIENT:in_l") & pids+=("$!")
@@ -273,11 +289,13 @@ done
 (set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME Out #1" "$HARDWARE_OUT_MID_L") & pids+=("$!")
 (set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$MID_STEREO_NAME Out #2" "$HARDWARE_OUT_MID_R") & pids+=("$!")
 
+# Highs
 if [[ $SETUP_TARGET == lmh ]]; then
 	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band2l" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #1") & pids+=("$!")
 	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band2r" "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME In #2") & pids+=("$!")
 	(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #1" "$HARDWARE_OUT_HI_L") & pids+=("$!")
 	(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:$HI_STEREO_NAME Out #2" "$HARDWARE_OUT_HI_R") & pids+=("$!")
+# Hi-mids & highs
 elif [[ $SETUP_TARGET == lmmh ]]; then
 	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band2l" "$CALFJACKHOST_CLIENT:$HIMID_STEREO_NAME In #1") & pids+=("$!")
 	(set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band2r" "$CALFJACKHOST_CLIENT:$HIMID_STEREO_NAME In #2") & pids+=("$!")

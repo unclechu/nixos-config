@@ -11,6 +11,18 @@
         "url": "https://github.com/unclechu/MIDI-Trigger/archive/d4af983fe171fc2bc8bed9802c0476005a4134ab.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "amp-power-controller": {
+        "branch": "master",
+        "description": "A very simple build to control the power supplied for my audio power amplifier and a cooling fan for it from the computer",
+        "homepage": null,
+        "owner": "unclechu",
+        "repo": "amp-power-controller",
+        "rev": "6c7fddde9bd986c192d55c9c163f8d35c3a6aae2",
+        "sha256": "0ikzvh979brdbnxi1agxw0s477z584i5pyrlmf5d9slhry7a20il",
+        "type": "tarball",
+        "url": "https://github.com/unclechu/amp-power-controller/archive/6c7fddde9bd986c192d55c9c163f8d35c3a6aae2.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "bashrc": {
         "branch": "master",
         "description": "bash configs",
