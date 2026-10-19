@@ -270,13 +270,14 @@ done
 # Pre EQ inputs
 (set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-left" "$CALFJACKHOST_CLIENT:eq In #1") & pids+=("$!")
 (set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-right" "$CALFJACKHOST_CLIENT:eq In #2") & pids+=("$!")
-# Everything that goes to pre-EQ should go to the amp power controller trigger port too
-(set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-left" "$AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT") & pids+=("$!")
-(set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-right" "$AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT") & pids+=("$!")
 
 # Inputs
 (set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:eq Out #1" "$JALV_LSP_XOVER_CLIENT:in_l") & pids+=("$!")
 (set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:eq Out #2" "$JALV_LSP_XOVER_CLIENT:in_r") & pids+=("$!")
+# Taking EQ output as a trigger source means the amp power triggering is only
+# happening for the signal that is going to the amp.
+(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:eq Out #1" "$AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT") & pids+=("$!")
+(set -o xtrace; jack_connect "$CALFJACKHOST_CLIENT:eq Out #2" "$AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT") & pids+=("$!")
 
 # Sub-woofer
 (set -o xtrace; jack_connect "$JALV_LSP_XOVER_CLIENT:band0l" "$CALFJACKHOST_CLIENT:$SUB_STEREO_NAME In #1") & pids+=("$!")

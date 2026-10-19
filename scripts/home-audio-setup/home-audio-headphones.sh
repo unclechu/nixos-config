@@ -23,8 +23,6 @@ SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}"); cd -- "$SCRIPT_DIR"
 
 : "${CALFJACKHOST_CLIENT:=home-audio-calf}"
 
-: "${AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT:=amp_power_controller_watch:in}"
-
 : "${HEADPHONES_L_PORT:=system:playback_3}"
 : "${HEADPHONES_R_PORT:=system:playback_4}"
 
@@ -50,9 +48,6 @@ if $IS_ON; then
 	# Disconnect speakers
 	(set -o xtrace; jack_disconnect "$PA_SINK_CLIENT:front-left" "$CALFJACKHOST_CLIENT:eq In #1" || :) & pids+=("$!")
 	(set -o xtrace; jack_disconnect "$PA_SINK_CLIENT:front-right" "$CALFJACKHOST_CLIENT:eq In #2" || :) & pids+=("$!")
-	# Everything that goes to pre-EQ should go to the amp power controller trigger port too
-	(set -o xtrace; jack_disconnect "$PA_SINK_CLIENT:front-left" "$AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT" || :) & pids+=("$!")
-	(set -o xtrace; jack_disconnect "$PA_SINK_CLIENT:front-right" "$AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT" || :) & pids+=("$!")
 	(set -o xtrace; amp-power-switch off) # Switch off amplifier immediately
 
 	wait -- "${pids[@]}"
@@ -75,9 +70,6 @@ else
 	# Connect speakers
 	(set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-left" "$CALFJACKHOST_CLIENT:eq In #1" || :) & pids+=("$!")
 	(set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-right" "$CALFJACKHOST_CLIENT:eq In #2" || :) & pids+=("$!")
-	# Everything that goes to pre-EQ should go to the amp power controller trigger port too
-	(set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-left" "$AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT" || :) & pids+=("$!")
-	(set -o xtrace; jack_connect "$PA_SINK_CLIENT:front-right" "$AMP_POWER_CONTROLLER_JACK_WATCH_TRIGGER_PORT" || :) & pids+=("$!")
 fi
 
 >&2 printf 'Waiting for the main JACK ports connectivity PIDs: %s\n' "${pids[*]}"
