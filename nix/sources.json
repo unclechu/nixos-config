@@ -17,10 +17,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "amp-power-controller",
-        "rev": "6c7fddde9bd986c192d55c9c163f8d35c3a6aae2",
-        "sha256": "0ikzvh979brdbnxi1agxw0s477z584i5pyrlmf5d9slhry7a20il",
+        "rev": "7f632aef390ef77a1c8ea42c276a80f9c3b9c8b9",
+        "sha256": "0fp8l3gyqh4s2xkqp1cfj6ip7cw16pc1wv4rm5hzrlizlm8b6zl7",
         "type": "tarball",
-        "url": "https://github.com/unclechu/amp-power-controller/archive/6c7fddde9bd986c192d55c9c163f8d35c3a6aae2.tar.gz",
+        "url": "https://github.com/unclechu/amp-power-controller/archive/7f632aef390ef77a1c8ea42c276a80f9c3b9c8b9.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "bashrc": {
