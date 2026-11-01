@@ -13,7 +13,6 @@ in
 , runCommand ? pkgs.runCommand
 
 , dbus ? pkgs.dbus
-, pcre ? pkgs.pcre
 , xdotool ? pkgs.xdotool
 , xwininfo ? pkgs.xwininfo
 
@@ -48,7 +47,7 @@ let
       ./ipc.nim
       ./types.nim
     ];
-    buildInputs = [ dbus pcre ];
+    buildInputs = [ dbus ];
     lspForShell = __nimLsp;
     e = executable-dependencies {
       xdotool = xdotool;

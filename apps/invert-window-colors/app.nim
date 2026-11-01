@@ -1,8 +1,8 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-from strutils import parseInt, format
-from re import Regex, re, find
+from strutils import parseInt, format, strip
+from strscans import scanf
 from options import Option, isSome, isNone, some, none, get
 from streams import Stream, readLine, writeLine
 from locks import Lock, initLock, acquire, release
@@ -90,10 +90,12 @@ proc getRootWnd(): uint32 =
 
   proc handler(hproc: osproc.Process; sout: Stream) =
     var line: string = ""
+    var id: int
     while sout.readLine(line):
       if line == "":
         continue
-      elif line.find(re"Window\sid:\s+(\d+)", matches) != -1:
+      elif scanf(line.strip, "Window id:$s$i", id):
+        matches[0] = $id
         hproc.terminate
         break
     if matches[0] == "":
@@ -110,10 +112,12 @@ proc getParentWnd(childWnd: uint32): Option[uint32] =
 
   proc handler(hproc: osproc.Process; sout: Stream) =
     var line: string = ""
+    var id: int
     while sout.readLine(line):
       if line == "":
         continue
-      elif line.find(re"Parent\swindow\sid:\s+(\d+)", matches) != -1:
+      elif scanf(line.strip, "Parent window id:$s$i", id):
+        matches[0] = $id
         hproc.terminate
         break
     if matches[0] == "":

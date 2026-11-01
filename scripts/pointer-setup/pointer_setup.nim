@@ -6,7 +6,6 @@
 from std/locks import nil
 from std/options import nil
 from std/osproc import nil
-from std/re import nil
 from std/sets import nil
 from std/streams import nil
 from std/strutils import nil
@@ -209,6 +208,49 @@ template parseSetPropValue(value: string): Either[string, SetProp] =
 
 const productIdPropName: string = "Device Product ID";
 
+type XinputProperty = tuple[name: string, id: uint, value: string]
+
+proc parseDeviceId(line, deviceName: string): options.Option[uint] =
+  let marker = "↳ " & deviceName
+  let markerPos = strutils.find(line, marker)
+  if markerPos < 0: return options.none(uint)
+
+  let remaining = line.substr(markerPos + marker.len)
+  if remaining.len == 0 or remaining[0] notin strutils.Whitespace:
+    return options.none(uint)
+
+  let fields = strutils.splitWhitespace(remaining)
+  if fields.len < 2 or not strutils.startsWith(fields[0], "id="):
+    return options.none(uint)
+
+  let idText = fields[0].substr(3)
+  if idText.len == 0 or not strutils.allCharsInSet(idText, strutils.Digits):
+    return options.none(uint)
+
+  options.some(strutils.parseUInt(idText))
+
+proc parseXinputProperty(line: string): options.Option[XinputProperty] =
+  let delimPos = strutils.find(line, "):")
+  if delimPos < 0: return options.none(XinputProperty)
+
+  let beforeDelim = line.substr(0, delimPos - 1)
+  let openParen = strutils.rfind(beforeDelim, '(')
+  if openParen < 0: return options.none(XinputProperty)
+
+  let name = strutils.strip(beforeDelim.substr(0, openParen - 1))
+  let idText = beforeDelim.substr(openParen + 1)
+  let value = strutils.strip(line.substr(delimPos + 2))
+
+  if (
+    name.len == 0 or
+    value.len == 0 or
+    idText.len == 0 or
+    not strutils.allCharsInSet(idText, strutils.Digits)
+  ):
+    return options.none(XinputProperty)
+
+  options.some((name: name, id: strutils.parseUInt(idText), value: value))
+
 # The main program
 
 withStderr:
@@ -255,20 +297,6 @@ withStderr:
         acc[x.name] = x.values
       acc
 
-  # xinput output parsing patterns
-  let
-    xinputDeviceLinePattern: re.Regex =
-      re.re("↳ " & re.escapeRe(deviceName) & r"\s+id=\d+\s+")
-
-    xinputDeviceIdPattern: re.Regex = re.re(r"id=(\d+)")
-
-    xinputPropPattern: re.Regex =
-      re.re(
-        r"^\s*([^:]+?)" & # Property name
-        r"\s+\((\d+)\):" & # Property ID
-        r"\s*([^:]+?)\s*$" # Property value
-      )
-
   let xinputDevicesListProc: InOutProc = block:
     log.debug("Requesting a list of devices by calling xinput")
     let p: InOutProc =
@@ -281,13 +309,11 @@ withStderr:
     deviceLine: string
 
   while streams.readLine(xinputDevicesListProc.stdoutStream, deviceLine):
-    if not re.contains(deviceLine, xinputDeviceLinePattern): continue
+    let parsedDeviceId = parseDeviceId(deviceLine, deviceName)
+    if options.isNone(parsedDeviceId): continue
 
     let deviceId: uint = block:
-      var captures: array[1, string]
-      if re.find(deviceLine, xinputDeviceIdPattern, captures) < 0:
-        fail("Failed to extract xinput device ID from device line: " & strutils.escape(deviceLine))
-      let id: uint = strutils.parseInt(captures[0]).uint
+      let id: uint = options.get(parsedDeviceId)
       log.debug(
         "Found device by device name " & strutils.escape(deviceName) &
         " (device ID: " & $id & ")"
@@ -312,13 +338,13 @@ withStderr:
       propLine: string
 
     while streams.readLine(xinputDevicePropsListProc.stdoutStream, propLine):
-      var propCapture: array[3, string]
-      if not re.match(propLine, xinputPropPattern, propCapture): continue
+      let parsedProperty = parseXinputProperty(propLine)
+      if options.isNone(parsedProperty): continue
 
       let
-        propName: string = propCapture[0]
-        propId: uint = strutils.parseInt(propCapture[1]).uint
-        propValue: string = propCapture[2]
+        propName: string = options.get(parsedProperty).name
+        propId: uint = options.get(parsedProperty).id
+        propValue: string = options.get(parsedProperty).value
 
       if propName == productIdPropName and options.isSome(deviceProductId):
         foundDeviceProductIdProp = true

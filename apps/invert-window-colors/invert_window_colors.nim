@@ -1,9 +1,8 @@
 # Author: Viacheslav Lotsmanov
 # License: MIT https://raw.githubusercontent.com/unclechu/nixos-config/master/LICENSE
 
-from strutils import format, join, parseUInt, replace, split
+from strutils import format, join, parseUInt, replace, split, allCharsInSet
 from sequtils import filterIt, mapIt, newSeqWith, keepItIf
-from re import re, match
 from os import paramStr, paramCount, commandLineParams
 from options import Option, isSome, isNone, some, none, get
 
@@ -22,13 +21,19 @@ const
 
 proc isForCommand(): bool {.inline.} = (
   paramCount() in [2, 3] and paramStr(1) == "for" and
-  paramStr(2).match(re"\d+") and
+  (paramStr(2).len > 0 and paramStr(2).allCharsInSet({'0'..'9'})) and
   (paramCount() == 2 or paramStr(3) in stCmd)
   )
 
 proc isAppCommand(): bool {.inline.} = (
   paramCount() in [2, 3] and paramStr(1) == "app" and
-  (paramStr(2) == "all" or paramStr(2).match(re"[a-z, ]+")) and
+  (
+    paramStr(2) == "all" or
+    (
+      paramStr(2).len > 0 and
+      paramStr(2).allCharsInSet({'a'..'z', ',', ' '})
+    )
+  ) and
   (paramCount() == 2 or paramStr(3) in stCmd)
   )
 
