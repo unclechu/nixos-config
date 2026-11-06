@@ -155,6 +155,10 @@ let
     in parent // {
       eq = parent.eq // {
         parametricBands = subWooferPushEq.parametricBands ++ [
+          { on = false; f = 2000.; l = -6.; q = 16.; }
+          { on = false; f = 2300.; l = -6.; q = 21.; }
+          { on = false; f = 2500.; l = -6.; q = 22.; }
+
           # For “Visaton G 25 FFL”:
           # { f = 6459.33; l = -2.0; q = 4.966; }
           # { f = 7248.51; l = -1.0; q = 8.181; }
