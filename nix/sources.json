@@ -77,10 +77,10 @@
         "homepage": null,
         "owner": "unclechu",
         "repo": "neovimrc",
-        "rev": "875375a4d231ea61e8e6f70ad0e61b547eba6213",
-        "sha256": "11jv77wc25i1f2mim04q5sggmfmj10n8k1xmxixf5gqnk64xvarv",
+        "rev": "0736d9e0ed3cbf4b5636d60fd7a8d0edf68d4d98",
+        "sha256": "0d66zwvsfkss1zpf9fp8j0jaf1nh482r17z3qivv2nmmc403b7ik",
         "type": "tarball",
-        "url": "https://github.com/unclechu/neovimrc/archive/875375a4d231ea61e8e6f70ad0e61b547eba6213.tar.gz",
+        "url": "https://github.com/unclechu/neovimrc/archive/0736d9e0ed3cbf4b5636d60fd7a8d0edf68d4d98.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nim-dbus": {
