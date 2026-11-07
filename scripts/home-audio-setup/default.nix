@@ -155,9 +155,14 @@ let
     in parent // {
       eq = parent.eq // {
         parametricBands = subWooferPushEq.parametricBands ++ [
+          # Supressing resonances
+          { on = true; f = 135.; l = -8.; q = 12.5; }
+          { on = true; f = 145.; l = -6.; q = 20.; }
+          { on = true; f = 160.; l = -7.; q = 20.; }
+
           { on = false; f = 2000.; l = -6.; q = 16.; }
           { on = false; f = 2300.; l = -6.; q = 21.; }
-          { on = false; f = 2500.; l = -6.; q = 22.; }
+          { on = true; f = 2500.; l = -6.; q = 22.; }
 
           # For “Visaton G 25 FFL”:
           # { f = 6459.33; l = -2.0; q = 4.966; }
